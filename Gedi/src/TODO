@@ -1,0 +1,4 @@
+Implement Resimulate
+Implement: Subreads in cit as input
+Test resimulate, and check inferred parameters
+Merge gene groups (>50% overlap, or end wihtin 100bp)

@@ -1,0 +1,60 @@
+#!/bin/bash
+
+p=
+tmpfolder=
+nthreads=6
+
+while [[ $1 == -* ]]
+do
+   case $1 in
+       -h)  printf "bamlist2cit [-p] [-t tmpfolder] xyz.bamlist\n\n -p\tShow progress\n\n"
+		exit
+		;;
+       -p) p=" -p";;
+       -n) shift; nthreads=$1;;
+       -t) shift;
+	   tmpfolder=" -Djava.io.tmpdir=$1"
+	   mkdir -p $1
+	   ;;
+       -*) add="$add $1";; 
+   esac
+   shift;
+done
+
+proc=0
+PIDS=
+CITS=
+for i in $( grep -v "^#" $1 ); do
+	echo "Converting $i"
+	gedi $tmpfolder$add -e Bam2CIT $i.cit $i &
+	PIDS="$PIDS $!"
+	CITS="$CITS $i.cit"
+	proc=$((proc+1))
+	if (( $proc==$nthreads )); then
+		wait $PIDS
+		PIDS=
+		proc=0
+	fi
+done
+wait $PIDS
+
+proc=0
+PIDS=
+for i in $( grep -v "^#" $1 ); do
+	echo "Correcting $i.cit"
+        gedi $tmpfolder$add -e CorrectCIT $i.cit &
+	PIDS="$PIDS $!"
+        proc=$((proc+1))
+        if (( $proc==$nthreads )); then
+                wait $PIDS
+                PIDS=
+                proc=0
+        fi
+
+done
+wait $PIDS
+
+echo "Merging"
+gedi $tmpfolder$add -e MergeCIT $p -c $1.cit $CITS
+gedi $tmpfolder$add -e ReadCount $p $1.cit
+

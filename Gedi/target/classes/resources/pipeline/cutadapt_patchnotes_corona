@@ -1,0 +1,21 @@
+after @staticmethod def masked_read
+
+    @staticmethod
+    def corona_read(read, matches: Sequence[Match]):
+        start, stop = remainder(matches)
+        result = read[:]
+        result.sequence = (
+            'N' * 2
+            + read.sequence[start:stop])
+        result.qualities = (
+            read.qualities[(start-2):stop])
+        return result
+
+        
+After       trimmed_read = self.masked_read(read, matches)
+        
+        elif self.action == 'corona':
+            trimmed_read = self.corona_read(read, matches)
+        
+        
+Add 'corona' in __main__ into the list (after 'mask')

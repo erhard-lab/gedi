@@ -1,0 +1,348 @@
+<?JS0
+varin("id","Track id",true);
+varin("paths","File paths",true);
+varin("totals","Array of total counts",true);
+varin("background","Background color of track",false);
+varin("readmode","How to count multimappers (default: weight",false);
+varin("mbppp","Maximal bp per pixel (Default: Infinity)",false);
+varin("nolog","Use logscale",false);
+varin("nonorm","Use logscale",false);
+varin("bigreads","Show reads (with magnification)",false);
+varin("ribopos","Which reference position to use for ribo-seq (default: FivePrime)",false);
+varin("ribooffset","Which reference offset to use for ribo-seq (default: 12)",false);
+?>
+<?JS
+var background = background?background:"#ffffff";
+var readmode = readmode?readmode:ReadCountMode.Weight;
+var mbppp = mbppp?mbppp:1000;
+var nonorm;
+var nolog;
+var bigreads;
+var bigreadsset=bigreads;
+if (!bigreads) bigreads=1;
+if (bigreads===true) bigreads = 5;
+
+var ribohide = typeof ribopos == 'undefined' && typeof ribooffset == 'undefined'
+var ribopos = ribopos?ribopos:"FivePrime";
+var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
+
+var ncond = 0;
+for each (var path in paths) {
+	var f = new File(path+".metadata.json");
+	if (f.exists()) ncond+=DynamicObject.parseJson(f).getEntry("conditions").asArray().length
+}
+ncond = new Integer(ncond);
+
+var merge;
+if (typeof merge === 'undefined') {
+	merge = ncond>=10;
+}
+
+?>
+	
+<?JS if (merge) {
+	var totals = JS.doubleArray(ArrayUtils.sum(totals));
+ ?>
+	<StorageSource id="+.<?JS id ?>.pdata" filter="+">
+		<?JS for each (var path in paths) { ?>
+		<File path="<?JS path ?>" />
+		<?JS } ?>
+	</StorageSource>
+	<StorageSource id="-.<?JS id ?>.pdata" filter="-">
+		<?JS for each (var path in paths) { ?>
+		<File path="<?JS path ?>" />
+		<?JS } ?>
+	</StorageSource>
+
+	<ContrastMapping id="contrast">
+		<MergeAll n="<? ncond ?>" />
+	</ContrastMapping>
+	<AlignedReadsDataContrastMapper id="+.<?JS id ?>.data" input="+.<?JS id ?>.pdata" contrast="contrast" />
+	<AlignedReadsDataContrastMapper id="-.<?JS id ?>.data" input="-.<?JS id ?>.pdata" contrast="contrast" />
+	
+	
+<?JS } else { ?>
+	
+	<StorageSource id="+.<?JS id ?>.data" filter="+">
+		<?JS for each (var path in paths) { ?>
+		<File path="<?JS path ?>" />
+		<?JS } ?>
+	</StorageSource>
+	<StorageSource id="-.<?JS id ?>.data" filter="-">
+		<?JS for each (var path in paths) { ?>
+		<File path="<?JS path ?>" />
+		<?JS } ?>
+	</StorageSource>
+
+<?JS }  ?>
+		
+	<AlignedReadsDataToCoverageMapper id="+.<?JS id ?>.coveragenn" input="+.<?JS id ?>.data">
+		<ReadCountMode m="<?JS readmode ?>" />
+	</AlignedReadsDataToCoverageMapper>
+	<NumericNormalize id="+.<?JS id ?>.coverage" input="+.<?JS id ?>.coveragenn" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+	<AlignedReadsDataToJunctionCountMapper id="+.<?JS id ?>.junctionsnn" input="+.<?JS id ?>.data">
+		<ReadCountMode m="<?JS readmode ?>" />
+		<Strand strand="+"/>
+	</AlignedReadsDataToJunctionCountMapper>
+	<StorageNumericNormalize id="+.<?JS id ?>.junctions" input="+.<?JS id ?>.junctionsnn" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+	<AlignedReadsDataToMismatchesMapper id="+.<?JS id ?>.mismatches" input="+.<?JS id ?>.data">	
+		<ReadCountMode m="<?JS readmode ?>" />
+	</AlignedReadsDataToMismatchesMapper>
+	<AlignedReadsDataToSoftclipMapper id="+.<?JS id ?>.softclip3p" input="+.<?JS id ?>.data">	
+		<ReadCountMode m="<?JS readmode ?>" />
+	</AlignedReadsDataToSoftclipMapper>
+	
+	<AlignedReadsDataToCoverageMapper id="-.<?JS id ?>.coveragenn" input="-.<?JS id ?>.data">
+		<ReadCountMode m="<?JS readmode ?>" />
+	</AlignedReadsDataToCoverageMapper>
+	<NumericNormalize id="-.<?JS id ?>.coverage" input="-.<?JS id ?>.coveragenn" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+	<AlignedReadsDataToJunctionCountMapper id="-.<?JS id ?>.junctionsnn" input="-.<?JS id ?>.data">
+		<ReadCountMode m="<?JS readmode ?>" />
+		<Strand strand="-"/>
+	</AlignedReadsDataToJunctionCountMapper>
+	<StorageNumericNormalize id="-.<?JS id ?>.junctions" input="-.<?JS id ?>.junctionsnn" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+	<AlignedReadsDataToMismatchesMapper id="-.<?JS id ?>.mismatches" input="-.<?JS id ?>.data" >	
+			<ReadCountMode m="<?JS readmode ?>" />
+	</AlignedReadsDataToMismatchesMapper>
+	<AlignedReadsDataToSoftclipMapper id="-.<?JS id ?>.softclip3p" input="-.<?JS id ?>.data">	
+		<ReadCountMode m="<?JS readmode ?>" />
+	</AlignedReadsDataToSoftclipMapper>
+	
+	<AlignedReadsDataToPositionMapper input="+.<?JS id ?>.data" id="+.<?JS id ?>.5pnn">
+		<ReadCountMode m="<?JS readmode ?>" />
+		<ReferencePosition p="Start" />
+	</AlignedReadsDataToPositionMapper>
+	<NumericNormalize id="+.<?JS id ?>.5p" input="+.<?JS id ?>.5pnn" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+	<AlignedReadsDataToPositionMapper input="-.<?JS id ?>.data" id="-.<?JS id ?>.5pnn">
+		<ReadCountMode m="<?JS readmode ?>" />
+		<ReferencePosition p="Stop" />
+	</AlignedReadsDataToPositionMapper>
+	<NumericNormalize id="-.<?JS id ?>.5p" input="-.<?JS id ?>.5pnn" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+
+	<AlignedReadsDataToPositionMapper input="+.<?JS id ?>.data" id="+.<?JS id ?>.3pnn">
+		<ReadCountMode m="<?JS readmode ?>" />
+		<ReferencePosition p="Stop" />
+	</AlignedReadsDataToPositionMapper>
+	<NumericNormalize id="+.<?JS id ?>.3p" input="+.<?JS id ?>.3pnn" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+	<AlignedReadsDataToPositionMapper input="-.<?JS id ?>.data" id="-.<?JS id ?>.3pnn">
+		<ReadCountMode m="<?JS readmode ?>" />
+		<ReferencePosition p="Start" />
+	</AlignedReadsDataToPositionMapper>
+	<NumericNormalize id="-.<?JS id ?>.3p" input="-.<?JS id ?>.3pnn" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+	
+	<PatternMatrix id="+.<?JS id ?>.ribo.patmat" input="+.<?JS id ?>.data" min="24" max="36" strand="+">
+		<ReadPosition position="<? ribopos ?>" offset="<? ribooffset ?>" />
+		<ValueFunction js="Math.log10(data.getTotalCountOverall(ReadCountMode.Weight))" />
+	</PatternMatrix>
+	<PatternMatrix id="-.<?JS id ?>.ribo.patmat" input="-.<?JS id ?>.data" min="24" max="36" strand="-">
+		<ReadPosition position="<? ribopos ?>" offset="<? ribooffset ?>" />
+		<ValueFunction js="Math.log10(data.getTotalCountOverall(ReadCountMode.Weight))" />
+	</PatternMatrix>
+	
+	<NumericMerge input="+.<?JS id ?>.coveragenn,+.<?JS id ?>.mismatches" id="+.<?JS id ?>.mismatchfrac">
+		<Compute js="data.slice(data.length()-5,data.length()).copy().applyInPlace(function(d) d/data.slice(0,data.length()-5).sum())" />
+	</NumericMerge>
+	<NumericMerge input="-.<?JS id ?>.coveragenn,-.<?JS id ?>.mismatches" id="-.<?JS id ?>.mismatchfrac">
+		<Compute js="data.slice(data.length()-5,data.length()).copy().applyInPlace(function(d) d/data.slice(0,data.length()-5).sum())" />
+	</NumericMerge>
+	
+	
+	<HeatmapTrack id="+.<?JS id ?>.Ribo-seq.Heatmap" input="+.<?JS id ?>.ribo.patmat">
+		<AutoHeight sizePerBin="6" />
+		<BottomUp />
+		<Hidden h="<? ribohide ?>" />
+	</HeatmapTrack>
+	<HeatmapTrack id="-.<?JS id ?>.Ribo-seq.Heatmap" input="-.<?JS id ?>.ribo.patmat">
+		<AutoHeight sizePerBin="6" />
+		<BottomUp />
+		<Hidden h="<? ribohide ?>" />
+	</HeatmapTrack>
+	
+	<StackedBoxesTrack id="+.<?JS id ?>.Normalized.5p" class="<?JS id ?>" input="+.<?JS id ?>.5p">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+	</StackedBoxesTrack>
+	<StackedBoxesTrack id="+.<?JS id ?>.Normalized.3p" class="<?JS id ?>" input="+.<?JS id ?>.3p">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+	</StackedBoxesTrack>
+	
+	<NumericTrackGroup id="+.<?JS id ?>.Normalized.Data" class="<?JS id ?>">
+		<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+		<RegionLinesTrack input="+.<?JS id ?>.junctions" id="+.<?JS id ?>.Normalized.Junctions" class="<?JS id ?>" >
+			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</RegionLinesTrack>
+		<LinesTrack input="+.<?JS id ?>.coverage" id="+.<?JS id ?>.Normalized.Coverage" class="<?JS id ?>" >
+			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+			<FixedMin min="0"/>
+			<Points p="false" />
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</LinesTrack>
+		<? if (nonorm) { ?><Hidden h="true" /><? } ?>
+	</NumericTrackGroup>
+	
+	<StackedBoxesTrack id="+.<?JS id ?>.Unnormalized.5p" class="<?JS id ?>" input="+.<?JS id ?>.5pnn">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+	</StackedBoxesTrack>
+	
+	<ScaleLimitLinker id="+.<?JS id ?>.Unnormalized.3p.linker" />
+	<StackedBoxesTrack id="+.<?JS id ?>.Unnormalized.3p" class="<?JS id ?>" input="+.<?JS id ?>.3pnn">
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<LimitLinker linker="+.<?JS id ?>.Unnormalized.3p.linker" />
+		<Hidden h="true" />
+	</StackedBoxesTrack>
+	<StackedBoxesTrack input="+.<?JS id ?>.softclip3p" id="+.<?JS id ?>.Softclip.Softclip 3'" class="basecolors">
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<LimitLinker linker="+.<?JS id ?>.Unnormalized.3p.linker" />
+		<Hidden h="true" />
+	</StackedBoxesTrack>
+
+	
+	<NumericTrackGroup id="+.<?JS id ?>.Unnormalized.Data" class="<?JS id ?>">
+		<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+		<RegionLinesTrack input="+.<?JS id ?>.junctionsnn" id="+.<?JS id ?>.Unnormalized.Junctions" class="<?JS id ?>" >
+			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</RegionLinesTrack>
+		<LinesTrack input="+.<?JS id ?>.coveragenn" id="+.<?JS id ?>.Unnormalized.Coverage" class="<?JS id ?>" >
+			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+			<FixedMin min="0"/>
+			<Points p="false" />
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</LinesTrack>
+		<? if (!nonorm) { ?><Hidden h="true" /><? } ?>
+	</NumericTrackGroup>
+
+
+
+	
+	<NumericTrackGroup id="+.<?JS id ?>.Mismatches.Group" class="<?JS id ?>">
+		<StackedLinesTrack input="+.<?JS id ?>.coveragenn" id="+.<?JS id ?>.Mismatches.Coverage" class="<?JS id ?>" >
+			<FixedMin min="0"/>
+			<Points p="false" />
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</StackedLinesTrack>
+		<StackedBoxesTrack input="+.<?JS id ?>.mismatches" id="+.<?JS id ?>.Mismatches.Mismatches" class="basecolors">
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</StackedBoxesTrack>
+		<Hidden h="true" />
+	</NumericTrackGroup>
+	
+	<StackedBoxesTrack input="+.<?JS id ?>.mismatchfrac" id="+.<?JS id ?>.Mismatches.Fraction" class="basecolors">
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<FixedMin min="0"/>
+		<FixedMax min="0.1"/>
+		<Hidden h="true" />
+	</StackedBoxesTrack>
+		
+
+	<PackRegionTrack input="+.<?JS id ?>.data" id="+.<?JS id ?>.Reads"  >
+		<Hspace space="1" />
+		<Vspace space="<? print(bigreads>1?1:0) ?>" />
+		<Background c="#e5efff" />
+		<Strand strand="+"/>
+		<BoxRenderer>
+			<AlignedReadsDataBoxRenderer>
+				<Factor f="<? print(bigreads) ?>"/>
+			</AlignedReadsDataBoxRenderer>
+		</BoxRenderer>
+		<ViewDoubleClick />
+		<Hidden h="<? print(bigreadsset?'false':'true') ?>" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+	</PackRegionTrack>
+	
+
+	<StackedBoxesTrack id="-.<?JS id ?>.Normalized.5p" class="<?JS id ?>" input="-.<?JS id ?>.5p">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+	</StackedBoxesTrack>
+	<StackedBoxesTrack id="-.<?JS id ?>.Normalized.3p" class="<?JS id ?>" input="-.<?JS id ?>.3p">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+	</StackedBoxesTrack>
+	
+	<NumericTrackGroup id="-.<?JS id ?>.Normalized.Data" class="<?JS id ?>">
+		<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+		<RegionLinesTrack input="-.<?JS id ?>.junctions" id="-.<?JS id ?>.Normalized.Junctions" class="<?JS id ?>" >
+			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</RegionLinesTrack>
+		<LinesTrack input="-.<?JS id ?>.coverage" id="-.<?JS id ?>.Normalized.Coverage" class="<?JS id ?>" >
+			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+			<FixedMin min="0"/>
+			<Points p="false" />
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</LinesTrack>
+		<? if (nonorm) { ?><Hidden h="true" /><? } ?>
+	</NumericTrackGroup>
+	
+	<StackedBoxesTrack id="-.<?JS id ?>.Unnormalized.5p" class="<?JS id ?>" input="-.<?JS id ?>.5pnn">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+	</StackedBoxesTrack>
+
+	<ScaleLimitLinker id="-.<?JS id ?>.Unnormalized.3p.linker" />
+	<StackedBoxesTrack id="-.<?JS id ?>.Unnormalized.3p" class="<?JS id ?>" input="-.<?JS id ?>.3pnn">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<LimitLinker linker="-.<?JS id ?>.Unnormalized.3p.linker" />
+	</StackedBoxesTrack>
+	<StackedBoxesTrack input="-.<?JS id ?>.softclip3p" id="-.<?JS id ?>.Softclip.Softclip 3'" class="basecolors">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<LimitLinker linker="-.<?JS id ?>.Unnormalized.3p.linker" />
+	</StackedBoxesTrack>
+	
+	<NumericTrackGroup id="-.<?JS id ?>.Unnormalized.Data" class="<?JS id ?>">
+		<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+		<RegionLinesTrack input="-.<?JS id ?>.junctionsnn" id="-.<?JS id ?>.Unnormalized.Junctions" class="<?JS id ?>" >
+			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</RegionLinesTrack>
+		<LinesTrack input="-.<?JS id ?>.coveragenn" id="-.<?JS id ?>.Unnormalized.Coverage" class="<?JS id ?>" >
+			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
+			<FixedMin min="0"/>
+			<Points p="false" />
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</LinesTrack>
+		<? if (!nonorm) { ?><Hidden h="true" /><? } ?>
+	</NumericTrackGroup>
+
+
+
+	<NumericTrackGroup id="-.<?JS id ?>.Mismatches.Group" class="<?JS id ?>">
+		<StackedLinesTrack input="-.<?JS id ?>.coveragenn" id="-.<?JS id ?>.Mismatches.Coverage" class="<?JS id ?>" >
+			<FixedMin min="0"/>
+			<Points p="false" />
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</StackedLinesTrack>
+		<StackedBoxesTrack input="-.<?JS id ?>.mismatches" id="-.<?JS id ?>.Mismatches.Mismatches" class="basecolors">
+			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		</StackedBoxesTrack>
+		<Hidden h="true" />
+	</NumericTrackGroup>
+
+	<StackedBoxesTrack input="-.<?JS id ?>.mismatchfrac" id="-.<?JS id ?>.Mismatches.Fraction" class="basecolors">
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<FixedMin min="0"/>
+		<FixedMax min="0.1"/>
+		<Hidden h="true" />
+	</StackedBoxesTrack>
+		
+		
+	<PackRegionTrack input="-.<?JS id ?>.data" id="-.<?JS id ?>.Reads"  >
+		<Hspace space="1" />
+		<Vspace space="<? print(bigreads>1?1:0) ?>" />
+		<Background c="#e5efff" />
+		<Strand strand="-"/>
+		<BoxRenderer>
+			<AlignedReadsDataBoxRenderer>
+				<Factor f="<? print(bigreads) ?>" />
+			</AlignedReadsDataBoxRenderer>
+		</BoxRenderer>
+		<ViewDoubleClick />
+		<Hidden h="<? print(bigreadsset?'false':'true') ?>" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+	</PackRegionTrack>

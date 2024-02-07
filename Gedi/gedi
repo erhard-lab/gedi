@@ -1,0 +1,55 @@
+#!/bin/bash
+
+mem=16G
+
+
+DIR="$(dirname "$(readlink -f "$0")")"
+
+# put together the class path string
+if [ -f "$DIR/gedi.jar" ]; then
+	CP="$DIR/gedi.jar:$DIR/lib/*:$DIR/plugins/*"
+else
+	if [ ! -f $DIR/Gedi/classpath_maven.txt ]; then
+	   	mvn -f $DIR/Gedi dependency:build-classpath -Dmdep.outputFile=$DIR/Gedi/classpath_maven.txt
+	fi
+	cp=`cat $DIR/Gedi/classpath_maven.txt`
+	CP="$DIR/Gedi/target/classes:$cp:$HOME/.gedi/plugins/.*"
+fi
+
+
+d=
+p=
+e=
+add="--add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-opens java.xml/com.sun.org.apache.xerces.internal.util=ALL-UNNAMED --add-opens  java.base/jdk.internal.reflect=ALL-UNNAMED --add-opens java.base/jdk.internal.ref=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
+tmpfolder=
+jmx=
+
+
+while [[ $1 == -* ]]
+do
+   case $1 in
+       -h)  printf "gedi [-jmx] [-d] [-d2] [-p] [-mem <XYZ>G] [-t <tmpfolder] [-e] [-<java-option>] main-class [param...]\n\n -d\tStart in debug mode (server on port 8998)\n -d2\tStart in secondary debug mode (server on port 8999)\n -p\tStart cpu hprof\n -t\tspecify tmp folder\n -e\tprepend executables. before main-class\n -mem<XYZ>G\tmaximal memory available to gedi (replace XYZ by the gigabytes)\n\n"
+		exit
+		;;
+       -d) d=" -agentlib:jdwp=transport=dt_socket,address=8998,server=y";;
+       -d2) d=" -agentlib:jdwp=transport=dt_socket,address=8999,server=y";;
+       -p) p=" -Xrunhprof:cpu=samples";;
+       -n) exit 10;;
+       -mem) shift;
+           mem="$1";
+           ;;
+       -jmx) jmx="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=8991 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Djava.rmi.server.hostname=wvir052.virologie.uni-wuerzburg.de";;
+       -t) shift;
+	   tmpfolder=" -Djava.io.tmpdir=$1"
+	   mkdir -p $1
+	   ;;
+       -e) e=executables.;;
+       -*) add="$add $1";; 
+   esac
+   shift;
+done
+
+
+
+java $xp$d$p$tmpfolder $add -Xmx$mem -Xms2048m -cp $CP $e"$@"
+
