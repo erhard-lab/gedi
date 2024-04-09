@@ -9,11 +9,11 @@ DIR="$(dirname "$(readlink -f "$0")")"
 if [ -f "$DIR/gedi.jar" ]; then
 	CP="$DIR/gedi.jar:$DIR/lib/*:$DIR/plugins/*"
 else
-	if [ ! -f $DIR/Gedi/classpath_maven.txt ]; then
-	   	mvn -f $DIR/Gedi dependency:build-classpath -Dmdep.outputFile=$DIR/Gedi/classpath_maven.txt
+	if [ ! -f $DIR/classpath_maven.txt ]; then
+	   	mvn -f $DIR dependency:build-classpath -Dmdep.outputFile=$DIR/classpath_maven.txt
 	fi
-	cp=`cat $DIR/Gedi/classpath_maven.txt`
-	CP="$DIR/Gedi/target/classes:$cp:$HOME/.gedi/plugins/.*"
+	cp=`cat $DIR/classpath_maven.txt`
+	CP="$DIR/target/classes:$cp:$HOME/.gedi/plugins/.*"
 fi
 
 

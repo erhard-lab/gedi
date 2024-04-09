@@ -426,7 +426,7 @@ public class PolyaCluster {
 			
 			MemoryIntervalTreeStorage<Transcript> transcripts = genomic.getTranscripts();
 			
-			for (ImmutableReferenceGenomicRegion<DefaultAlignedReadsData> read : (test?reads.ei("13-:28298663-28500000").sort():reads.ei()) //reads.ei("10+")   
+			for (ImmutableReferenceGenomicRegion<DefaultAlignedReadsData> read : (test?reads.ei("22+:20586947-20588174").sort():reads.ei()) //reads.ei("10+")   
 										.progress(context.getProgress(), (int)reads.size(), r->"Collecting reads "+r.toLocationString())
 										.filter(r->r.getData().getMultiplicity(0)<=1)
 										.checkOrder((a,b)->a.compareTo(b))
