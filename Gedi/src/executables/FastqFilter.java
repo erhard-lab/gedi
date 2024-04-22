@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import gedi.app.Gedi;
 import gedi.core.region.ArrayGenomicRegion;
@@ -68,6 +70,7 @@ public class FastqFilter {
 		System.err.println(" -smartseq\t\t\tRemove the first three bases and trim poly-A stretches (>=7) in the end!");
 		System.err.println(" -layout\t\t\tSpecify read layout; umi parts are concatenated and appended to the read name; insert is kept, linker is discarded (Format: each block is either I or a number and either of UL; blocks are concatenated, blocks are followed by the read length (example: 6U4LI75 is Quant-seq); for paired-end, separated by comma, both 5' to 3'); only reads are kept that are shorter than the given read length (i.e. adapter has been trimmed), so to circumvent that, use 9999 has read length");
 		System.err.println(" -umi\t\t\tTrim umis and append to read name (Format: umi-length[,spacer-length[,umi-read2-length,spacer-read2-length]])");
+		System.err.println(" -umiregex\t\t\tRead umi from id of fastq (only first, regex group 1)");
 		System.err.println(" -ld <file>\t\t\tWrite length distribution (and plot it)");
 		System.err.println(" -h\t\t\tShow this message");
 		System.err.println(" -D\t\t\tOutput debugging information");
@@ -107,6 +110,7 @@ public class FastqFilter {
 		int[] umi = null;
 		int[] tlens = null;
 		String layout = null;
+		String umiregex = null;
 		
 		int i;
 		for (i=0; i<args.length; i++) {
@@ -151,6 +155,9 @@ public class FastqFilter {
 			else if (args[i].equals("-layout")) {
 				layout = checkParam(args, ++i);
 			}
+			else if (args[i].equals("-umiregex")) {
+				umiregex = checkParam(args, ++i);
+			}
 			else if (args[i].equals("-D"))
 			{}
 			else
@@ -188,6 +195,8 @@ public class FastqFilter {
 		
 		if (umi!=null && layout!=null) 
 			throw new RuntimeException("Specify either -umi or -layout!");
+		
+		Pattern umiPattern = umiregex!=null?Pattern.compile(umiregex):null;
 		
 		int pelenmismatch = 0;
 		int n = 0;
@@ -227,6 +236,13 @@ public class FastqFilter {
 						seq = layout1.getInsert(seq);
 						q = layout1.getInsert(q);
 					}
+					
+					if (umiPattern!=null) {
+						Matcher m = umiPattern.matcher(id);
+						if (m.find()) {
+							addId = m.group(1);
+						} else throw new RuntimeException("Could not match umi in fastq header: "+id);
+					}
 
 
 					if (keepids) {
@@ -254,10 +270,11 @@ public class FastqFilter {
 		else {
 			char[] aumi = umi!=null?new char[1+umi[0]+umi[2]]:new char[1];
 			aumi[0]='#';
+			String addId = null;
 			
 			LineIterator it2 = new LineOrientedFile(inp2).lineIterator();
 			while (it.hasNext() && it2.hasNext()) {
-				it.next();					it2.next();
+				String id1 = it.next();					it2.next();
 				String seq1 = it.next(); 	String seq2 = it2.next();
 				it.next();					it2.next();
 				String q1 = it.next();		String q2 = it2.next();
@@ -294,6 +311,13 @@ public class FastqFilter {
 					
 					if (layout1!=null) throw new RuntimeException("Not implemented yet!");
 					
+					if (umiPattern!=null) {
+						Matcher m = umiPattern.matcher(id1);
+						if (m.find()) {
+							addId = m.group(1);
+						} else throw new RuntimeException("Could not match umi in fastq header: "+id1);
+					}
+					
 					if (Math.min(seq1.length(),seq2.length())>=len) {
 						
 						if (keepids) throw new RuntimeException("Not implemented for PE!");
@@ -301,6 +325,10 @@ public class FastqFilter {
 						out1.write("@");
 						out1.write(n+"");
 						if (umi!=null) out1.write(aumi);
+						if (addId!=null) {
+							out1.write("#");
+							out1.write(addId);
+						}
 						out1.writeLine();
 						out1.writeLine(seq1);
 						out1.writeLine("+");
@@ -309,6 +337,10 @@ public class FastqFilter {
 						out2.write("@");
 						out2.write(n+++"");
 						if (umi!=null) out2.write(aumi);
+						if (addId!=null) {
+							out2.write("#");
+							out2.write(addId);
+						}
 						out2.writeLine();
 						out2.writeLine(seq2);
 						out2.writeLine("+");

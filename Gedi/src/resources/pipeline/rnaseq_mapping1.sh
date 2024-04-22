@@ -18,6 +18,7 @@ varin("adapter","Only for single end!",false);
 varin("introns","All/Annotated/None",false);
 varin("smartseq","*Full length* smart seq library, i.e. trim first 3bp",false);
 varin("umi","Reads start with umis (umi-len,spacer-len,umi2-len,spacer2-len; 6,4 for Lexogen UMIs!)",false);
+varin("umiregex","UMIs are in Fastq header, specify regex, umi is group1 (only first read for PE)",false);
 varin("layout","Specify read layout for umis and linkrs)",false);
 varin("keepnoumi","Also keep the cit file without umi deduplication",false);
 varin("umiallowmulti","Allow for multimappers when working with UMIs",false);
@@ -47,6 +48,7 @@ varout("reads","File name containing read mappings");
 <?JS
 var novar;
 var bcid;
+var umiregex;
 var keepnoumi;
 var starparam = starparam?starparam:"";
 var cutadaptparam = cutadaptparam?cutadaptparam:"";
@@ -247,7 +249,7 @@ mv tmp.fastq <? name ?>_2.fastq
 <? }?>
 
 
-gedi -t . -e FastqFilter -D <?extractparam?>-overwrite<? if (smartseq) print(" -smartseq"); ?><? if (umi) print(" -umi "+umi); ?><? if (bcid) print(" -keepids "); ?><? if (layout) print(" -layout "+layout); ?> -ld <?JS name ?>.readlengths.tsv $EQUAL_LEN -min <?JS minlength ?> <?JS fastqname ?>
+gedi -t . -e FastqFilter -D <?extractparam?>-overwrite<? if (smartseq) print(" -smartseq"); ?><? if (umi) print(" -umi "+umi); ?><? if (umiregex) print(" -umiregex \""+umiregex+"\""); ?><? if (bcid) print(" -keepids "); ?><? if (layout) print(" -layout "+layout); ?> -ld <?JS name ?>.readlengths.tsv $EQUAL_LEN -min <?JS minlength ?> <?JS fastqname ?>
 
 
 	echo -ne "Trimmed\t" >> <?JS name ?>.reads.tsv
@@ -363,14 +365,14 @@ mv <? name ?>.stats.plots/* <?JS wd ?>/report
 samtools index <? name ?>.bam
 
 echo -ne "Mitochondrial\t" >> <?JS name ?>.reads.tsv
-gedi -t . -e Bam2CIT<? if (umi || layout || bcid) print(" -umi"); ?><? if (umiallowmulti) print(" -umiAllowMulti"); ?> <? minmaq ?> <? citparam ?> <? name ?>.cit <? name ?>.bam | tail -n1 | awk '{ print $2 }'>> <?JS name ?>.reads.tsv
+gedi -t . -e Bam2CIT<? if (umi || layout || bcid || umiregex) print(" -umi"); ?><? if (umiallowmulti) print(" -umiAllowMulti"); ?> <? minmaq ?> <? citparam ?> <? name ?>.cit <? name ?>.bam | tail -n1 | awk '{ print $2 }'>> <?JS name ?>.reads.tsv
 gedi -t . -e CorrectCIT <? forcecorrect ?> <? name ?>.cit
 echo -ne "CIT\t" >> <?JS name ?>.reads.tsv
 gedi -t . -e ReadCount -g <? genomes ?> -m Weight <? name ?>.cit | tail -n1 | awk '{ print $2 }'>> <?JS name ?>.reads.tsv
 
 mv *.readlengths.* <?JS wd ?>/report
 
-<?JS if (umi || layout) { ?>
+<?JS if (umi || layout || umiregex) { ?>
 
 <?JS if (keepnoumi) { ?>
 gedi -t . -e DedupUMI -nocollapse -prefix <? name ?>.nodedup <? name ?>.cit
