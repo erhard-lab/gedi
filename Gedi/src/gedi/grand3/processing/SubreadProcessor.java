@@ -15,6 +15,8 @@ import gedi.core.genomic.Genomic;
 import gedi.core.reference.ReferenceSequence;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.grand3.experiment.ExperimentalDesign;
+import gedi.grand3.knmatrix.SubreadCounterKNMatrices;
+import gedi.grand3.knmatrix.SubreadCounterKNMatrixPerTarget;
 import gedi.grand3.reads.ReadSource;
 import gedi.grand3.targets.SnpData;
 import gedi.grand3.targets.TargetCollection;
@@ -124,6 +126,36 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Finished"))
 			.unfold(l->EI.wrap(l));
 	}
+	
+	
+	public void processTarget(Supplier<Progress> progress, String name, 
+			TargetCollection targets,
+			SubreadCounterKNMatrices res) throws IOException {
+		
+		CompoundParallelizedState state = new CompoundParallelizedState();
+		state.add(new SubreadProcessorMismatchBuffer(source.getConverter().getSemantic().length));
+		state.add(res);
+		
+		if (new File(name).exists()) {
+			
+			EI.lines(new File(name))
+					.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r))
+					.map(tname->{
+						ImmutableReferenceGenomicRegion<String> target = targets.getRegion(tname);
+						if (target==null) throw new RuntimeException("Target with name "+tname+" unknown!");
+						processTarget(targets,target,state);
+						return 1;
+					})
+					.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Finished"))
+					.drain();
+			
+		} 
+		else {
+			ImmutableReferenceGenomicRegion<String> target = targets.getRegion(name);
+			if (target==null) throw new RuntimeException("Target with name "+name+" unknown!");
+			processTarget(targets,target,state);
+		}
+	}
 
 	
 	private <T extends SubreadCounter<T>> void processTarget(
@@ -143,7 +175,6 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		ReferenceSequence refInd = target.getReference().toStrandIndependent();
 		
 		for (ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> sread : source.getSubReads(target,null).loop()) {
-
 			// classify read
 			targets.classify(target, sread, source.getStrandness(), true, buff);
 			

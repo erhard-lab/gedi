@@ -12,6 +12,7 @@ import java.util.function.ToIntFunction;
 import gedi.core.data.annotation.Transcript;
 import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.ReadCountMode;
+import gedi.core.genomic.Genomic;
 import gedi.core.reference.ReferenceSequence;
 import gedi.core.reference.Strandness;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
@@ -29,6 +30,7 @@ import gedi.util.functions.ExtendedIterator;
  */
 public class GeneExonicTargetCollection implements TargetCollection {
 	
+	private Genomic genomic; // only for getting a target by name
 	private LinkedHashMap<String,CompatibilityCategory> exonic = new LinkedHashMap<>();
 	private LinkedHashMap<String,CompatibilityCategory> intronic = new LinkedHashMap<>();
 	private CompatibilityCategory[] categories;
@@ -51,11 +53,12 @@ public class GeneExonicTargetCollection implements TargetCollection {
 	private HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2TransAntisense;
 	private HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2TransBoth;
 	
-	public GeneExonicTargetCollection(MemoryIntervalTreeStorage<String> genes, Function<ReferenceSequence,String> genome,ToIntFunction<String> chrLength,
+	public GeneExonicTargetCollection(Genomic genomic, MemoryIntervalTreeStorage<String> genes, Function<ReferenceSequence,String> genome,ToIntFunction<String> chrLength,
 			Predicate<String> useForGlobal,
 			boolean useExonForGlobal, boolean useIntronForGlobal, boolean outputExon, boolean outputIntron,
 			MemoryIntervalTreeStorage<Transcript> transcripts, ReadCountMode mode, ReadCountMode overlap,
 			int clipForCompatibility) {
+		this.genomic = genomic;
 		this.genes = genes;
 		this.genome = genome;
 		this.useForGlobal = useForGlobal;
@@ -99,10 +102,15 @@ public class GeneExonicTargetCollection implements TargetCollection {
 	
 	@Override
 	public TargetCollection create(ReadCountMode mode, ReadCountMode overlap) {
-		return new GeneExonicTargetCollection(genes, genome, chrLength, useForGlobal, useExonForGlobal, useIntronForGlobal, outputExon, outputIntron, transcripts, mode, overlap, clipForCompatibility);
+		return new GeneExonicTargetCollection(genomic,genes, genome, chrLength, useForGlobal, useExonForGlobal, useIntronForGlobal, outputExon, outputIntron, transcripts, mode, overlap, clipForCompatibility);
 	}
 	
-	
+	public ImmutableReferenceGenomicRegion<String> getRegion(String name) {
+		if (genomic==null)
+			throw new RuntimeException("Can only get target by name if genomic object is there!");
+		ImmutableReferenceGenomicRegion target = ImmutableReferenceGenomicRegion.parse(genomic, name);
+		return extend1kb(target, chrLength);
+	}
 	
 	public ExtendedIterator<ImmutableReferenceGenomicRegion<String>> iterateRegions() {
 //		return genes.ei(Chromosome.obtain("C5X+")).chain(genes.ei(Chromosome.obtain("C5X-"))); 
@@ -180,7 +188,6 @@ public class GeneExonicTargetCollection implements TargetCollection {
 			default: cand = gene2TransBoth.get(target); break;
 			}
 		}
-		
 		if (cand==null) return 0;
 		
 		// return the number of genes

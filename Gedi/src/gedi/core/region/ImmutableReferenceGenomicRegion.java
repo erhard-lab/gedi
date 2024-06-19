@@ -147,6 +147,7 @@ public class ImmutableReferenceGenomicRegion<D> implements ReferenceGenomicRegio
 					}
 				}
 			}
+			if (data==null) data = (D) rgr.data;
 		}
 		return parse(pos,data);
 	}

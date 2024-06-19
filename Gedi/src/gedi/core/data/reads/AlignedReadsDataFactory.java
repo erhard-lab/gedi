@@ -666,7 +666,10 @@ public class AlignedReadsDataFactory {
 			return this;
 		}
 
-		
+		public VarIndel complement() {
+			indel = SequenceUtils.getDnaComplement(indel);
+			return this;
+		}
 		
 	}
 	

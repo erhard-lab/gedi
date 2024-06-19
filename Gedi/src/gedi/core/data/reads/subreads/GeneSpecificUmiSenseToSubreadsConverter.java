@@ -296,7 +296,12 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 		if (reads.size()==1) {
 			ImmutableReferenceGenomicRegion<SingleUmiAlignedReadsData> r = reads.get(0);
 			SubreadsAlignedReadsData re = SubreadsAlignedReadsData.createUnitCount(numCond, condition, new int[] {0}, new int[0], 
-					r.getData().getVarIndels(0).map(vari->vari.reposition(region.induce(r.map(vari.getPosition())))).list()
+					r.getData().getVarIndels(0).map(vari->{
+						vari = vari.reposition(region.induce(r.map(vari.getPosition())));
+						if (!r.getReference().getStrand().equals(region.getReference().getStrand())) 
+							vari=vari.complement();
+						return vari;
+					}).list()
 					);
 			
 			if (reporter!=null) {
@@ -306,6 +311,8 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 						VarIndel vari = read.getData().getVarIndel(0, v);
 						if (vari.isMismatch()) {
 							vari=vari.reposition(region.induce(read.map(vari.getPosition())));
+							if (!read.getReference().getStrand().equals(region.getReference().getStrand())) 
+								vari=vari.complement();
 							reporter.reportMismatch(v, false, true);
 						}
 					}
@@ -383,6 +390,8 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 				else {
 					// fix problems with infrequent super long reads
 					vari=vari.reposition(region.induce(read.map(vari.getPosition())));
+					if (!read.getReference().getStrand().equals(region.getReference().getStrand())) 
+						vari=vari.complement();
 					if (vari!=null)
 						vars.add(vari);
 				}
@@ -415,6 +424,8 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 					VarIndel vari = read.getData().getVarIndel(0, v);
 					if (vari.isMismatch()) {
 						vari=vari.reposition(region.induce(read.map(vari.getPosition())));
+						if (!read.getReference().getStrand().equals(region.getReference().getStrand())) 
+							vari=vari.complement();
 						if (vari!=null) {
 							int idx = Collections.binarySearch(vars, vari,posComp);
 							reporter.reportMismatch(v, overFun.applyAsInt(vari.getPosition()), idx>=0);
@@ -532,25 +543,35 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 		fac1.newDistinctSequence();
 		fac1.setMultiplicity(1);
 		fac1.setCount(0, 1,new DnaSequence[] {new DnaSequence("AACC")});
-		ImmutableReferenceGenomicRegion<BarcodedAlignedReadsData> r1 = ImmutableReferenceGenomicRegion.parse("1:100-110",fac1.createBarcode());
-		ImmutableReferenceGenomicRegion<BarcodedAlignedReadsData> r2 = ImmutableReferenceGenomicRegion.parse("1:120-130",fac1.createBarcode());
-		ImmutableReferenceGenomicRegion<BarcodedAlignedReadsData> r3 = ImmutableReferenceGenomicRegion.parse("1:100-120",fac1.createBarcode());
+		ImmutableReferenceGenomicRegion<BarcodedAlignedReadsData> r1 = ImmutableReferenceGenomicRegion.parse("1-:100-110",fac1.createBarcode());
+		ImmutableReferenceGenomicRegion<BarcodedAlignedReadsData> r2 = ImmutableReferenceGenomicRegion.parse("1-:120-130",fac1.createBarcode());
+		fac1.addMismatch(4, 'A', 'G', false);
+		ImmutableReferenceGenomicRegion<BarcodedAlignedReadsData> r3 = ImmutableReferenceGenomicRegion.parse("1-:100-120",fac1.createBarcode());
 
-		AlignedReadsDataFactory fac2 = new AlignedReadsDataFactory(1).start();
-		fac2.newDistinctSequence();
-		fac2.setMultiplicity(1);
-		fac2.setCount(0, 1);
-		fac2.setGeometry(10, 0, 10);
-		ImmutableReferenceGenomicRegion<DefaultAlignedReadsData> rp = ImmutableReferenceGenomicRegion.parse("1:100-105|110-115|120-130",fac2.create());
+//		AlignedReadsDataFactory fac2 = new AlignedReadsDataFactory(1).start();
+//		fac2.newDistinctSequence();
+//		fac2.setMultiplicity(1);
+//		fac2.setCount(0, 1);
+//		fac2.setGeometry(10, 0, 10);
+//		ImmutableReferenceGenomicRegion<DefaultAlignedReadsData> rp = ImmutableReferenceGenomicRegion.parse("1:100-105|110-115|120-130",fac2.create());
 		
 		new GeneSpecificUmiSenseToSubreadsConverter(new String[] {"C"}, new String[] {"C"}, new String[] {"AA"})
 			.setDebug(true)
 			.convert("Test",Chromosome.obtain("1+"), new ArrayList<>(Arrays.asList(r1,r2,r3)), null)
 			.drain();
 		
-		System.out.println();
+		ImmutableReferenceGenomicRegion<SingleUmiAlignedReadsData> s1 = ImmutableReferenceGenomicRegion.parse("1-:100-110",new SingleUmiAlignedReadsData(r1.getData(),0,0));
+		ImmutableReferenceGenomicRegion<SingleUmiAlignedReadsData> s2 = ImmutableReferenceGenomicRegion.parse("1-:120-130",new SingleUmiAlignedReadsData(r2.getData(),0,0));
+		ImmutableReferenceGenomicRegion<SingleUmiAlignedReadsData> s3 = ImmutableReferenceGenomicRegion.parse("1-:100-120",new SingleUmiAlignedReadsData(r3.getData(),0,0));
+
+		SubreadsAlignedReadsData ss = new GeneSpecificUmiSenseToSubreadsConverter(new String[] {"C"}, new String[] {"C"}, new String[] {"AA"}).
+				createSubread(0, ImmutableReferenceGenomicRegion.parse("1+:100-120"),new ArrayList<>(Arrays.asList(s3)), 0,null);
 		
-		System.out.println(new PairedEndToSubreadsConverter(true).setDebug(true).convert(rp, true, null));
+		System.out.println(ss);
+		
+//		System.out.println();
+		
+//		System.out.println(new PairedEndToSubreadsConverter(true).setDebug(true).convert(rp, true, null));
 		
 		
 	}

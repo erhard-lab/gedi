@@ -97,6 +97,9 @@ public class Grand3ParameterSet extends GediParameterSet {
 	
 	public GediParameter<ModelEstimationMethod> estimMethod = new GediParameter<ModelEstimationMethod>(this, "estim", "Which method to use for estimating the global parameters. If more than one are given, the first is used to estimate target parameters", true, new EnumParameterType<>(ModelEstimationMethod.class),ModelEstimationMethod.Full);
 	
+	public GediParameter<String> targetMixmat = new GediParameter<String>(this,"targetMixmat", "Which target to output the MixMatrix for", false, new StringParameterType(),true);
+	public GediParameter<File> targetMixmatFile = new GediParameter<File>(this,"${prefix}.mixmatrices/${targetMixmat}.knmatrix.tsv.gz", "Mixmatrix for the given target", false, new FileParameterType());
+	
 	public GediParameter<File> targetBinFile = new GediParameter<File>(this,"${prefix}.targets.bin", "File containing the raw estimates per target", false, new FileParameterType(true));
 	public GediParameter<File> targetFolder = new GediParameter<File>(this,"${prefix}.targets", "Folder containing sparse matrices of all estimates per target", false, new FileParameterType());
 

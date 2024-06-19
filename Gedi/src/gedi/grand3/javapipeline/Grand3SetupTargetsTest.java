@@ -51,6 +51,7 @@ public class Grand3SetupTargetsTest extends GediProgram {
 		tr.fill(genomic.getTranscripts().ei(gg));
 		
 		TargetCollection targets =  new GeneExonicTargetCollection(
+				null,
 				genes,
 				r->"Test",
 				r->genomic.getLength(r),

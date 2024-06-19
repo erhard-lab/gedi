@@ -267,7 +267,9 @@ public abstract class GediProgram {
 	 * @return
 	 */
 	@SuppressWarnings("rawtypes")
-	public static GediProgram create(String name, GediProgram...subs) {
+	public static GediProgram create(String name, GediProgram...subs1) {
+		
+		GediProgram[] subs = EI.wrap(subs1).removeNulls().toArray(GediProgram.class);
 
 		HashSet<GediParameter> inputs = new HashSet<>();
 		HashSet<GediParameter> outputs = new HashSet<>();

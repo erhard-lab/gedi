@@ -21,6 +21,7 @@ import gedi.grand3.estimation.TargetEstimator;
 import gedi.grand3.estimation.estimators.ModelEstimationMethod;
 import gedi.grand3.experiment.ExperimentalDesign;
 import gedi.grand3.experiment.PseudobulkDefinition;
+import gedi.grand3.knmatrix.SubreadCounterKNMatrices;
 import gedi.grand3.knmatrix.SubreadCounterKNMatrixPerTarget;
 import gedi.grand3.processing.SubreadProcessor;
 import gedi.grand3.processing.SubreadProcessorMismatchBuffer;
@@ -41,7 +42,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 
 	
 	
-	public Grand3ProcessTargets(Grand3ParameterSet params, boolean hasMappedTarget) {
+	public Grand3ProcessTargets(Grand3ParameterSet params, boolean hasMappedTarget,boolean hasTargetMixmat) {
 		addInput(params.nthreads);
 		addInput(params.genomic);
 		addInput(params.reads);
@@ -60,14 +61,19 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		addInput(params.pseudobulkFile);
 		addInput(params.pseudobulkName);
 		addInput(params.pseudobulkMinimalPurity);
+		addInput(params.targetMixmat);
 		
 		addInput(params.prefix);
 		addInput(params.debug);
 		
-		if (hasMappedTarget)
+		if (hasTargetMixmat) {
+			addOutput(params.targetMixmatFile);
+		} else if (hasMappedTarget)
 			addOutput(params.pseudobulkBinFile);
 		else
 			addOutput(params.targetBinFile);
+		
+		
 		
 	}
 	
@@ -93,6 +99,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		String pseudobulkFile = getParameter(pind++);
 		String pseudobulkName = getParameter(pind++);
 		double pseudobulkMinimalPurity = getDoubleParameter(pind++);
+		String targetMixmat = getParameter(pind++);
 		
 		String prefix = getParameter(pind++);
 		boolean debug = getBooleanParameter(pind++);
@@ -117,9 +124,9 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		
 		// which subreads to use
 		boolean[] subreadsToUse = new boolean[subreads.length];
-		System.out.println(useSubreads.size());
-		for (String s : useSubreads)
-			System.out.println(s);
+//		System.out.println(useSubreads.size());
+//		for (String s : useSubreads)
+//			System.out.println(s);
 		if (useSubreads.size()==0)
 			Arrays.fill(subreadsToUse, true);
 		else
@@ -153,11 +160,26 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		if (EI.wrap(targetMapping).mapToInt(a->ArrayUtils.max(a)).max()+1!=targetToSample.length) throw new RuntimeException("Assertion failed!");
 		context.getLog().info("Output conditions n="+targetToSample.length);
 		
+		ReadSource<A> source = new ReadSource<>(reads, clipping, strandness, debug);
+		
+		SubreadProcessor<A> algo = new SubreadProcessor<A>(genomic,source,masked);
+		algo.setNthreads(nthreads);
+		algo.setDebug(debug);
+		
+		if (targetMixmat!=null) {
+			context.getLog().info("Will only compute parameters and mix matrix for "+targetMixmat+"...");
+			SubreadCounterKNMatrices binom = new SubreadCounterKNMatrices(c->c.useToEstimateTargetParameters(),design.getNumSamples(), targetToSample,source.getConverter().getSemantic().length,design.getTypes());
+			binom.setDebug(debug);
+			algo.processTarget(context::getProgress,targetMixmat, targets, binom);
+			binom.write(getOutputFile(0), design);
+			
+			return null;
+		}
 		
 		context.getLog().info("Filling likelihood cache...");
 		TargetEstimator targetEstimatorObject = new TargetEstimator(design, models, targetMapping, targetToSample, 0.01,context::getProgress,nthreads);
 		context.getLog().info("Done filling likelihood cache.");
-		
+
 		SubreadCounterKNMatrixPerTarget targetEstimator = new SubreadCounterKNMatrixPerTarget(targets.getCategories(),c->c.useToEstimateTargetParameters(), targetEstimatorObject, design.getTypes(),subreadsToUse);
 		
 		PageFileWriter bin = new PageFileWriter(getOutputFile(0).getPath());
@@ -167,14 +189,10 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 			bin.putLong(0); // reserved
 		
 		context.getLog().info("Estimating target parameters...");
-		ReadSource<A> source = new ReadSource<>(reads, clipping, strandness, debug);
 		
 		
 		SubreadStatistics stat = new SubreadStatistics(source.getConverter().getSemantic().length, design.getIndexToSampleId());
 		
-		SubreadProcessor<A> algo = new SubreadProcessor<A>(genomic,source,masked);
-		algo.setNthreads(nthreads);
-		algo.setDebug(debug);
 		int num = 0;
 		long nonzeroCounts = 0;
 		long[] nonzeroNtrs = new long[design.getTypes().length];

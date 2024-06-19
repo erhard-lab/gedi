@@ -26,6 +26,7 @@ public class Grand3 {
 		
 		Grand3ParameterSet params = new Grand3ParameterSet();
 		boolean hasMappedTarget = ArrayUtils.find(args, "-"+params.pseudobulkFile.getName())>=0;
+		boolean hasTargetMixmat = ArrayUtils.find(args, "-"+params.targetMixmat.getName())>=0;
 		
 		GediProgram pipeline = GediProgram.create("Grand3",
 				new Grand3WriteExperimentalDesign(params),
@@ -34,10 +35,10 @@ public class Grand3 {
 				new Grand3SnpsAndClip(params),
 				new Grand3CollectSufficientStatistics(params),
 				new Grand3EstimateModel(params),
-				new Grand3ProcessTargets(params, hasMappedTarget),
-				new Grand3OutputFlatfiles(params, hasMappedTarget),
+				new Grand3ProcessTargets(params, hasMappedTarget, hasTargetMixmat),
+				hasTargetMixmat? null: new Grand3OutputFlatfiles(params, hasMappedTarget),
 				new Grand3WriteAllPseudobulkFile(params),
-				new Grand3Resimulate<>(params),
+				hasTargetMixmat? null: new Grand3Resimulate<>(params),
 				new Grand3BurstMcmcOutput<>(params)
 				);
 		
@@ -48,7 +49,9 @@ public class Grand3 {
 
 	private static String getChangelog() {
 		return "3.0.3:\n"
-				+ "introduced the -restrict-subreads parameter\n\n"
+				+ " introduced the -restrict-subreads parameter\n\n"+
+				"3.0.4:\n"
+				+ " implemented 5' sequencing (10x): antisense with UMIs\n per gene output for the MixMatrices\n\n"
 				;
 	}
 		

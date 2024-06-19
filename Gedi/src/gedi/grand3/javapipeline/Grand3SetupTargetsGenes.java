@@ -73,6 +73,7 @@ public class Grand3SetupTargetsGenes extends GediProgram {
 		
 		String first = genomic.getOriginList().get(0);
 		TargetCollection targets =  new GeneExonicTargetCollection(
+				genomic,
 				genomic.getGenes(),
 				r->r.isMitochondrial()?"Mito":genomic.getOrigin(r).getId(),
 				r->genomic.getLength(r),

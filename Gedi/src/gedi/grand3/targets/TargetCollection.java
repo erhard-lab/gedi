@@ -28,7 +28,7 @@ import gedi.util.functions.ExtendedIterator;
  */
 public interface TargetCollection {
 	
-	
+	ImmutableReferenceGenomicRegion<String> getRegion(String name);
 	ExtendedIterator<ImmutableReferenceGenomicRegion<String>> iterateRegions();
 	int getNumRegions();
 	void classify(ImmutableReferenceGenomicRegion<String> target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, Strandness strandness, boolean isStrandCorrected, Grand3ReadClassified classified);
