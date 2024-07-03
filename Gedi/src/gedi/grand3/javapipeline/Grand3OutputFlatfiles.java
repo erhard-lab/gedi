@@ -135,6 +135,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		LineWriter[][] ntrBeta = mkWriter(dir,"beta","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shape = mkWriter2(dir,"shape","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shapeLLR = mkWriter2(dir,"llr","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
+		LineWriter[] shapeLL = mkWriter2(dir,"ll","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		
 		int numFeatures = 0;
 		long numCounts = 0;
@@ -172,6 +173,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 					}
 					shape[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getShape());
 					shapeLLR[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getLogLikShape()-val.getShape().getLogLikGlobal());
+					shapeLL[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getLogLikShape());
 					numNtr[t]++;
 				}
 			}
@@ -294,11 +296,12 @@ public class Grand3OutputFlatfiles extends GediProgram {
 				for (int i=0; i<columnNames.length; i++)
 					if (design.getLabelForSample(columnToSample[i], design.getTypes()[t])!=null) {
 						if (res.get(t,i)!=null) 
-							out.writef("\t%.2f\t%.1f",
+							out.writef("\t%.2f\t%.1f\t%.1f",
 									res.get(t,i).getShape().getShape(), 
-									res.get(t,i).getShape().getLogLikShape()-res.get(t,i).getShape().getLogLikGlobal());
+									res.get(t,i).getShape().getLogLikShape()-res.get(t,i).getShape().getLogLikGlobal(),
+									res.get(t,i).getShape().getLogLikShape());
 						else
-							out.writef("\tNA\tNA");
+							out.writef("\tNA\tNA\tNA");
 					} 
 			out.writeLine();
 			
@@ -333,7 +336,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		for (MetabolicLabelType t: design.getTypes())
 			for (int i=0; i<columnNames.length; i++)
 				if (design.getLabelForSample(columnToSample[i], t)!=null)
-					out.writef("\t%s Shape\t%s LLR",columnNames[i],columnNames[i]);
+					out.writef("\t%s Shape\\t%s LLR\\t%s LL",columnNames[i],columnNames[i],columnNames[i]);
 		out.writeLine();
 	}
 
