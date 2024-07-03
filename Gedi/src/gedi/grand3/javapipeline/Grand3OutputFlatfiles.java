@@ -336,7 +336,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		for (MetabolicLabelType t: design.getTypes())
 			for (int i=0; i<columnNames.length; i++)
 				if (design.getLabelForSample(columnToSample[i], t)!=null)
-					out.writef("\t%s Shape\\t%s LLR\\t%s LL",columnNames[i],columnNames[i],columnNames[i]);
+					out.writef("\t%s Shape\t%s LLR\t%s LL",columnNames[i],columnNames[i],columnNames[i]);
 		out.writeLine();
 	}
 
