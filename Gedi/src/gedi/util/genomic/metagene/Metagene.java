@@ -58,7 +58,7 @@ public class Metagene implements ParallelizedState<Metagene>{
 		double[] profile = new double[width];
 		int[] lengths = new int[ranges.length];
 		int start = 0;
-
+		
 		for (int i=0; i<ranges.length; i++) {
 			ReferenceSequence ref = ranges[i].reg.getReference(g);
 			GenomicRegion reg = ranges[i].reg.getRegion(g);
@@ -178,7 +178,7 @@ public class Metagene implements ParallelizedState<Metagene>{
 	
 	private static void checkFixedFactor(int dstart, int dend, int start, int end, double fixedFactor) {
 		if (fixedFactor>0 && (int)Math.round((end-start)/fixedFactor)!=dend-dstart)
-			throw new RuntimeException("Not the fixed factor!");
+			throw new RuntimeException("Not the fixed factor: "+dstart+","+dend+","+start+","+end+","+fixedFactor);
 	}
 	
 	private static void scale(IndexDoubleProcessor data, int dstart, int dend, double[] re, int rstart, int rend, int offset, UnivariateStatistic stat) {

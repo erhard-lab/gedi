@@ -1,5 +1,6 @@
 package gedi.util.genomic.metagene;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
@@ -8,11 +9,13 @@ import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.ReadCountMode;
 import gedi.core.reference.Strandness;
 import gedi.core.region.ArrayGenomicRegion;
+import gedi.core.region.GenomicRegion;
 import gedi.core.region.GenomicRegionPosition;
 import gedi.core.region.GenomicRegionStorage;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.core.region.MutableReferenceGenomicRegion;
 import gedi.core.region.ReferenceGenomicRegion;
+import gedi.util.datastructure.array.NumericArray;
 import gedi.util.datastructure.array.sparse.AutoSparseDenseDoubleArrayCollector;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
@@ -25,6 +28,7 @@ public class StorageMetageneDataProvider<D> implements MetageneDataProvider {
 	private ToIntFunction<ReferenceGenomicRegion<D>> getPos2;
 	private ToDoubleFunction<ImmutableReferenceGenomicRegion<D>> getValue;
 	private Predicate<ImmutableReferenceGenomicRegion<D>> filter;
+	private Function<ImmutableReferenceGenomicRegion<?>,Predicate<ImmutableReferenceGenomicRegion<D>>> filterExt;
 	
 	/**
 	 * 
@@ -73,6 +77,11 @@ public class StorageMetageneDataProvider<D> implements MetageneDataProvider {
 		return this;
 	}
 	
+	public StorageMetageneDataProvider<D> setFilterExt(Function<ImmutableReferenceGenomicRegion<?>,Predicate<ImmutableReferenceGenomicRegion<D>>> filter) {
+		this.filterExt = filter;
+		return this;
+	}
+	
 	
 	@Override
 	public AutoSparseDenseDoubleArrayCollector getData(ImmutableReferenceGenomicRegion<?> rgr) {
@@ -92,6 +101,8 @@ public class StorageMetageneDataProvider<D> implements MetageneDataProvider {
 		
 		if (filter!=null)
 			it = it.filter(filter);
+		if (filterExt!=null)
+			it = it.filter(filterExt.apply(rgr));
 		
 		MutableReferenceGenomicRegion ee = rgr.toMutable();
 		if (getPos2!=null) {
@@ -157,5 +168,24 @@ public class StorageMetageneDataProvider<D> implements MetageneDataProvider {
 		return new StorageMetageneDataProvider<>(storage,strandness,pos,0,rgr->rgr.getData().getTotalCountOverall(mode));
 	}
 
-	
+
+	public static <D extends NumericArray> StorageMetageneDataProvider<D> fromCodonStorage(GenomicRegionStorage<D> storage, int frame, int condition) {
+		frame = frame%3;
+		if (frame<0) frame = 3+frame;
+		int cframe = frame;
+		StorageMetageneDataProvider re = new StorageMetageneDataProvider<>(storage,Strandness.Sense,GenomicRegionPosition.Start,0,cod->cod.getData().getDouble(condition));
+		re.setFilterExt(orf->new Predicate<ImmutableReferenceGenomicRegion<NumericArray>>() {
+			@Override
+			public boolean test(ImmutableReferenceGenomicRegion<NumericArray> cod) {
+				return ((ReferenceGenomicRegion) orf).induce(cod.getRegion()).getStart()%3==cframe;
+			}
+			
+		});
+		return re;
+	}
+
+	public static <D extends NumericArray> StorageMetageneDataProvider<D> fromCodonStorage(GenomicRegionStorage<D> storage, int condition) {
+		return new StorageMetageneDataProvider<>(storage,Strandness.Sense,GenomicRegionPosition.FivePrime,0,cod->cod.getData().getDouble(condition));
+	}
+
 }

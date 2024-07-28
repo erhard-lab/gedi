@@ -20,6 +20,11 @@ import gedi.util.functions.EI;
 
 public class Gedi {
 	
+	static {
+        // must be called before any Logger method is used.
+        System.setProperty("java.util.logging.manager", LogUtils.class.getName());
+    }
+	
 	private static boolean started = false;
 	
 	public static void startup() {

@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
 Built-By: erhard
-Build-Jdk: 18.0.2-ea
+Build-Jdk: 21.0.3
 Created-By: Maven Integration for Eclipse
 

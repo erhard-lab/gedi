@@ -11,10 +11,7 @@ import java.util.logging.LogManager;
  */
 public class LogUtils extends LogManager {
 	
-	static {
-        // must be called before any Logger method is used.
-        System.setProperty("java.util.logging.manager", LogUtils.class.getName());
-    }
+
 
 
 	public enum LogMode {
