@@ -1,10 +1,19 @@
 package gedi.core.data.reads;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import javax.swing.DefaultListCellRenderer;
+
+import clojure.main;
+import gedi.centeredDiskIntervalTree.CenteredDiskIntervalTreeStorage;
+import gedi.core.reference.Chromosome;
+import gedi.core.region.ArrayGenomicRegion;
+import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.util.datastructure.collections.intcollections.IntArrayList;
 import gedi.util.dynamic.DynamicObject;
+import gedi.util.functions.EI;
 import gedi.util.io.randomaccess.BinaryReader;
 import gedi.util.io.randomaccess.serialization.BinarySerializable;
 
@@ -342,17 +351,35 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 		}
 		
 		
-		
-		for (int i=0; i<d; i++) {
-			int v = in.getCInt();
-			var[i] = new short[v];
-			indels[i] = new CharSequence[v];
-			for (int j=0; j<v; j++) {
-				var[i][j] = in.getCShort();
-				char[] ca = new char[in.getCInt()];
-				for (int cr=0; cr<ca.length; cr++)
-					ca[cr] = in.getAsciiChar();
-				indels[i][j] = new String(ca); 
+		if (in.getContext().getGlobalInfo().getEntry(AlignedReadsData.BETTERPOSATTRIBUTE).asInt()==1) {
+			for (int i=0; i<d; i++) {
+				int v = in.getCInt();
+				var[i] = new short[v];
+				indels[i] = new CharSequence[v];
+				for (int j=0; j<v; j++) {
+					var[i][j] = in.getCShort();
+					char[] ca = new char[ isMismatch(i, j)?2: in.getCInt()];
+					for (int cr=0; cr<ca.length; cr++)
+						ca[cr] = in.getAsciiChar();
+					indels[i][j] = new String(ca); 
+				}
+			}
+		} else {
+			for (int i=0; i<d; i++) {
+				int v = in.getCInt();
+				var[i] = new short[v];
+				indels[i] = new CharSequence[v];
+				for (int j=0; j<v; j++) {
+					var[i][j] = in.getCShort();
+					// need to shift bits 12ff to 13ff!
+					int smask = (var[i][j] & 0xFFFF)>>>12;
+					var[i][j] = (short) ((var[i][j] & ((1<<12)-1)) | (smask<<13)); 
+							
+					char[] ca = new char[in.getCInt()];
+					for (int cr=0; cr<ca.length; cr++)
+						ca[cr] = in.getAsciiChar();
+					indels[i][j] = new String(ca); 
+				}
 			}
 		}
 		
@@ -411,7 +438,7 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 
 	
 	private static void checkPositionEncoding(int pos) {
-		if (pos>MAX_POSITION) throw new RuntimeException("Cannot encode positions >"+(1<<11));
+		if (pos>MAX_POSITION) throw new RuntimeException("Cannot encode positions >="+(MAX_POSITION+1));
 	}
 	
 	static short encodePos(int pos, short old) {
@@ -419,9 +446,12 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 		return (short) ((old & ~POS_MASK) | pos);
 	}
 	
+	static int TYPE_OFFSET = 13;
+	static int SEC_OFFSET = TYPE_OFFSET-1;
+	
 	static short encodeMismatch(int pos, char genomic, char read, boolean secondRead) {
 		checkPositionEncoding(pos);
-		return (short) (TYPE_MISMATCH<<13 | (secondRead?1:0) << 12 | pos);
+		return (short) (TYPE_MISMATCH<<TYPE_OFFSET | (secondRead?1:0) << SEC_OFFSET | pos);
 	}
 	static CharSequence encodeMismatchIndel(int pos, char genomic, char read) {
 //		if (read=='N') read=genomic;
@@ -430,7 +460,7 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 	
 	static short encodeDeletion(int pos, CharSequence genomic, boolean secondRead) {
 		checkPositionEncoding(pos);
-		return (short) (TYPE_DELETION<<13 | (secondRead?1:0) << 12 | pos);
+		return (short) (TYPE_DELETION<<TYPE_OFFSET | (secondRead?1:0) << SEC_OFFSET | pos);
 	}
 	static CharSequence encodeDeletionIndel(int pos, CharSequence genomic) {
 		return genomic;
@@ -438,14 +468,14 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 	
 	static short encodeInsertion(int pos, CharSequence read, boolean secondRead) {
 		checkPositionEncoding(pos);
-		return (short) (TYPE_INSERTION<<13 | (secondRead?1:0) << 12 | pos);
+		return (short) (TYPE_INSERTION<<TYPE_OFFSET | (secondRead?1:0) << SEC_OFFSET | pos);
 	}
 	static CharSequence encodeInsertionIndel(int pos, CharSequence read) {
 		return read;
 	}
 	
 	static short encodeSoftclip(boolean p5, CharSequence read, boolean secondRead) {
-		return (short) (TYPE_SOFTCLIP<<13 | (secondRead?1:0) << 12 | (p5?0:1));
+		return (short) (TYPE_SOFTCLIP<<TYPE_OFFSET | (secondRead?1:0) << SEC_OFFSET | (p5?0:1));
 	}
 	static CharSequence encodeSoftclipSequence(boolean p5, CharSequence read) {
 		return read;
@@ -453,11 +483,11 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 	
 	static boolean isSecondRead(short mask) {
 		int smask = mask & 0xFFFF;
-		return ((smask>>>12) & 1)==1;
+		return ((smask>>>SEC_OFFSET) & 1)==1;
 	}
 	
 	
-	private static short POS_MASK = (1<<12)-1;
+	private static short POS_MASK = (short) ((1<<SEC_OFFSET)-1);
 	static int pos(int mask) {
 		return mask & POS_MASK;
 	}
@@ -465,11 +495,11 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 	static final int TYPE_INSERTION = 1;
 	static final int TYPE_DELETION = 2;
 	static final int TYPE_SOFTCLIP = 3;
-	public static final int MAX_POSITION = (1<<11)-1;
+	public static final int MAX_POSITION = (1<<SEC_OFFSET)-1;
 	
 	static int type(short mask) {
 		int smask = mask & 0xFFFF;
-		return smask>>>13;
+		return smask>>>TYPE_OFFSET;
 	}
 	@Override
 	public int getDistinctSequences() {
@@ -581,6 +611,31 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 		return toString2();
 	}
 
+	
+	public static void main(String[] args) throws IOException{
+		AlignedReadsDataFactory fac = new AlignedReadsDataFactory(1);
+		fac.start();
+		fac.newDistinctSequence();
+		fac.addMismatch(2048, 'T', 'C', false);
+		fac.addMismatch(2050, 'T', 'C', false);
+		fac.addMismatch(4095, 'T', 'C', false);
+//		fac.addMismatch(8000, 'T', 'C', false);
+//		fac.addMismatch(8191, 'T', 'C', false);
+		fac.addSoftclip(true, "AAACGGGCTAT", false);
+		
+		
+		DefaultAlignedReadsData ard = fac.create();
+		
+		new File("/home/erhard/test.cit").delete();
+		
+		ImmutableReferenceGenomicRegion<DefaultAlignedReadsData> r = new ImmutableReferenceGenomicRegion<DefaultAlignedReadsData>(Chromosome.obtain("1+"), new ArrayGenomicRegion(0,10),ard);
+		new CenteredDiskIntervalTreeStorage<>("/home/erhard/test.cit", DefaultAlignedReadsData.class).fill(EI.singleton(r));
+		
+		System.out.println(r);
+		new CenteredDiskIntervalTreeStorage<>("/home/erhard/test.cit").ei().print();
+		new CenteredDiskIntervalTreeStorage<>("/home/erhard/test2.cit").ei().print();
+		
+	}
 	
 	
 }

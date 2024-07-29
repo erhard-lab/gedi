@@ -85,6 +85,9 @@ public interface AlignedReadsData extends BinarySerializable, GlobalInfoProvider
 	public static final String CONDITIONSATTRIBUTE = "CONDITIONS";
 	public static final String SPARSEATTRIBUTE = "SPARSE";
 	
+	public static final String BETTERPOSATTRIBUTE = "BPOS";
+	
+	
 	public static final String BARCODEATTRIBUTE = "BARCODE";
 	
 	
@@ -99,6 +102,7 @@ public interface AlignedReadsData extends BinarySerializable, GlobalInfoProvider
 		if (this instanceof HasBarcodes)
 			map.put(BARCODEATTRIBUTE, ((HasBarcodes)this).getBarcodeLength());
 		
+		map.put(BETTERPOSATTRIBUTE, 1);
 		return DynamicObject.from(map);
 	}
 	
@@ -1528,15 +1532,17 @@ public interface AlignedReadsData extends BinarySerializable, GlobalInfoProvider
 				} else if (isDeletion(i, j)) {
 					out.putCShort(DefaultAlignedReadsData.encodeDeletion(getDeletionPos(i, j), getDeletion(i, j),isVariationFromSecondRead(i, j)));
 					ch = DefaultAlignedReadsData.encodeDeletionIndel(getDeletionPos(i, j), getDeletion(i, j));
+					out.putCInt(ch.length());
 				} else if (isInsertion(i, j)) {
 					out.putCShort(DefaultAlignedReadsData.encodeInsertion(getInsertionPos(i, j), getInsertion(i, j),isVariationFromSecondRead(i, j)));
 					ch = DefaultAlignedReadsData.encodeInsertionIndel(getInsertionPos(i, j), getInsertion(i, j));
+					out.putCInt(ch.length());
 				} else if (isSoftclip(i, j)) {
 					out.putCShort(DefaultAlignedReadsData.encodeSoftclip(isSoftclip5p(i, j), getSoftclip(i, j),isVariationFromSecondRead(i, j)));
 					ch = DefaultAlignedReadsData.encodeSoftclipSequence(isSoftclip5p(i, j), getSoftclip(i, j));
+					out.putCInt(ch.length());
 				} else 
 					throw new RuntimeException("Neither mismatch nor deletion nor insertion!");
-				out.putCInt(ch.length());
 				out.putAsciiChars(ch);
 			}
 		}
