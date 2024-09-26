@@ -5,8 +5,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.UnaryOperator;
 import java.util.logging.Level;
 
 import gedi.core.data.reads.AlignedReadsData;
@@ -31,9 +33,11 @@ import gedi.grand3.reads.ClippingData;
 import gedi.grand3.reads.ReadSource;
 import gedi.grand3.targets.SnpData;
 import gedi.grand3.targets.TargetCollection;
+import gedi.grand3.targets.TargetCollectionMappedName;
 import gedi.util.ArrayUtils;
 import gedi.util.functions.EI;
 import gedi.util.io.randomaccess.PageFileWriter;
+import gedi.util.io.text.HeaderLine;
 import gedi.util.program.GediProgram;
 import gedi.util.program.GediProgramContext;
 import gedi.util.r.RRunner;
@@ -62,6 +66,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		addInput(params.pseudobulkName);
 		addInput(params.pseudobulkMinimalPurity);
 		addInput(params.targetMixmat);
+		addInput(params.targetMergeTable);
 		
 		addInput(params.prefix);
 		addInput(params.debug);
@@ -100,6 +105,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		String pseudobulkName = getParameter(pind++);
 		double pseudobulkMinimalPurity = getDoubleParameter(pind++);
 		String targetMixmat = getParameter(pind++);
+		String targetMergeTab = getParameter(pind++);
 		
 		String prefix = getParameter(pind++);
 		boolean debug = getBooleanParameter(pind++);
@@ -162,7 +168,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		
 		ReadSource<A> source = new ReadSource<>(reads, clipping, strandness, debug);
 		
-		SubreadProcessor<A> algo = new SubreadProcessor<A>(genomic,source,masked);
+		SubreadProcessor<A> algo = new SubreadProcessor<A>(genomic,source,masked,context.getLog());
 		algo.setNthreads(nthreads);
 		algo.setDebug(debug);
 		
@@ -182,6 +188,14 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 
 		SubreadCounterKNMatrixPerTarget targetEstimator = new SubreadCounterKNMatrixPerTarget(targets.getCategories(),c->c.useToEstimateTargetParameters(), targetEstimatorObject, design.getTypes(),subreadsToUse);
 		
+		UnaryOperator<String> mapper = a->a;
+		if (targetMergeTab!=null) {
+			HeaderLine h = new HeaderLine();
+			HashMap<String, String> map = EI.lines(targetMergeTab).header(h).split('\t').index(a->a[h.apply("name")], a->a[h.apply("merged")]);
+			context.getLog().info("Loaded merge table with "+map.size()+" entries.");
+			mapper =  a->map.getOrDefault(a, a);
+		}
+		
 		PageFileWriter bin = new PageFileWriter(getOutputFile(0).getPath());
 		bin.putInt(0); // reserved
 		bin.putLong(0); // reserved
@@ -197,7 +211,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		long nonzeroCounts = 0;
 		long[] nonzeroNtrs = new long[design.getTypes().length];
 		for (TargetEstimationResult res : algo.process(context::getProgress, 
-				targets,
+				targets,mapper,
 				targetEstimator,
 				stat).loop()) 
 			if (!res.isEmpty()) {
@@ -233,34 +247,6 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		return null;
 	}
 
-
-	private static class TestTargetCounter implements TargetCounter<TestTargetCounter, ImmutableReferenceGenomicRegion<String>> {
-
-		@Override
-		public void count(SubreadProcessorMismatchBuffer buffer) {
-		}
-
-		@Override
-		public TestTargetCounter spawn(int index) {
-			return new TestTargetCounter();
-		}
-
-		@Override
-		public void integrate(TestTargetCounter other) {
-		}
-
-		private ImmutableReferenceGenomicRegion<String> currentTarget;
-		@Override
-		public void startTarget(ImmutableReferenceGenomicRegion<String> currentTarget) {
-			this.currentTarget = currentTarget;
-		}
-
-		@Override
-		public List<ImmutableReferenceGenomicRegion<String>> getResultForCurrentTarget() {
-			return Arrays.asList(currentTarget);
-		}
-		
-	}
 	
 	
 }

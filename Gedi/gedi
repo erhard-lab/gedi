@@ -31,8 +31,8 @@ do
        -h)  printf "gedi [-jmx] [-d] [-d2] [-p] [-mem <XYZ>G] [-t <tmpfolder] [-e] [-<java-option>] main-class [param...]\n\n -d\tStart in debug mode (server on port 8998)\n -d2\tStart in secondary debug mode (server on port 8999)\n -p\tStart cpu hprof\n -t\tspecify tmp folder\n -e\tprepend executables. before main-class\n -mem<XYZ>G\tmaximal memory available to gedi (replace XYZ by the gigabytes)\n\n"
 		exit
 		;;
-       -d) d=" -agentlib:jdwp=transport=dt_socket,address=8998,server=y";;
-       -d2) d=" -agentlib:jdwp=transport=dt_socket,address=8999,server=y";;
+       -d) d=" -agentlib:jdwp=transport=dt_socket,address=0.0.0.0:8998,server=y";;
+       -d2) d=" -agentlib:jdwp=transport=dt_socket,address=0.0.0.0:8999,server=y";;
        -p) p=" -Xrunhprof:cpu=samples";;
        -n) exit 10;;
        -mem) shift;

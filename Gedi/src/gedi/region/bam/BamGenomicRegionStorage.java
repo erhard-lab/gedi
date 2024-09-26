@@ -22,6 +22,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import gedi.bam.tools.BamUtils;
 import gedi.core.data.reads.AlignedReadsData;
@@ -281,6 +283,37 @@ public class BamGenomicRegionStorage implements GenomicRegionStorage<AlignedRead
 	public void setUmi() {
 		this.barcode = (r1, r2)->{
 			return new DnaSequence(StringUtils.removeFooter(StringUtils.splitField(r1.getReadName(), '#', 1),"_"));
+		};
+		
+		this.barcodeChecker = (read)->{
+			return read.getReadName().contains("#");
+		};
+		
+		setMinimalAlignmentQuality(255);
+	}
+	
+	public void setUmiOnt() {
+		this.barcode = (r1, r2)->{
+			String s = StringUtils.splitField(r1.getReadName(), '#', 0);
+			int un = s.indexOf("_");
+			return new DnaSequence(s.substring(0,un)+s.substring(un+1));
+		};
+		
+		this.barcodeChecker = (read)->{
+			int ha = read.getReadName().indexOf("#");
+			int un = read.getReadName().indexOf("_");
+			return un>=0 && ha>un;
+		};
+	}
+	
+	public void setUmi(String pattern) {
+		Pattern pat = Pattern.compile(pattern);
+		this.barcode = (r1, r2)->{
+			Matcher m = pat.matcher(r1.getReadName());
+			StringBuilder sb = new StringBuilder();
+			for (int i=1; i<m.groupCount(); i++)
+				sb.append(m.group(i));
+			return new DnaSequence(sb.toString());
 		};
 		
 		this.barcodeChecker = (read)->{

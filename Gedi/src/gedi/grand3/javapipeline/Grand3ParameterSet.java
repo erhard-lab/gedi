@@ -100,15 +100,18 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<String> targetMixmat = new GediParameter<String>(this,"targetMixmat", "Which target to output the MixMatrix for", false, new StringParameterType(),true);
 	public GediParameter<File> targetMixmatFile = new GediParameter<File>(this,"${prefix}.mixmatrices/${targetMixmat}.knmatrix.tsv.gz", "Mixmatrix for the given target", false, new FileParameterType());
 	
-	public GediParameter<File> targetBinFile = new GediParameter<File>(this,"${prefix}.targets.bin", "File containing the raw estimates per target", false, new FileParameterType(true));
-	public GediParameter<File> targetFolder = new GediParameter<File>(this,"${prefix}.targets", "Folder containing sparse matrices of all estimates per target", false, new FileParameterType());
+	public GediParameter<String> targetMergeTable = new GediParameter<String>(this,"targetMergeTab", "A tsv file containing columns name (original name) and merged (new name)", false, new StringParameterType(),true);
+	
+	public GediParameter<String> targetsName = new GediParameter<String>(this,"targetsName", "Name for the target output files", false, new StringParameterType(),"targets");
+	public GediParameter<File> targetBinFile = new GediParameter<File>(this,"${prefix}.${targetsName}.bin", "File containing the raw estimates per target", false, new FileParameterType(true));
+	public GediParameter<File> targetFolder = new GediParameter<File>(this,"${prefix}.${targetsName}", "Folder containing sparse matrices of all estimates per target", false, new FileParameterType());
 
 	public GediParameter<String> pseudobulkFile = new GediParameter<String>(this,"pseudobulkFile", "File containing merge and distribute information for output (target) conditions (cells), e.g. useful for creating pseudobulk samples; if specified, no normal target output is generated.", false, new StringParameterType(),true);
 	public GediParameter<String> pseudobulkName = new GediParameter<String>(this,"pseudobulkName", "The prefix used for pseudobulk output", false, new StringParameterType(),"all");
 	public GediParameter<Double> pseudobulkMinimalPurity = new GediParameter<Double>(this,"pseudobulkPurity", "The minimal purity (how many cells are from a single library/sample) of a pseudobulk sample to estimate the parameters.", false, new DoubleParameterType(),0.95);
 	
-	public GediParameter<File> pseudobulkBinFile = new GediParameter<File>(this,"${prefix}.pseudobulk.${pseudobulkName}.bin", "File containing the raw estimates per pseudobulk target", false, new FileParameterType(true)) ;
-	public GediParameter<File> pseudobulkFolder = new GediParameter<File>(this,"${prefix}.pseudobulk.${pseudobulkName}", "Folder containing sparse matrices of all estimates per pseudobulk target", false, new FileParameterType());
+	public GediParameter<File> pseudobulkBinFile = new GediParameter<File>(this,"${prefix}.pseudobulk.${targetsName}.${pseudobulkName}.bin", "File containing the raw estimates per pseudobulk target", false, new FileParameterType(true)) ;
+	public GediParameter<File> pseudobulkFolder = new GediParameter<File>(this,"${prefix}.pseudobulk.${targetsName}.${pseudobulkName}", "Folder containing sparse matrices of all estimates per pseudobulk target", false, new FileParameterType());
 
 	public GediParameter<String> jointModel = new GediParameter<String>(this,"jointModel", "Definition of which models to estimate jointly (done on the . separated name, i.e. this should be a 1010110 with as many digits as . separated fields, and samples with the same remaining name after removing 0 fields are joined)", false, new StringParameterType(),true);
 

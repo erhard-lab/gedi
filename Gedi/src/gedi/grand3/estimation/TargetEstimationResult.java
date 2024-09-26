@@ -19,7 +19,7 @@ public class TargetEstimationResult implements BinarySerializable {
 		Binom,TbBinom,TbBinomShape
 	}
 	
-	private ImmutableReferenceGenomicRegion<String> target;
+	private String target;
 	private String category;
 	
 	private HashMap<Integer,Double> count = new HashMap<Integer, Double>();
@@ -27,7 +27,7 @@ public class TargetEstimationResult implements BinarySerializable {
 	
 	public TargetEstimationResult() {} // for deserialization
 	
-	public TargetEstimationResult(ImmutableReferenceGenomicRegion<String> target, String category, int numLabels) {
+	public TargetEstimationResult(String target, String category, int numLabels) {
 		this.target = target;
 		this.category = category;
 		map = new HashMap[numLabels];
@@ -35,7 +35,7 @@ public class TargetEstimationResult implements BinarySerializable {
 			map[i] = new HashMap<Integer, TargetEstimationResult.SingleEstimationResult>();
 	}
 
-	public ImmutableReferenceGenomicRegion<String> getTarget() {
+	public String getTarget() {
 		return target;
 	}
 	public String getCategory() {
@@ -114,9 +114,7 @@ public class TargetEstimationResult implements BinarySerializable {
 
 	@Override
 	public void serialize(BinaryWriter out) throws IOException {
-		FileUtils.writeReferenceSequence(out, target.getReference());
-		FileUtils.writeGenomicRegion(out, target.getRegion());
-		out.putString(target.getData());
+		out.putString(target);
 		out.putString(category);
 		
 		out.putCInt(count.size());
@@ -138,11 +136,7 @@ public class TargetEstimationResult implements BinarySerializable {
 
 	@Override
 	public void deserialize(BinaryReader in) throws IOException {
-		target = new ImmutableReferenceGenomicRegion<>(
-				FileUtils.readReferenceSequence(in),
-				FileUtils.readGenomicRegion(in),
-				in.getString()
-				);
+		target = in.getString();
 		category = in.getString();
 		
 		int numCond = in.getCInt();

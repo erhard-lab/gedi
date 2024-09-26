@@ -3,8 +3,12 @@ package gedi.grand3.javapipeline;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import gedi.app.Gedi;
 import gedi.core.genomic.Genomic;
@@ -20,6 +24,7 @@ import gedi.grand3.targets.TargetCollection;
 import gedi.util.datastructure.collections.intcollections.IntIterator;
 import gedi.util.functions.EI;
 import gedi.util.io.randomaccess.PageFile;
+import gedi.util.io.text.HeaderLine;
 import gedi.util.io.text.LineOrientedFile;
 import gedi.util.io.text.LineWriter;
 import gedi.util.mutable.MutableInteger;
@@ -46,7 +51,8 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		addInput(params.pseudobulkFile);
 		addInput(params.pseudobulkName);
 		addInput(params.pseudobulkMinimalPurity);
-		
+		addInput(params.targetMergeTable);
+
 		
 		if (hasMappedTarget)
 			addOutput(params.pseudobulkFolder);
@@ -72,6 +78,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		String pseudobulkFile = getParameter(pind++);
 		String pseudobulkName = getParameter(pind++);
 		double pseudobulkMinimalPurity = getDoubleParameter(pind++);
+		String targetMergeTab = getParameter(pind++);
 
 		Strandness strandness = Grand3Utils.getStrandness(strandnessFile);
 		ExperimentalDesign design = ExperimentalDesign.fromTable(designFile);
@@ -98,10 +105,16 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		if (forceDense) sparse=false;
 		if (forceSparse) sparse=true;
 		
+		HashMap<String, ArrayList<String>> map = new HashMap<String, ArrayList<String>>();
+		if (targetMergeTab!=null) {
+			HeaderLine h = new HeaderLine();
+			map = EI.lines(targetMergeTab).header(h).split('\t').indexMulti(a->a[h.apply("merged")], a->a[h.apply("name")]);
+		}
+		
 		if (sparse) 
 			outputSparse(context,genomic,design,columnNames,columnToSample,targetFile,folder);
 		else
-			outputDense(context,genomic,design,columnNames,columnToSample,targetFile,folder);
+			outputDense(context,genomic,design,columnNames,columnToSample,targetFile,folder,map);
 
 		return null;
 	} 
@@ -147,7 +160,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		if (!res.isExonic()) System.out.println("Sparse output for introns not implemented yet!");
 		
 			numFeatures++; // must start with 1 in mm file, so this is correct
-			features.writef("%s\t%s\tGene Expression\t%s\t%d\n",res.getTarget().getData(),sym.apply(res.getTarget().getData()),res.getGenome(),g2l.get(res.getTarget().getData()).N);
+			features.writef("%s\t%s\tGene Expression\t%s\t%d\n",res.getTarget(),sym.apply(res.getTarget()),res.getGenome(),g2l.get(res.getTarget()).N);
 			
 			IntIterator it = res.iterateCounts();
 			while (it.hasNext()) {
@@ -189,6 +202,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		finishWriters(ntrBeta);
 		finishWriters(shape);
 		finishWriters(shapeLLR);
+		finishWriters(shapeLL);
 		
 		if (storedNumCounts!=numCounts) throw new RuntimeException("Targets file corrupted: NumCounts does not match!");
 		for (int i=0; i<storedNumNtr.length; i++)
@@ -231,15 +245,19 @@ public class Grand3OutputFlatfiles extends GediProgram {
 
 
 
-	private void outputDense(GediProgramContext context, Genomic g, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File folder) throws IOException {
+	private void outputDense(GediProgramContext context, Genomic g, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File folder, HashMap<String, ArrayList<String>> map) throws IOException {
 		context.getLog().info("Writing flat files (dense)...");
 		
 		HashMap<String,MutableInteger> e2l = new HashMap<>();
 		g.getTranscripts().ei().forEachRemaining(tr->e2l.computeIfAbsent(tr.getData().getGeneId(), x->new MutableInteger()).max(tr.getRegion().getTotalLength())); 
-
+		for (String merged : map.keySet())
+			e2l.put(merged, new MutableInteger(EI.wrap(map.get(merged)).mapToInt(ge->e2l.getOrDefault(ge, new MutableInteger()).N).sum()));
+			
 		HashMap<String,MutableInteger> i2l = new HashMap<>();
 		g.getTranscripts().ei().forEachRemaining(tr->i2l.computeIfAbsent(tr.getData().getGeneId(), x->new MutableInteger()).max(tr.getRegion().invert().getTotalLength())); 
-
+		for (String merged : map.keySet())
+			i2l.put(merged, new MutableInteger(EI.wrap(map.get(merged)).mapToInt(ge->i2l.getOrDefault(ge, new MutableInteger()).N).sum()));
+		
 		
 		PageFile pf = new PageFile(targetFile.getPath());
 		
@@ -269,10 +287,12 @@ public class Grand3OutputFlatfiles extends GediProgram {
 			LineWriter out = res.isExonic()?exonic:intronic;
 			HashMap<String,MutableInteger> lenmap = res.isExonic()?e2l:i2l;
 			
+			String sym = g.getGeneTable("symbol").apply(res.getTarget());
+			if (sym==null) sym = res.getTarget();
 			out.writef("%s\t%s\t%s\t%d",
-					res.getTarget().getData(),
-					g.getGeneTable("symbol").apply(res.getTarget().getData()),
-					res.getGenome(),lenmap.get(res.getTarget().getData()).N
+					res.getTarget(),
+					sym,
+					res.getGenome(),lenmap.get(res.getTarget()).N
 					);
 			for (int i=0; i<columnNames.length; i++)
 				out.writef("\t%.1f",res.getCountOrZero(i));

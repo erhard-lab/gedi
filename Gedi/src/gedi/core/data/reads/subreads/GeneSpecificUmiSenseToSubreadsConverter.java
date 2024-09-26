@@ -238,7 +238,7 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 		int numCond = subreads.get(order[s]).getNumConditions();;
 		int[][] count = new int[distincts][];
 		int[][] nonzeros = new int[distincts][];
-		short[][] vars = new short[distincts][];
+		int[][] vars = new int[distincts][];
 		CharSequence[][] indels = new CharSequence[distincts][];
 		int[][] subreadGeom = new int[distincts][];
 		int[][] gaps = new int[distincts][];

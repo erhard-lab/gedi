@@ -6,6 +6,6 @@ import gedi.core.region.ImmutableReferenceGenomicRegion;
 
 public interface Grand3ReadClassified {
 
-	void classified(ImmutableReferenceGenomicRegion<String> target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, CompatibilityCategory cat, ReadCountMode mode, boolean sense);
+	void classified(String target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, CompatibilityCategory cat, ReadCountMode mode, boolean sense);
 	
 }

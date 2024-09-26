@@ -2,9 +2,13 @@ package gedi.grand3.processing;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import java.util.logging.Logger;
 
 import gedi.centeredDiskIntervalTree.CenteredDiskIntervalTreeStorage;
 import gedi.core.data.reads.AlignedReadsData;
@@ -36,14 +40,16 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 	private boolean debug = false;
 	
 	private ReadSource<A> source;
+	private Logger logger;
 
 	
 	
 	public SubreadProcessor(Genomic genomic, ReadSource<A> source, 
-			SnpData masked) {
+			SnpData masked, Logger logger) {
 		this.genomic = genomic;
 		this.source = source;
 		this.masked = masked;
+		this.logger = logger;
 	}
 	
 	public SubreadProcessor<A>  setNthreads(int nthreads) {
@@ -97,7 +103,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 			SubreadCounter... counter) {
 		
 		process(progress,
-				targets,
+				targets,a->a,
 				new DummyTargetCounter(),
 				counter)
 		.drain();
@@ -105,7 +111,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 	}
 	
 	public <T extends TargetCounter<T,R>,R> ExtendedIterator<R> process(Supplier<Progress> progress, 
-			TargetCollection targets,
+			TargetCollection targets, UnaryOperator<String> mapper,
 			T res,
 			SubreadCounter... counter) {
 		
@@ -115,12 +121,32 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		for (SubreadCounter c : counter)
 			state.add(c);
 		
-		return targets.iterateRegions()
-			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r.getData()))
-			.parallelizedState(nthreads, 5, state, (ei,b)->ei.map(target->{
+		ExtendedIterator<? extends List<ImmutableReferenceGenomicRegion<String>>> it;
+		int num;
+		if (res.mergeWithSameName()) {
+			logger.info("Checking target names...");
+			HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<String>>> merge = targets.iterateRegions().indexMulti(r->mapper.apply(r.getData()));
+			num = merge.size();
+			it = EI.wrap(merge.values());
+			
+			if (num!=targets.getNumRegions())
+				logger.info(String.format("...from %d targets, %d remain after merging by name!",targets.getNumRegions(),num));
+			else
+				logger.info(String.format("...all %d names are unique!",targets.getNumRegions()));
+
+		} else {
+			it = targets.iterateRegions().map(r->Arrays.asList(r));
+			num = targets.getNumRegions();
+		}
+		
+		return it
+			.iff(progress!=null,ei->ei.progress(progress.get(), num, r->"Processing "+r.get(0).getData()))
+			.parallelizedState(nthreads, 5, state, (ei,b)->ei.map(targetset->{
 				TargetCounter<T, R> t = b.get(1);
-				t.startTarget(target);
-				processTarget(targets,target,b);
+				t.startTarget(mapper.apply(targetset.get(0).getData()));
+				for (ImmutableReferenceGenomicRegion<String> target : targetset) {
+					processTarget(targets,target,b);
+				}
 				return t.getResultForCurrentTarget();
 			}))
 			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Finished"))
@@ -162,7 +188,6 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 			TargetCollection targets, 
 			ImmutableReferenceGenomicRegion<String> target, 
 			CompoundParallelizedState state) {
-		
 		
 		SubreadProcessorMismatchBuffer buff = state.<SubreadProcessorMismatchBuffer>get(0);
 		
@@ -264,7 +289,12 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		}
 
 		@Override
-		public void startTarget(ImmutableReferenceGenomicRegion<String> currentTarget) {
+		public boolean mergeWithSameName() {
+			return false;
+		}
+		
+		@Override
+		public void startTarget(String currentTarget) {
 		}
 
 		@Override

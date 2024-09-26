@@ -144,7 +144,7 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 		re.conditions = numCond;
 		re.count = new int[1][1]; re.count[0][0]=1;
 		re.nonzeros = new int[1][1]; re.nonzeros[0][0]=condition;
-		re.var = new short[1][vars.size()];
+		re.var = new int[1][vars.size()];
 		for (int i=0; i<vars.size(); i++) 
 			re.var[0][i] = vars.get(i).var;
 		re.indels = new CharSequence[1][vars.size()];
@@ -157,7 +157,7 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 		return re;
 	}
 	
-	public static SubreadsAlignedReadsData create(int numCond, int[][] count, int[][] nonzeros, short[][] vars, CharSequence[][] indels, int[][] subreadGeom, int[][] gaps) {
+	public static SubreadsAlignedReadsData create(int numCond, int[][] count, int[][] nonzeros, int[][] vars, CharSequence[][] indels, int[][] subreadGeom, int[][] gaps) {
 		SubreadsAlignedReadsData re = new SubreadsAlignedReadsData();
 		
 		re.conditions = numCond;
@@ -200,7 +200,7 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 	}
 
 
-	public static void setVarsAndSubreads(SubreadsAlignedReadsData d, int inIndex, short[][] vars,
+	public static void setVarsAndSubreads(SubreadsAlignedReadsData d, int inIndex, int[][] vars,
 			CharSequence[][] indels, int[][] subreadGeom, int[][] gaps, int outIndex) {
 		vars[outIndex] = d.var[inIndex];
 		indels[outIndex] = d.indels[inIndex];

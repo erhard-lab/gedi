@@ -279,28 +279,22 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 		<? if (nonorm) { ?><Hidden h="true" /><? } ?>
 	</NumericTrackGroup>
 	
-	<ScaleLimitLinker id="+.<?JS id ?>.Standard.Unnormalized.5p.linker" />
 	<StackedBoxesTrack id="+.<?JS id ?>.Standard.Unnormalized.5p" class="<?JS id ?>" input="+.<?JS id ?>.5pnn">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="+.<?JS id ?>.Standard.Unnormalized.5p.linker" />
 	</StackedBoxesTrack>
 	<StackedBoxesTrack input="+.<?JS id ?>.softclip5p" id="+.<?JS id ?>.Softclip.Softclip 5'" class="basecolors">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="+.<?JS id ?>.Standard.Unnormalized.5p.linker" />
 	</StackedBoxesTrack>
 		
-	<ScaleLimitLinker id="+.<?JS id ?>.Standard.Unnormalized.3p.linker" />
 	<StackedBoxesTrack id="+.<?JS id ?>.Standard.Unnormalized.3p" class="<?JS id ?>" input="+.<?JS id ?>.3pnn">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="+.<?JS id ?>.Standard.Unnormalized.3p.linker" />
 	</StackedBoxesTrack>
 	<StackedBoxesTrack input="+.<?JS id ?>.softclip3p" id="+.<?JS id ?>.Softclip.Softclip 3'" class="basecolors">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="+.<?JS id ?>.Standard.Unnormalized.3p.linker" />
 	</StackedBoxesTrack>
 		
 	<NumericTrackGroup id="+.<?JS id ?>.Standard.Unnormalized.Data" class="<?JS id ?>">
@@ -501,28 +495,22 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 		<? if (nonorm) { ?><Hidden h="true" /><? } ?>
 	</NumericTrackGroup>
 	
-	<ScaleLimitLinker id="-.<?JS id ?>.Standard.Unnormalized.5p.linker" />
 	<StackedBoxesTrack id="-.<?JS id ?>.Standard.Unnormalized.5p" class="<?JS id ?>" input="-.<?JS id ?>.5pnn">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="-.<?JS id ?>.Standard.Unnormalized.5p.linker" />
 	</StackedBoxesTrack>
 	<StackedBoxesTrack input="-.<?JS id ?>.softclip5p" id="-.<?JS id ?>.Softclip.Softclip 5'" class="basecolors">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="-.<?JS id ?>.Standard.Unnormalized.5p.linker" />
 	</StackedBoxesTrack>
 
-	<ScaleLimitLinker id="-.<?JS id ?>.Standard.Unnormalized.3p.linker" />
 	<StackedBoxesTrack id="-.<?JS id ?>.Standard.Unnormalized.3p" class="<?JS id ?>" input="-.<?JS id ?>.3pnn">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="-.<?JS id ?>.Standard.Unnormalized.3p.linker" />
 	</StackedBoxesTrack>
 	<StackedBoxesTrack input="-.<?JS id ?>.softclip3p" id="-.<?JS id ?>.Softclip.Softclip 3'" class="basecolors">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="-.<?JS id ?>.Standard.Unnormalized.3p.linker" />
 	</StackedBoxesTrack>
 
 	

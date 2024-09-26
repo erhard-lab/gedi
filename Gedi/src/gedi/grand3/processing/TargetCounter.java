@@ -6,7 +6,9 @@ import gedi.core.region.ImmutableReferenceGenomicRegion;
 
 public interface TargetCounter<T extends TargetCounter<T,R>,R> extends SubreadCounter<T> {
 
-	void startTarget(ImmutableReferenceGenomicRegion<String> currentTarget);
+	void startTarget(String currentTarget);
 	List<R> getResultForCurrentTarget();
+	
+	boolean mergeWithSameName();
 	
 }

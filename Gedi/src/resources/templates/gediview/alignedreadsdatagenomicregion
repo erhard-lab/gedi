@@ -91,6 +91,10 @@ if (typeof merge === 'undefined') {
 	<AlignedReadsDataToSoftclipMapper id="+.<?JS id ?>.softclip3p" input="+.<?JS id ?>.data">	
 		<ReadCountMode m="<?JS readmode ?>" />
 	</AlignedReadsDataToSoftclipMapper>
+	<AlignedReadsDataToSoftclipMapper id="+.<?JS id ?>.softclip5p" input="+.<?JS id ?>.data">	
+		<ReadCountMode m="<?JS readmode ?>" />
+		<FivePrime />
+	</AlignedReadsDataToSoftclipMapper>
 	
 	<AlignedReadsDataToCoverageMapper id="-.<?JS id ?>.coveragenn" input="-.<?JS id ?>.data">
 		<ReadCountMode m="<?JS readmode ?>" />
@@ -106,6 +110,10 @@ if (typeof merge === 'undefined') {
 	</AlignedReadsDataToMismatchesMapper>
 	<AlignedReadsDataToSoftclipMapper id="-.<?JS id ?>.softclip3p" input="-.<?JS id ?>.data">	
 		<ReadCountMode m="<?JS readmode ?>" />
+	</AlignedReadsDataToSoftclipMapper>
+	<AlignedReadsDataToSoftclipMapper id="-.<?JS id ?>.softclip5p" input="-.<?JS id ?>.data">	
+		<ReadCountMode m="<?JS readmode ?>" />
+		<FivePrime />
 	</AlignedReadsDataToSoftclipMapper>
 	
 	<AlignedReadsDataToPositionMapper input="+.<?JS id ?>.data" id="+.<?JS id ?>.5pnn">
@@ -186,16 +194,17 @@ if (typeof merge === 'undefined') {
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
-	
-	<ScaleLimitLinker id="+.<?JS id ?>.Unnormalized.3p.linker" />
 	<StackedBoxesTrack id="+.<?JS id ?>.Unnormalized.3p" class="<?JS id ?>" input="+.<?JS id ?>.3pnn">
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="+.<?JS id ?>.Unnormalized.3p.linker" />
+		<Hidden h="true" />
+	</StackedBoxesTrack>
+	
+	<StackedBoxesTrack input="+.<?JS id ?>.softclip5p" id="+.<?JS id ?>.Softclip.Softclip 5'" class="basecolors">
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 		<Hidden h="true" />
 	</StackedBoxesTrack>
 	<StackedBoxesTrack input="+.<?JS id ?>.softclip3p" id="+.<?JS id ?>.Softclip.Softclip 3'" class="basecolors">
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="+.<?JS id ?>.Unnormalized.3p.linker" />
 		<Hidden h="true" />
 	</StackedBoxesTrack>
 
@@ -282,17 +291,18 @@ if (typeof merge === 'undefined') {
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
-
-	<ScaleLimitLinker id="-.<?JS id ?>.Unnormalized.3p.linker" />
 	<StackedBoxesTrack id="-.<?JS id ?>.Unnormalized.3p" class="<?JS id ?>" input="-.<?JS id ?>.3pnn">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="-.<?JS id ?>.Unnormalized.3p.linker" />
+	</StackedBoxesTrack>
+
+	<StackedBoxesTrack input="-.<?JS id ?>.softclip5p" id="-.<?JS id ?>.Softclip.Softclip 5'" class="basecolors">
+		<Hidden h="true" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	<StackedBoxesTrack input="-.<?JS id ?>.softclip3p" id="-.<?JS id ?>.Softclip.Softclip 3'" class="basecolors">
 		<Hidden h="true" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
-		<LimitLinker linker="-.<?JS id ?>.Unnormalized.3p.linker" />
 	</StackedBoxesTrack>
 	
 	<NumericTrackGroup id="-.<?JS id ?>.Unnormalized.Data" class="<?JS id ?>">

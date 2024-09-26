@@ -14,6 +14,9 @@ import gedi.grand3.processing.SubreadProcessorMismatchBuffer;
 import gedi.grand3.processing.TargetCounter;
 import gedi.grand3.targets.CompatibilityCategory;
 import gedi.util.datastructure.array.sparse.AutoSparseDenseDoubleArrayCollector;
+import gedi.util.mutable.MutableDouble;
+import gedi.util.mutable.MutableInteger;
+import htsjdk.tribble.index.MutableIndex;
 
 public class SubreadCounterKNMatrixPerTarget implements SubreadCounter<SubreadCounterKNMatrixPerTarget>, TargetCounter<SubreadCounterKNMatrixPerTarget,TargetEstimationResult> {
 
@@ -36,12 +39,16 @@ public class SubreadCounterKNMatrixPerTarget implements SubreadCounter<SubreadCo
 	public void integrate(SubreadCounterKNMatrixPerTarget other) {
 	}
 	
+	@Override
+	public boolean mergeWithSameName() {
+		return true;
+	}
 	
 	
 	private double ci = 0.9;
 	private boolean betaApprox = true;
 	
-	private ImmutableReferenceGenomicRegion<String> currentTarget; 
+	private String currentTarget; 
 	private AutoSparseDenseDoubleArrayCollector[] total;
 	// category,label
 	private HashMap<SubreadKNKey,AutoSparseDenseDoubleArrayCollector>[][] llCounter;
@@ -81,7 +88,7 @@ public class SubreadCounterKNMatrixPerTarget implements SubreadCounter<SubreadCo
 	}
 	
 	@Override
-	public void startTarget(ImmutableReferenceGenomicRegion<String> target) {
+	public void startTarget(String target) {
 		for (int a=0; a<llCounter.length; a++) 
 			if (llCounter[a]!=null) {
 				for (int b=0; b<llCounter[a].length; b++)
@@ -95,8 +102,6 @@ public class SubreadCounterKNMatrixPerTarget implements SubreadCounter<SubreadCo
 
 	@Override
 	public void count(SubreadProcessorMismatchBuffer buffer) {
-		if (!buffer.getTarget().equals(currentTarget))  throw new RuntimeException("Fatal error!");
-		
 		int numSub = targetEstimator.getNumSubreads();
 		int numCond = targetEstimator.getNumOutputConditions();
 		int k,n;
@@ -137,7 +142,6 @@ public class SubreadCounterKNMatrixPerTarget implements SubreadCounter<SubreadCo
 		}
 	}
 	
-
 	@Override
 	public List<TargetEstimationResult> getResultForCurrentTarget() {
 		ArrayList<TargetEstimationResult> re = new ArrayList<TargetEstimationResult>();

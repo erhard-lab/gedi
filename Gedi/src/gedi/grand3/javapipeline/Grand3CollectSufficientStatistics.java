@@ -104,7 +104,7 @@ public class Grand3CollectSufficientStatistics<A extends AlignedReadsData> exten
 		
 		
 		// for the globalstat, only uniques are counted (thus, ints!) 
-		SubreadProcessor<A> algo = new SubreadProcessor<>(genomic,source,masked);
+		SubreadProcessor<A> algo = new SubreadProcessor<>(genomic,source,masked,context.getLog());
 		algo.setNthreads(nthreads);
 		algo.setDebug(debug);
 		algo.process(context::getProgress, 

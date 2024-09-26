@@ -120,7 +120,7 @@ public class Grand3Resimulate<A extends AlignedReadsData> extends GediProgram {
 		
 		Resimulator resim = ntrs==null?null:new Resimulator(genomic,modelType,models,ntrs,mmMat,design.getTypes(), seed);
 		
-		SubreadProcessor<A> algo = new SubreadProcessor<A>(genomic,source,masked);
+		SubreadProcessor<A> algo = new SubreadProcessor<A>(genomic,source,masked,context.getLog());
 		algo.setNthreads(nthreads);
 		algo.setDebug(debug);
 		algo.writeSubreads(context::getProgress, 
@@ -175,7 +175,7 @@ public class Grand3Resimulate<A extends AlignedReadsData> extends GediProgram {
 						int i = it.nextInt();
 						SingleEstimationResult val = res.get(t,i);
 						
-						re[t][i][cat.id()].put(res.getTarget().getData(), val.getModel(ModelType.valueOf(model.name())).getMap());
+						re[t][i][cat.id()].put(res.getTarget(), val.getModel(ModelType.valueOf(model.name())).getMap());
 					}
 				}
 			

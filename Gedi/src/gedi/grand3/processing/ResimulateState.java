@@ -23,12 +23,12 @@ public class ResimulateState implements Grand3ReadClassified, ParallelizedState<
 	
 	
 	@Override
-	public void classified(ImmutableReferenceGenomicRegion<String> target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read,
+	public void classified(String target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read,
 			CompatibilityCategory cat, ReadCountMode mode, boolean sense) {
 		if (mode.equals(ReadCountMode.No) || cat==null || !cat.useToEstimateTargetParameters())
 			this.target = null;
 		else
-			this.target = target.getData();
+			this.target = target;
 		this.cat = cat;
 		
 		if (!sense) 

@@ -1527,18 +1527,18 @@ public interface AlignedReadsData extends BinarySerializable, GlobalInfoProvider
 			for (int j=0; j<v; j++) {
 				CharSequence ch;
 				if (isMismatch(i, j)) {
-					out.putCShort(DefaultAlignedReadsData.encodeMismatch(getMismatchPos(i, j), getMismatchGenomic(i, j).charAt(0), getMismatchRead(i, j).charAt(0),isVariationFromSecondRead(i, j)));
+					out.putCInt(DefaultAlignedReadsData.encodeMismatch(getMismatchPos(i, j), getMismatchGenomic(i, j).charAt(0), getMismatchRead(i, j).charAt(0),isVariationFromSecondRead(i, j)));
 					ch = DefaultAlignedReadsData.encodeMismatchIndel(getMismatchPos(i, j), getMismatchGenomic(i, j).charAt(0), getMismatchRead(i, j).charAt(0));
 				} else if (isDeletion(i, j)) {
-					out.putCShort(DefaultAlignedReadsData.encodeDeletion(getDeletionPos(i, j), getDeletion(i, j),isVariationFromSecondRead(i, j)));
+					out.putCInt(DefaultAlignedReadsData.encodeDeletion(getDeletionPos(i, j), getDeletion(i, j),isVariationFromSecondRead(i, j)));
 					ch = DefaultAlignedReadsData.encodeDeletionIndel(getDeletionPos(i, j), getDeletion(i, j));
 					out.putCInt(ch.length());
 				} else if (isInsertion(i, j)) {
-					out.putCShort(DefaultAlignedReadsData.encodeInsertion(getInsertionPos(i, j), getInsertion(i, j),isVariationFromSecondRead(i, j)));
+					out.putCInt(DefaultAlignedReadsData.encodeInsertion(getInsertionPos(i, j), getInsertion(i, j),isVariationFromSecondRead(i, j)));
 					ch = DefaultAlignedReadsData.encodeInsertionIndel(getInsertionPos(i, j), getInsertion(i, j));
 					out.putCInt(ch.length());
 				} else if (isSoftclip(i, j)) {
-					out.putCShort(DefaultAlignedReadsData.encodeSoftclip(isSoftclip5p(i, j), getSoftclip(i, j),isVariationFromSecondRead(i, j)));
+					out.putCInt(DefaultAlignedReadsData.encodeSoftclip(isSoftclip5p(i, j), getSoftclip(i, j),isVariationFromSecondRead(i, j)));
 					ch = DefaultAlignedReadsData.encodeSoftclipSequence(isSoftclip5p(i, j), getSoftclip(i, j));
 					out.putCInt(ch.length());
 				} else 

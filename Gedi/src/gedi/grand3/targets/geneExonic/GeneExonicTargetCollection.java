@@ -189,7 +189,6 @@ public class GeneExonicTargetCollection implements TargetCollection {
 			}
 		}
 		if (cand==null) return 0;
-		
 		// return the number of genes
 		// zero if target not among them
 		// negative counts if read is antisense
@@ -234,9 +233,7 @@ public class GeneExonicTargetCollection implements TargetCollection {
 					mode = ReadCountMode.CollapseAll;
 			}
 		}
-		
-		classified.classified(target,read,cat,mode,found>=0);
-
+		classified.classified(target.getData(),read,cat,mode,found>=0);
 	}
 	
 	private static <T> ImmutableReferenceGenomicRegion<T> extend1kb(ImmutableReferenceGenomicRegion<T> target, ToIntFunction<String> chrLength) {

@@ -72,7 +72,8 @@ public class KNMatrix implements ParallelizedState<KNMatrix> {
 				Entry<Integer,AutoSparseDenseDoubleArrayCollector> ken = kit.next();
 				Integer k = ken.getKey();
 				double count = ken.getValue().get(condition);
-				wr.writef("%s%d\t%d\t%.0f\n", prefix,k,n,count);
+				if (count>0)
+					wr.writef("%s%d\t%d\t%.0f\n", prefix,k,n,count);
 			}
 			
 		}

@@ -2,6 +2,7 @@ package gedi.core.data.reads;
 
 import java.io.IOException;
 
+import gedi.core.region.ReferenceGenomicRegion;
 import gedi.util.io.randomaccess.BinaryReader;
 
 public class SelectDistinctSequenceAlignedReadsData implements AlignedReadsDataDecorator {
@@ -211,8 +212,5 @@ public class SelectDistinctSequenceAlignedReadsData implements AlignedReadsDataD
 		return toString2();
 	}
 
-
-	
-	
 	
 }

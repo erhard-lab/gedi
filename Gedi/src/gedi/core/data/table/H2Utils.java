@@ -37,7 +37,6 @@ import org.h2.value.Value;
 import gedi.util.ArrayUtils;
 import gedi.util.ReflectionUtils;
 import gedi.util.StringUtils;
-import jdk.internal.reflect.MethodAccessor;
 
 public class H2Utils {
 
@@ -97,22 +96,22 @@ public class H2Utils {
 	    // hack: copy the method object, replace its MethodAccessor by one that ignores the object 
 	    // (first argument of invoke, in the FunctionAlias always null) and uses the predicate instead
 		method = ReflectionUtils.invoke(method,"copy");
-		final MethodAccessor ma = ReflectionUtils.invoke(method, "acquireMethodAccessor");
-		ReflectionUtils.set(method, "methodAccessor", new MethodAccessor() {
-			@Override
-			public Object invoke(Object arg0, Object[] arg1)
-					throws IllegalArgumentException, InvocationTargetException {
-				return ma.invoke(o, arg1);
-			}
-			@SuppressWarnings("unused")
-			public Object invoke(Object arg0, Object[] arg1, Class cls)
-					throws IllegalArgumentException, InvocationTargetException {
-				return ma.invoke(o, arg1);
-			}
-			});
-		
-		JavaMethod[] a = {ReflectionUtils.newInstance(JavaMethod.class, method, 0)};
-	 	ReflectionUtils.set(functionAlias, "javaMethods", a);
+//		final MethodAccessor ma = ReflectionUtils.invoke(method, "acquireMethodAccessor");
+//		ReflectionUtils.set(method, "methodAccessor", new MethodAccessor() {
+//			@Override
+//			public Object invoke(Object arg0, Object[] arg1)
+//					throws IllegalArgumentException, InvocationTargetException {
+//				return ma.invoke(o, arg1);
+//			}
+//			@SuppressWarnings("unused")
+//			public Object invoke(Object arg0, Object[] arg1, Class cls)
+//					throws IllegalArgumentException, InvocationTargetException {
+//				return ma.invoke(o, arg1);
+//			}
+//			});
+//		
+//		JavaMethod[] a = {ReflectionUtils.newInstance(JavaMethod.class, method, 0)};
+//	 	ReflectionUtils.set(functionAlias, "javaMethods", a);
 		
 	    return aliasName;
 		

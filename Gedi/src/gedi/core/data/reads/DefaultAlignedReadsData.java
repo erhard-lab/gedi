@@ -23,7 +23,7 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 	protected int conditions;
 	protected int[][] nonzeros;
 	protected int[][] count;
-	protected short[][] var;
+	protected int[][] var;
 	protected CharSequence[][] indels;
 	protected int[] multiplicity;
 	protected int[] ids;
@@ -53,7 +53,7 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 			int distinct = data.getDistinctSequences();
 			int condition = data.getNumConditions();
 			
-			var = new short[distinct][];
+			var = new int[distinct][];
 			indels = new CharSequence[distinct][];
 			multiplicity = new int[distinct];
 			
@@ -79,7 +79,7 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 			}
 			
 			for (int i=0; i<count.length; i++) {
-				var[i] = new short[data.getVariationCount(i)];
+				var[i] = new int[data.getVariationCount(i)];
 				indels[i] = new CharSequence[var[i].length];
 				
 				for (int v=0; v<var[i].length; v++) {
@@ -292,7 +292,7 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 			c = gi.getEntry(CONDITIONSATTRIBUTE).asInt();
 		conditions = c;
 		
-		var = new short[d][];
+		var = new int[d][];
 		indels = new CharSequence[d][];
 		multiplicity = new int[d];
 		
@@ -354,10 +354,10 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 		if (in.getContext().getGlobalInfo().getEntry(AlignedReadsData.BETTERPOSATTRIBUTE).asInt()==1) {
 			for (int i=0; i<d; i++) {
 				int v = in.getCInt();
-				var[i] = new short[v];
+				var[i] = new int[v];
 				indels[i] = new CharSequence[v];
 				for (int j=0; j<v; j++) {
-					var[i][j] = in.getCShort();
+					var[i][j] = in.getCInt();
 					char[] ca = new char[ isMismatch(i, j)?2: in.getCInt()];
 					for (int cr=0; cr<ca.length; cr++)
 						ca[cr] = in.getAsciiChar();
@@ -367,15 +367,18 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 		} else {
 			for (int i=0; i<d; i++) {
 				int v = in.getCInt();
-				var[i] = new short[v];
+				var[i] = new int[v];
 				indels[i] = new CharSequence[v];
 				for (int j=0; j<v; j++) {
-					var[i][j] = in.getCShort();
+					short dd = in.getCShort();
+					// previous layout: bits 12-15 were secondread and type, 0-11 was pos
+					// new layout: bits 0-3 are secondread and type, 3-31 are pos
 					// need to shift bits 12ff to 13ff!
-					int smask = (var[i][j] & 0xFFFF)>>>12;
-					var[i][j] = (short) ((var[i][j] & ((1<<12)-1)) | (smask<<13)); 
+					int secondreadAndType = (dd & 0xFFFF)>>>12;
+					int pos = dd & ((1<<12)-1);
+					var[i][j] = (pos<<3) | secondreadAndType; 
 							
-					char[] ca = new char[in.getCInt()];
+					char[] ca = new char[in.getCInt()]; // used to always store the length!
 					for (int cr=0; cr<ca.length; cr++)
 						ca[cr] = in.getAsciiChar();
 					indels[i][j] = new String(ca); 
@@ -441,66 +444,67 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 		if (pos>MAX_POSITION) throw new RuntimeException("Cannot encode positions >="+(MAX_POSITION+1));
 	}
 	
-	static short encodePos(int pos, short old) {
+	static int encodePos(int pos, int old) {
 		checkPositionEncoding(pos);
-		return (short) ((old & ~POS_MASK) | pos);
+		return ((old & SECONDANDTYPEMASK) | (pos<<3));
 	}
 	
-	static int TYPE_OFFSET = 13;
-	static int SEC_OFFSET = TYPE_OFFSET-1;
-	
-	static short encodeMismatch(int pos, char genomic, char read, boolean secondRead) {
+	static int encodeMismatch(int pos, char genomic, char read, boolean secondRead) {
 		checkPositionEncoding(pos);
-		return (short) (TYPE_MISMATCH<<TYPE_OFFSET | (secondRead?1:0) << SEC_OFFSET | pos);
+		return (TYPE_MISMATCH<<TYPE_OFFSET | (secondRead?1:0) | (pos<<POS_OFFSET));
 	}
 	static CharSequence encodeMismatchIndel(int pos, char genomic, char read) {
 //		if (read=='N') read=genomic;
 		return new String(new char[] {genomic, read});
 	}
 	
-	static short encodeDeletion(int pos, CharSequence genomic, boolean secondRead) {
+	static int encodeDeletion(int pos, CharSequence genomic, boolean secondRead) {
 		checkPositionEncoding(pos);
-		return (short) (TYPE_DELETION<<TYPE_OFFSET | (secondRead?1:0) << SEC_OFFSET | pos);
+		return (TYPE_DELETION<<TYPE_OFFSET | (secondRead?1:0) | (pos<<POS_OFFSET));
 	}
 	static CharSequence encodeDeletionIndel(int pos, CharSequence genomic) {
 		return genomic;
 	}
 	
-	static short encodeInsertion(int pos, CharSequence read, boolean secondRead) {
+	static int encodeInsertion(int pos, CharSequence read, boolean secondRead) {
 		checkPositionEncoding(pos);
-		return (short) (TYPE_INSERTION<<TYPE_OFFSET | (secondRead?1:0) << SEC_OFFSET | pos);
+		return (TYPE_INSERTION<<TYPE_OFFSET | (secondRead?1:0) | (pos<<POS_OFFSET));
 	}
 	static CharSequence encodeInsertionIndel(int pos, CharSequence read) {
 		return read;
 	}
 	
-	static short encodeSoftclip(boolean p5, CharSequence read, boolean secondRead) {
-		return (short) (TYPE_SOFTCLIP<<TYPE_OFFSET | (secondRead?1:0) << SEC_OFFSET | (p5?0:1));
+	static int encodeSoftclip(boolean p5, CharSequence read, boolean secondRead) {
+		return (TYPE_SOFTCLIP<<TYPE_OFFSET | (secondRead?1:0) | ((p5?0:1)<<POS_OFFSET));
 	}
 	static CharSequence encodeSoftclipSequence(boolean p5, CharSequence read) {
 		return read;
 	}
 	
-	static boolean isSecondRead(short mask) {
+	static boolean isSecondRead(int mask) {
 		int smask = mask & 0xFFFF;
-		return ((smask>>>SEC_OFFSET) & 1)==1;
+		return (smask & 1)==1;
 	}
 	
-	
-	private static short POS_MASK = (short) ((1<<SEC_OFFSET)-1);
+	static int type(int mask) {
+		return (mask>>>TYPE_OFFSET)&3;
+	}
 	static int pos(int mask) {
-		return mask & POS_MASK;
+		return mask >>> POS_OFFSET;
 	}
+	
+	
+	private static int SECONDANDTYPEMASK = 7;
+	static final int TYPE_OFFSET = 1;
+	static final int POS_OFFSET = 3;
+	
 	static final int TYPE_MISMATCH = 0;
 	static final int TYPE_INSERTION = 1;
 	static final int TYPE_DELETION = 2;
 	static final int TYPE_SOFTCLIP = 3;
-	public static final int MAX_POSITION = (1<<SEC_OFFSET)-1;
+	public static final int MAX_POSITION = (1<<28)-1;
 	
-	static int type(short mask) {
-		int smask = mask & 0xFFFF;
-		return smask>>>TYPE_OFFSET;
-	}
+
 	@Override
 	public int getDistinctSequences() {
 		return var.length;
@@ -619,8 +623,9 @@ public class DefaultAlignedReadsData implements AlignedReadsData, BinarySerializ
 		fac.addMismatch(2048, 'T', 'C', false);
 		fac.addMismatch(2050, 'T', 'C', false);
 		fac.addMismatch(4095, 'T', 'C', false);
-//		fac.addMismatch(8000, 'T', 'C', false);
-//		fac.addMismatch(8191, 'T', 'C', false);
+		fac.addMismatch(8000, 'T', 'C', false);
+		fac.addMismatch(8191, 'T', 'C', false);
+		fac.addMismatch(118191, 'T', 'C', false);
 		fac.addSoftclip(true, "AAACGGGCTAT", false);
 		
 		

@@ -423,6 +423,13 @@ public class ExperimentalDesign {
 			
 		}
 		
+		if (EI.wrap(labels).filter(a->a.length>1|a[0]!=null).count()==0) {
+			// only no4sU, this would crash grand3, but might be important for just counting reads the grand3 way
+			for (int i=0; i<labels.length; i++) 
+				labels[i][0] = new MetabolicLabel(types[0],1, 1, 0);
+		}
+		
+		
 //		if (
 //				EI.wrap(samples).mapToInt(s->s.length()==0?0:1).sum()==0 &&
 //						EI.wrap(barcodes).mapToInt(s->s.length()==0?0:1).sum()==0 &&

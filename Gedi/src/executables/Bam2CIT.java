@@ -72,6 +72,8 @@ public class Bam2CIT {
 		boolean is10x = false;
 		boolean isDropseq = false;
 		boolean isUmi = false;
+		boolean isUmiONT = false;
+		String umiPattern = null;
 		boolean umiAllowMulti = false;
 		boolean progress = false;
 		boolean keepIds = false;
@@ -138,9 +140,13 @@ public class Bam2CIT {
 			} 
 			else if (args[i].equals("-umi")) 
 				isUmi = true;
+			else if (args[i].equals("-umiOnt")) 
+				isUmiONT = true;
 			else if (args[i].equals("-umiAllowMulti")) {
-				isUmi = true;
 				umiAllowMulti = true;
+			} else if (args[i].equals("-umiPattern")) {
+				isUmi = true;
+				umiPattern = checkParam(args, ++i);
 			} else if (args[i].equals("-keepMito"))
 				keepMito = true;
 			else if (args[i].equals("-join"))
@@ -182,8 +188,16 @@ public class Bam2CIT {
 		storage.setKeepReadNames(keepIds);
 		Class<?> dataClass = DefaultAlignedReadsData.class;
 
+		if (isUmiONT) {
+			storage.setUmiOnt();
+			dataClass = BarcodedAlignedReadsData.class;
+		}
+		
 		if (isUmi) {
-			storage.setUmi();
+			if (umiPattern!=null)
+				storage.setUmi(umiPattern);
+			else
+				storage.setUmi();
 			if (umiAllowMulti)
 				storage.setMinimalAlignmentQuality(0);
 			dataClass = BarcodedAlignedReadsData.class;
@@ -274,6 +288,7 @@ public class Bam2CIT {
 			else it = EI.wrap(storage.getReferenceSequences()).
 					filter(r->r.getName().startsWith(uRemovePref)).unfold(r->storage.ei(r)).
 					map(r->new ImmutableReferenceGenomicRegion<>(gedi.core.reference.Chromosome.obtain(r.getReference().getName().substring(uRemovePref.length()),r.getReference().getStrand()), r.getRegion(), r.getData()));
+
 			
 			if (head>0) it = it.head(head);
 			if (!keepMito) it = it.filter(r->{
@@ -387,7 +402,7 @@ public class Bam2CIT {
 		return re;
 	}
 	private static void usage() {
-		System.out.println("Bam2CIT [-p] [-id] [-compress] [-minmaq <MAQ>] [-keepMito] [-novar] [-nosec] [-10x] [-umi [-umiAllowMulti]] [-barcodelist <multiseq-table>] [-removePrefix <prefix>] <output> <file1> <file2> ... \n\n -p shows progress\n -id add ids to CIT\n -removePrefix filters reads for that and removes the prefix (e.g. for 10x runs with human/mouse combined)\n -barcodelist <multiseq-table>  needs to be a tsv file with columns Barcode and Sample!");
+		System.out.println("Bam2CIT [-p] [-id] [-compress] [-minmaq <MAQ>] [-keepMito] [-novar] [-nosec] [-10x] [-umi [-umiAllowMulti] [-umiPattern <regex-all-groups-are-used>]] [-barcodelist <multiseq-table>] [-removePrefix <prefix>] <output> <file1> <file2> ... \n\n -p shows progress\n -id add ids to CIT\n -removePrefix filters reads for that and removes the prefix (e.g. for 10x runs with human/mouse combined)\n -barcodelist <multiseq-table>  needs to be a tsv file with columns Barcode and Sample!");
 	}
 	
 }

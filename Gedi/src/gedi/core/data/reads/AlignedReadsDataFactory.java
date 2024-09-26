@@ -549,13 +549,13 @@ public class AlignedReadsDataFactory {
 	}
 	
 	public static class VarIndel implements AlignedReadsVariation {
-		public short var;
+		public int var;
 		public CharSequence indel;
 		@Override
 		public int compareTo(AlignedReadsVariation o) {
 			VarIndel a = (VarIndel) o;
 			int re = Integer.compare(DefaultAlignedReadsData.pos(var), DefaultAlignedReadsData.pos(a.var));
-			if (re==0) re = Short.compare(var, a.var);
+			if (re==0) re = Integer.compare(var, a.var);
 			if (re==0) re = StringUtils.compare(indel, a.indel);
 			return re;
 		}
@@ -667,7 +667,13 @@ public class AlignedReadsDataFactory {
 		}
 
 		public VarIndel complement() {
-			indel = SequenceUtils.getDnaComplement(indel);
+			if (isMismatch()) {
+				indel = SequenceUtils.getDnaComplement(indel);
+				return this;
+			}
+			indel = SequenceUtils.getDnaReverseComplement(indel);
+			if (isDeletion() & indel.length()>1)
+				var = DefaultAlignedReadsData.encodePos(DefaultAlignedReadsData.pos(var)-(indel.length()-1),var);
 			return this;
 		}
 		
@@ -1116,7 +1122,7 @@ public class AlignedReadsDataFactory {
 		}
 		else
 			re.count = new int[][] {count};
-		re.var = new short[1][0];
+		re.var = new int[1][0];
 		re.indels = new CharSequence[1][0];
 		re.multiplicity = new int[] {1};
 		return re;
@@ -1250,10 +1256,10 @@ public class AlignedReadsDataFactory {
 		return re;
 	}
 
-	private short[][] convShort(ArrayList<TreeSet<VarIndel>> var) {
-		short[][] re = new short[currentDistinct+1][];
+	private int[][] convShort(ArrayList<TreeSet<VarIndel>> var) {
+		int[][] re = new int[currentDistinct+1][];
 		for (int i=0; i<re.length; i++) {
-			re[i] = new short[var.get(i).size()];
+			re[i] = new int[var.get(i).size()];
 			int j=0;
 			for (VarIndel v : var.get(i))
 				re[i][j++] = v.var;

@@ -59,7 +59,7 @@ public class BamUtils {
 				coords.add(l);
 			if (op==CigarOperator.N || op==CigarOperator.D || op==CigarOperator.M)
 				l+=e.getLength();
-			else if (op!=CigarOperator.I && op!=CigarOperator.S) // softclipped parts will not be part of the genomic region!
+			else if (op!=CigarOperator.I && op!=CigarOperator.S && op!=CigarOperator.H) // hard/softclipped parts will not be part of the genomic region!
 				throw new RuntimeException("CIGAR operator "+op+" not supported!");
 			if (op==CigarOperator.N)
 				coords.add(l);
@@ -389,6 +389,7 @@ public class BamUtils {
 				break;
 			case D:
 			case N:
+			case H:
 				break;
 			default:
 				throw new RuntimeException("CIGAR operator "+e.getOperator()+" not supported!");

@@ -35,7 +35,6 @@ import javax.swing.JPanel;
 import javax.swing.Scrollable;
 import javax.swing.ToolTipManager;
 
-import org.freehep.graphicsbase.util.export.ExportDialog;
 import org.freehep.graphicsbase.util.export.ExportFileType;
 import org.freehep.graphicsio.DummyGraphics2D;
 
@@ -47,6 +46,7 @@ import gedi.core.data.mapper.GenomicRegionDataMappingJob;
 import gedi.core.reference.LazyGenome;
 import gedi.core.reference.ReferenceSequence;
 import gedi.core.region.GenomicRegion;
+import gedi.gui.export.ExportDialog;
 import gedi.util.FileUtils;
 import gedi.util.functions.EI;
 import gedi.util.gui.PixelBasepairMapper;

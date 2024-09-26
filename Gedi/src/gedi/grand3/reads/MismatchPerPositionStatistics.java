@@ -19,6 +19,7 @@ import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.grand3.Grand3Utils;
 import gedi.grand3.targets.CompatibilityCategory;
 import gedi.grand3.targets.TargetCollection;
+import gedi.grand3.targets.geneExonic.GeneExonicTargetCollection;
 import gedi.util.ArrayUtils;
 import gedi.util.SequenceUtils;
 import gedi.util.functions.EI;
@@ -359,6 +360,7 @@ public class MismatchPerPositionStatistics extends MismatchReporterWithSequence<
 		double[][] re = new double[firstRead?rl1:rl2][conditions.length];
 
 		if (conditions.length==0) return re;
+		if (re.length==0) return null;
 		
 //		int retainedOverlap = catIndex(category, sense, true, true);
 //		int removedOverlap = catIndex(category, sense, false, true);// g=r is empty!
@@ -394,9 +396,22 @@ public class MismatchPerPositionStatistics extends MismatchReporterWithSequence<
 	
 	public static void main(String[] args) throws IOException {
 
+		
 		Genomic g = Genomic.get("h.ens90");
+		String first = g.getOriginList().get(0);
+		TargetCollection targets =  new GeneExonicTargetCollection(
+					g,
+					g.getGenes(),
+					r->r.isMitochondrial()?"Mito":g.getOrigin(r).getId(),
+					r->g.getLength(r),
+					s->s.equals(first),
+					true,false,true,false,
+					g.getTranscripts(),
+					ReadCountMode.Unique,
+					ReadCountMode.Unique,
+					0);
+		
 		ImmutableReferenceGenomicRegion<Transcript> tr = g.getTranscripts().ei().skip(2400).filter(t->t.getRegion().getTotalLength()<1000).first();
-		TargetCollection targets = Grand3Utils.getTargets(g, Strandness.Sense, ReadCountMode.Unique, ReadCountMode.Unique, 0);
 		MismatchPerPositionStatistics mm = new MismatchPerPositionStatistics(g, targets, 1);
 		mm.cacheRegion(new ImmutableReferenceGenomicRegion<>(tr.getReference(), tr.getRegion(),"ENSG00000228776"),0);
 		

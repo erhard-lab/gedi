@@ -358,7 +358,9 @@ public class BamAlignedReadDataFactory extends AlignedReadsDataFactory {
 				ls+=e.getLength();
 				
 				break;
-			case N: break;
+			case N:
+			case H:
+				break;
 			default: throw new IllegalArgumentException("Cigar operator "+e.getOperator()+" unknown!");
 			}
 		}
@@ -376,6 +378,7 @@ public class BamAlignedReadDataFactory extends AlignedReadsDataFactory {
 				break;
 			case N:
 			case S:
+			case H:
 			case I: 
 				break;
 			default: throw new IllegalArgumentException("Cigar operator "+e.getOperator()+" unknown!");

@@ -23,7 +23,7 @@ public class SubreadProcessorMismatchBuffer implements Grand3ReadClassified, Par
 	}
 	
 	private CompatibilityCategory cat;
-	private ImmutableReferenceGenomicRegion<String> target;
+	private String target;
 	
 	private ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> read;
 	int distinct;
@@ -39,7 +39,7 @@ public class SubreadProcessorMismatchBuffer implements Grand3ReadClassified, Par
 	}
 	
 	@Override
-	public void classified(ImmutableReferenceGenomicRegion<String> target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read,
+	public void classified(String target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read,
 			CompatibilityCategory cat, ReadCountMode mode, boolean sense) {
 		this.target = target;
 		this.read = (ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>) read;
@@ -141,7 +141,7 @@ public class SubreadProcessorMismatchBuffer implements Grand3ReadClassified, Par
 		return distinct;
 	}
 	
-	public ImmutableReferenceGenomicRegion<String> getTarget() {
+	public String getTarget() {
 		return target;
 	}
 

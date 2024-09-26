@@ -29,20 +29,7 @@ public class Grand3Utils {
 	}
 
 	
-	public static TargetCollection getTargets(Genomic genomic, Strandness strandness, ReadCountMode mode, ReadCountMode overlap, int introntol) {
-		String first = genomic.getOriginList().get(0);
-		return new GeneExonicTargetCollection(
-				genomic,
-				genomic.getGenes(),
-				r->r.isMitochondrial()?"Mito":genomic.getOrigin(r).getId(),
-				r->genomic.getLength(r),
-				s->s.equals(first),
-				true,false,true,false,
-				genomic.getTranscripts(),
-				mode,
-				overlap,
-				introntol);
-	}
+	
 
 
 
