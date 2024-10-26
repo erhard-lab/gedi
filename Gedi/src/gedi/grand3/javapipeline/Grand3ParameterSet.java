@@ -51,6 +51,7 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<ReadCountMode> mode = new GediParameter<ReadCountMode>(this,"mode", "Read count mode what to do with multi-mapping reads", false, new ChoicesParameterType<ReadCountMode>(ReadCountMode.valueOf, ReadCountMode.class),ReadCountMode.Weight);
 	public GediParameter<ReadCountMode> overlap = new GediParameter<ReadCountMode>(this,"overlap", "Overlapping gene mode: What to do for locations that are compatible with more than one gene", false, new ChoicesParameterType<ReadCountMode>(ReadCountMode.valueOf, ReadCountMode.class),ReadCountMode.Unique);
 	public GediParameter<Integer> introntol = new GediParameter<Integer>(this,"introntol", "Tolerance for introns", false, new IntParameterType(), 5);
+	public GediParameter<Integer> minOverlap = new GediParameter<Integer>(this,"minOverlap", "minimal overlap for Splice sites", false, new IntParameterType(), 5);
 	
 	public GediParameter<TargetCollection> targetCollection = new GediParameter<TargetCollection>(this,"target-description","Internal use only",false,new InternalParameterType<>(TargetCollection.class));
 	public GediParameter<String> targets = new GediParameter<String>(this,"targets","Define which targets to estimate parameters for",false,new StringParameterType(),"genes");

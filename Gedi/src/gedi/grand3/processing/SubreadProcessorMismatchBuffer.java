@@ -1,6 +1,9 @@
 package gedi.grand3.processing;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.ReadCountMode;
@@ -23,7 +26,7 @@ public class SubreadProcessorMismatchBuffer implements Grand3ReadClassified, Par
 	}
 	
 	private CompatibilityCategory cat;
-	private String target;
+	private Collection<String> targets;
 	
 	private ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> read;
 	int distinct;
@@ -39,9 +42,9 @@ public class SubreadProcessorMismatchBuffer implements Grand3ReadClassified, Par
 	}
 	
 	@Override
-	public void classified(String target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read,
+	public void classified(Collection<String> targets, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read,
 			CompatibilityCategory cat, ReadCountMode mode, boolean sense) {
-		this.target = target;
+		this.targets = targets;
 		this.read = (ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>) read;
 		this.mode = mode;
 		this.cat = cat;
@@ -141,14 +144,21 @@ public class SubreadProcessorMismatchBuffer implements Grand3ReadClassified, Par
 		return distinct;
 	}
 	
-	public String getTarget() {
-		return target;
+	public Collection<String> getTargets() {
+		return targets;
 	}
 
 	public ReadCountMode getMode() {
 		return mode;
 	}
 
+	public boolean isSense() {
+		return true;
+	}
+
+	public CompatibilityCategory getCompatibilityCategory() {
+		return cat;
+	}
 
 
 	

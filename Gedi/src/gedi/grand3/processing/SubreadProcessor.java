@@ -131,7 +131,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		int num;
 		if (res.mergeWithSameName()) {
 			logger.info("Checking target names...");
-			HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<String>>> merge = targets.iterateRegions().indexMulti(r->mapper.inverse(r.getData()));
+			HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<String>>> merge = targets.iterateRegions().indexMulti(r->mapper.inverseOrDefault(r.getData(),r.getData()));
 			num = merge.size();
 			it = EI.wrap(merge.values());
 			

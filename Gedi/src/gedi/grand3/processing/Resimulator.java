@@ -52,7 +52,7 @@ public class Resimulator  {
 	public ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> resimulate(ResimulateState state,
 			ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> t) {
 		
-		if (state.getTarget()==null) return null;
+		if (state.getTargets()==null) return null;
 		
 		char[] readSeq;
 		// obtain sequence
@@ -129,7 +129,7 @@ public class Resimulator  {
 				read = SequenceUtils.getDnaComplement(read);
 			}
 			
-			Double ntr = ntrs[t][cond][state.getCategory().id()].get(state.getTarget());
+			Double ntr = ntrs[t][cond][state.getCategory().id()].get(state.getTargets().iterator().next());
 			if (ntr==null) ntr = 0.0; // e.g., no4sU
 			
 			boolean isNew = state.getRnd().nextDouble()<ntr;

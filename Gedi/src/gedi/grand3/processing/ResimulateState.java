@@ -1,5 +1,9 @@
 package gedi.grand3.processing;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.ReadCountMode;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
@@ -18,17 +22,17 @@ public class ResimulateState implements Grand3ReadClassified, ParallelizedState<
 		this.seed = seed;
 	}
 
-	private String target;
+	private Collection<String> targets;
 	private CompatibilityCategory cat;
 	
 	
 	@Override
-	public void classified(String target, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read,
+	public void classified(Collection<String> targets, ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read,
 			CompatibilityCategory cat, ReadCountMode mode, boolean sense) {
 		if (mode.equals(ReadCountMode.No) || cat==null || !cat.useToEstimateTargetParameters())
-			this.target = null;
+			this.targets = null;
 		else
-			this.target = target;
+			this.targets = targets;
 		this.cat = cat;
 		
 		if (!sense) 
@@ -57,8 +61,8 @@ public class ResimulateState implements Grand3ReadClassified, ParallelizedState<
 	public void integrate(ResimulateState other) {
 	}
 	
-	public String getTarget() {
-		return target;
+	public Collection<String> getTargets() {
+		return targets;
 	}
 
 	public CompatibilityCategory getCategory() {
@@ -71,6 +75,18 @@ public class ResimulateState implements Grand3ReadClassified, ParallelizedState<
 
 	public ImmutableReferenceGenomicRegion<String> getSequenceRegion() {
 		return region;
+	}
+
+	public CompatibilityCategory getCompatibilityCategory() {
+		return cat;
+	}
+
+	public ReadCountMode getMode() {
+		return null;
+	}
+
+	public boolean isSense() {
+		return true;
 	}
 
 	

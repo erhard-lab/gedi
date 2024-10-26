@@ -118,44 +118,45 @@ public class SubreadCounterKNMatrixPerTarget implements SubreadCounter<SubreadCo
 		int k,n;
 		if (useCat.test(buffer.getCategory())) {
 			
-			String target = buffer.getTarget();
-			target = mapping.inverseOrDefault(target,target);
-			MutablePair<AutoSparseDenseDoubleArrayCollector[], HashMap<SubreadKNKey, AutoSparseDenseDoubleArrayCollector>[][]> pair = targetToTotalAndLLCounter.computeIfAbsent(target, x->makePair());
-			AutoSparseDenseDoubleArrayCollector[] total = pair.Item1;
-			HashMap<SubreadKNKey, AutoSparseDenseDoubleArrayCollector>[][] llCounter = pair.Item2;
-			
-
-			int c = buffer.getCategory().id();
-			buffer.count(total[c], targetEstimator.getIndexMapping());
-			
-			for (int l=0; l<targetEstimator.getNumTypes(); l++) {
+			for (String target : buffer.getTargets()) {
+				target = mapping.inverseOrDefault(target,target);
+				MutablePair<AutoSparseDenseDoubleArrayCollector[], HashMap<SubreadKNKey, AutoSparseDenseDoubleArrayCollector>[][]> pair = targetToTotalAndLLCounter.computeIfAbsent(target, x->makePair());
+				AutoSparseDenseDoubleArrayCollector[] total = pair.Item1;
+				HashMap<SubreadKNKey, AutoSparseDenseDoubleArrayCollector>[][] llCounter = pair.Item2;
 				
-				for (int s=0; s<numSub; s++) {
-							
-					n = buffer.getTotal(s, labels[l]);
-					k = buffer.getMismatches(s, labels[l]);
-					if (subreadsToUse[s]) {
-						llKey.k[s] = k;
-						llKey.n[s] = n;
-					} else {
-						llKey.k[s] = 0;
-						llKey.n[s] = 0;
-					}
+	
+				int c = buffer.getCategory().id();
+				buffer.count(total[c], targetEstimator.getIndexMapping());
+				
+				for (int l=0; l<targetEstimator.getNumTypes(); l++) {
 					
-					if (k>n) 
-						throw new RuntimeException("Cannot be: "+buffer.getRead());
-					if (n>0) {
-						if (debug) {
-							System.out.println("Binom: "+labels[l]+" s="+s+" k="+k+" n="+n);
+					for (int s=0; s<numSub; s++) {
+								
+						n = buffer.getTotal(s, labels[l]);
+						k = buffer.getMismatches(s, labels[l]);
+						if (subreadsToUse[s]) {
+							llKey.k[s] = k;
+							llKey.n[s] = n;
+						} else {
+							llKey.k[s] = 0;
+							llKey.n[s] = 0;
+						}
+						
+						if (k>n) 
+							throw new RuntimeException("Cannot be: "+buffer.getRead());
+						if (n>0) {
+							if (debug) {
+								System.out.println("Binom: "+labels[l]+" s="+s+" k="+k+" n="+n);
+							}
 						}
 					}
+					
+					AutoSparseDenseDoubleArrayCollector co = llCounter[c][l].get(llKey);
+					if (co==null) 
+						llCounter[c][l].put(llKey.clone(), co=new AutoSparseDenseDoubleArrayCollector(numCond<50?numCond:10, numCond));
+					buffer.count(co,targetEstimator.getIndexMapping());
+					
 				}
-				
-				AutoSparseDenseDoubleArrayCollector co = llCounter[c][l].get(llKey);
-				if (co==null) 
-					llCounter[c][l].put(llKey.clone(), co=new AutoSparseDenseDoubleArrayCollector(numCond<50?numCond:10, numCond));
-				buffer.count(co,targetEstimator.getIndexMapping());
-				
 			}
 		}
 	}

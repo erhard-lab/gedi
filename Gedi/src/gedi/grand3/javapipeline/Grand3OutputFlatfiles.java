@@ -288,11 +288,21 @@ public class Grand3OutputFlatfiles extends GediProgram {
 			HashMap<String,MutableInteger> lenmap = res.isExonic()?e2l:i2l;
 			
 			String sym = g.getGeneTable("symbol").apply(res.getTarget());
-			if (sym==null) sym = res.getTarget();
+			if (sym==null) {
+				if (res.getTarget().contains("_")) {
+					sym = g.getGeneTable("symbol").apply(res.getTarget().substring(0,res.getTarget().indexOf(("_"))));
+					if (sym!=null)
+						sym = sym+res.getTarget().substring(res.getTarget().indexOf(("_")));	
+				}
+				
+				if (sym==null)
+					sym = res.getTarget();
+					
+			}
 			out.writef("%s\t%s\t%s\t%d",
 					res.getTarget(),
 					sym,
-					res.getGenome(),lenmap.get(res.getTarget()).N
+					res.getGenome(),lenmap.getOrDefault(res.getTarget(),new MutableInteger()).N
 					);
 			for (int i=0; i<columnNames.length; i++)
 				out.writef("\t%.1f",res.getCountOrZero(i));

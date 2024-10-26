@@ -15,7 +15,6 @@ import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.genomic.Genomic;
 import gedi.core.reference.Strandness;
 import gedi.core.region.GenomicRegionStorage;
-import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.grand3.Grand3Utils;
 import gedi.grand3.estimation.ModelStructure;
 import gedi.grand3.estimation.TargetEstimationResult;
@@ -33,7 +32,6 @@ import gedi.grand3.reads.ClippingData;
 import gedi.grand3.reads.ReadSource;
 import gedi.grand3.targets.SnpData;
 import gedi.grand3.targets.TargetCollection;
-import gedi.grand3.targets.TargetCollectionMappedName;
 import gedi.util.ArrayUtils;
 import gedi.util.datastructure.mapping.OneToManyMapping;
 import gedi.util.functions.EI;
@@ -188,7 +186,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		context.getLog().info("Done filling likelihood cache.");
 
 		
-		OneToManyMapping<String, String> mapper = null;
+		OneToManyMapping<String, String> mapper = new OneToManyMapping<String, String>();
 		if (targetMergeTab!=null) {
 			
 			

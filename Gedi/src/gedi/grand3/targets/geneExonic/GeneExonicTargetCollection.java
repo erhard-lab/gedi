@@ -1,6 +1,7 @@
 package gedi.grand3.targets.geneExonic;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -30,28 +31,28 @@ import gedi.util.functions.ExtendedIterator;
  */
 public class GeneExonicTargetCollection implements TargetCollection {
 	
-	private Genomic genomic; // only for getting a target by name
-	private LinkedHashMap<String,CompatibilityCategory> exonic = new LinkedHashMap<>();
-	private LinkedHashMap<String,CompatibilityCategory> intronic = new LinkedHashMap<>();
-	private CompatibilityCategory[] categories;
+	protected Genomic genomic; // only for getting a target by name
+	protected LinkedHashMap<String,CompatibilityCategory> exonic = new LinkedHashMap<>();
+	protected LinkedHashMap<String,CompatibilityCategory> intronic = new LinkedHashMap<>();
+	protected CompatibilityCategory[] categories;
 
-	private MemoryIntervalTreeStorage<String> genes;
-	private MemoryIntervalTreeStorage<Transcript> transcripts;
+	protected MemoryIntervalTreeStorage<String> genes;
+	protected MemoryIntervalTreeStorage<Transcript> transcripts;
 	
-	private Predicate<String> useForGlobal;
-	private ReadCountMode mode;
-	private ReadCountMode overlap;
-	private boolean useExonForGlobal;
-	private boolean useIntronForGlobal;
-	private boolean outputExon;
-	private boolean outputIntron;
-	private int clipForCompatibility;
-	private Function<ReferenceSequence,String> genome;
-	private ToIntFunction<String> chrLength;
-	private HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2Trans;
-	private HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2TransSense;
-	private HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2TransAntisense;
-	private HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2TransBoth;
+	protected Predicate<String> useForGlobal;
+	protected ReadCountMode mode;
+	protected ReadCountMode overlap;
+	protected boolean useExonForGlobal;
+	protected boolean useIntronForGlobal;
+	protected boolean outputExon;
+	protected boolean outputIntron;
+	protected int clipForCompatibility;
+	protected Function<ReferenceSequence,String> genome;
+	protected ToIntFunction<String> chrLength;
+	protected HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2Trans;
+	protected HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2TransSense;
+	protected HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2TransAntisense;
+	protected HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<Transcript>>> gene2TransBoth;
 	
 	public GeneExonicTargetCollection(Genomic genomic, MemoryIntervalTreeStorage<String> genes, Function<ReferenceSequence,String> genome,ToIntFunction<String> chrLength,
 			Predicate<String> useForGlobal,
@@ -122,7 +123,7 @@ public class GeneExonicTargetCollection implements TargetCollection {
 		return (int) genes.size();
 	}
 	
-	private boolean isExonic(ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, ImmutableReferenceGenomicRegion<Transcript> t) {
+	protected boolean isExonic(ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, ImmutableReferenceGenomicRegion<Transcript> t) {
 		int inIntron = read.getRegion().intersectLengthInvert(t.getRegion());
 		if (t.getData().isCoding() && t.getData().get5UtrLength(t.getReference(), t.getRegion())==0 && t.getData().get3UtrLength(t.getReference(),t.getRegion())==0) {
 			// incomplete transcript
@@ -132,7 +133,7 @@ public class GeneExonicTargetCollection implements TargetCollection {
 		return inIntron<=clipForCompatibility && t.getRegion().getStart()<=read.getRegion().getStart() && t.getRegion().getEnd()>=read.getRegion().getEnd();
 	}
 	
-	private boolean isIntronic(ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, ImmutableReferenceGenomicRegion<Transcript> t) {
+	protected boolean isIntronic(ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, ImmutableReferenceGenomicRegion<Transcript> t) {
 		int inIntron = read.getRegion().intersectLengthInvert(t.getRegion());
 		if (t.getData().isCoding() && t.getData().get5UtrLength(t.getReference(), t.getRegion())==0 && t.getData().get3UtrLength(t.getReference(),t.getRegion())==0) {
 			// incomplete transcript
@@ -142,7 +143,7 @@ public class GeneExonicTargetCollection implements TargetCollection {
 		return inIntron>clipForCompatibility && t.getRegion().getStart()<=read.getRegion().getStart() && t.getRegion().getEnd()>=read.getRegion().getEnd();
 	}
 	
-	private int countFilteredGenesOld(String target, Strandness strandness,
+	protected int countFilteredGenesOld(String target, Strandness strandness,
 			ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, 
 			boolean isStrandCorrected,
 			BiPredicate<ImmutableReferenceGenomicRegion<? extends AlignedReadsData>,ImmutableReferenceGenomicRegion<Transcript>> checker) {
@@ -174,7 +175,7 @@ public class GeneExonicTargetCollection implements TargetCollection {
 		return genes.size()*found;
 	}
 	
-	private int countFilteredGenes(String target, Strandness strandness,
+	protected int countFilteredGenes(String target, Strandness strandness,
 			ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, 
 			boolean isStrandCorrected,
 			BiPredicate<ImmutableReferenceGenomicRegion<? extends AlignedReadsData>,ImmutableReferenceGenomicRegion<Transcript>> checker) {
@@ -233,7 +234,7 @@ public class GeneExonicTargetCollection implements TargetCollection {
 					mode = ReadCountMode.CollapseAll;
 			}
 		}
-		classified.classified(target.getData(),read,cat,mode,found>=0);
+		classified.classified(Arrays.asList(target.getData()),read,cat,mode,found>=0);
 	}
 	
 	private static <T> ImmutableReferenceGenomicRegion<T> extend1kb(ImmutableReferenceGenomicRegion<T> target, ToIntFunction<String> chrLength) {

@@ -9,6 +9,7 @@ import gedi.grand3.javapipeline.Grand3OutputFlatfiles;
 import gedi.grand3.javapipeline.Grand3ParameterSet;
 import gedi.grand3.javapipeline.Grand3ProcessTargets;
 import gedi.grand3.javapipeline.Grand3Resimulate;
+import gedi.grand3.javapipeline.Grand3SetupTargetsAcceptor;
 import gedi.grand3.javapipeline.Grand3SetupTargetsGenes;
 import gedi.grand3.javapipeline.Grand3SetupTargetsTest;
 import gedi.grand3.javapipeline.Grand3SnpsAndClip;
@@ -30,6 +31,7 @@ public class Grand3 {
 		
 		GediProgram pipeline = GediProgram.create("Grand3",
 				new Grand3WriteExperimentalDesign(params),
+				new Grand3SetupTargetsAcceptor(params),
 				new Grand3SetupTargetsGenes(params),
 				new Grand3SetupTargetsTest(params),
 				new Grand3SnpsAndClip(params),

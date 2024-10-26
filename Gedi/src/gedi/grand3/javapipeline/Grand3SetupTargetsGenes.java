@@ -9,7 +9,6 @@ import java.util.HashMap;
 import gedi.core.data.reads.ReadCountMode;
 import gedi.core.genomic.Genomic;
 import gedi.grand3.targets.TargetCollection;
-import gedi.grand3.targets.TargetCollectionMappedName;
 import gedi.grand3.targets.geneExonic.GeneExonicTargetCollection;
 import gedi.util.functions.EI;
 import gedi.util.io.text.HeaderLine;

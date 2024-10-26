@@ -65,18 +65,20 @@ public class OneToManyMapping<F,T> {
 	private void makeSureInverse() {
 		if (inverse!=null) return;
 		inverse = new HashMap<T, F>();
-		for (F f : map.keySet()) {
-			for (T t : map.get(f))
-				inverse.put(t, f);
+		if (map!=null)
+			for (F f : map.keySet()) {
+				for (T t : map.get(f))
+					inverse.put(t, f);
 		}
 	}
 	private void makeSureMap() {
 		if (map!=null) return;
 		map = new HashMap<F, ArrayList<T>>();
 		
-		for (T t : inverse.keySet()) {
-			map.computeIfAbsent(inverse.get(t), x->new ArrayList<T>()).add(t);
-		}
+		if (inverse!=null)
+			for (T t : inverse.keySet()) {
+				map.computeIfAbsent(inverse.get(t), x->new ArrayList<T>()).add(t);
+			}
 	}
 	
 	
