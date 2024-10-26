@@ -35,6 +35,7 @@ import gedi.grand3.targets.SnpData;
 import gedi.grand3.targets.TargetCollection;
 import gedi.grand3.targets.TargetCollectionMappedName;
 import gedi.util.ArrayUtils;
+import gedi.util.datastructure.mapping.OneToManyMapping;
 import gedi.util.functions.EI;
 import gedi.util.io.randomaccess.PageFileWriter;
 import gedi.util.io.text.HeaderLine;
@@ -186,15 +187,17 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		TargetEstimator targetEstimatorObject = new TargetEstimator(design, models, targetMapping, targetToSample, 0.01,context::getProgress,nthreads);
 		context.getLog().info("Done filling likelihood cache.");
 
-		SubreadCounterKNMatrixPerTarget targetEstimator = new SubreadCounterKNMatrixPerTarget(targets.getCategories(),c->c.useToEstimateTargetParameters(), targetEstimatorObject, design.getTypes(),subreadsToUse);
 		
-		UnaryOperator<String> mapper = a->a;
+		OneToManyMapping<String, String> mapper = null;
 		if (targetMergeTab!=null) {
-			HeaderLine h = new HeaderLine();
-			HashMap<String, String> map = EI.lines(targetMergeTab).header(h).split('\t').index(a->a[h.apply("name")], a->a[h.apply("merged")]);
-			context.getLog().info("Loaded merge table with "+map.size()+" entries.");
-			mapper =  a->map.getOrDefault(a, a);
+			
+			
+			mapper = OneToManyMapping.fromFile(targetMergeTab, "merged", "name");
+			context.getLog().info("Loaded merge table with "+mapper.getFromUniverse().size()+" entries.");
 		}
+		
+		SubreadCounterKNMatrixPerTarget targetEstimator = new SubreadCounterKNMatrixPerTarget(targets.getCategories(),c->c.useToEstimateTargetParameters(), targetEstimatorObject, design.getTypes(),subreadsToUse,mapper);
+		
 		
 		PageFileWriter bin = new PageFileWriter(getOutputFile(0).getPath());
 		bin.putInt(0); // reserved

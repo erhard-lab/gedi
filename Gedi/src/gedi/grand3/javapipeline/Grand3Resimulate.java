@@ -18,6 +18,7 @@ import gedi.grand3.estimation.TargetEstimationResult.ModelType;
 import gedi.grand3.estimation.TargetEstimationResult.SingleEstimationResult;
 import gedi.grand3.estimation.estimators.ModelEstimationMethod;
 import gedi.grand3.experiment.ExperimentalDesign;
+import gedi.grand3.experiment.PseudobulkDefinition;
 import gedi.grand3.processing.Resimulator;
 import gedi.grand3.processing.Resimulator.ResimulatorModelType;
 import gedi.grand3.processing.SubreadProcessor;
@@ -26,6 +27,7 @@ import gedi.grand3.reads.ReadSource;
 import gedi.grand3.targets.CompatibilityCategory;
 import gedi.grand3.targets.SnpData;
 import gedi.grand3.targets.TargetCollection;
+import gedi.util.ArrayUtils;
 import gedi.util.datastructure.collections.intcollections.IntIterator;
 import gedi.util.functions.EI;
 import gedi.util.io.randomaccess.PageFile;
@@ -36,7 +38,7 @@ public class Grand3Resimulate<A extends AlignedReadsData> extends GediProgram {
 
 	
 	
-	public Grand3Resimulate(Grand3ParameterSet params) {
+	public Grand3Resimulate(Grand3ParameterSet params,boolean hasMappedTarget) {
 		addInput(params.nthreads);
 		addInput(params.genomic);
 		addInput(params.reads);
@@ -44,9 +46,15 @@ public class Grand3Resimulate<A extends AlignedReadsData> extends GediProgram {
 		addInput(params.snpFile);
 		addInput(params.strandnessFile);
 		addInput(params.clipFile);
+		addInput(params.pseudobulkFile);
+		addInput(params.pseudobulkName);
+		addInput(params.pseudobulkMinimalPurity);
 		addInput(params.experimentalDesignFile);
 		addInput(params.subreadSemanticFile);
-		addInput(params.targetBinFile);
+		if (hasMappedTarget)
+			addInput(params.pseudobulkBinFile);
+		else
+			addInput(params.targetBinFile);
 		addInput(params.modelFile);
 		addInput(params.modelBinFile);
 		addInput(params.estimMethod);
@@ -73,6 +81,9 @@ public class Grand3Resimulate<A extends AlignedReadsData> extends GediProgram {
 		File snpFile = getParameter(pind++); 
 		File strandnessFile = getParameter(pind++); 
 		File clipFile = getParameter(pind++);
+		String pseudobulkFile = getParameter(pind++);
+		String pseudobulkName = getParameter(pind++);
+		double pseudobulkMinimalPurity = getDoubleParameter(pind++);
 		File designFile = getParameter(pind++);
 		File subreadFile = getParameter(pind++); 
 		File targetFile = getParameter(pind++); 
@@ -97,6 +108,22 @@ public class Grand3Resimulate<A extends AlignedReadsData> extends GediProgram {
 		context.getLog().info("Read "+masked.size()+" SNPs!");
 		context.getLog().info("Strandness: "+strandness);
 		context.getLog().info("Clipping: "+clipping);
+		
+		int[][] targetMapping;
+		String[] pseudobulkNames;
+		if (pseudobulkFile!=null) {
+			context.getLog().info("Mapping output conditions using the file "+pseudobulkFile);
+			PseudobulkDefinition psdef = new PseudobulkDefinition(pseudobulkFile,design,context.getLog(),pseudobulkMinimalPurity);
+			targetMapping = psdef.getCellsToPseudobulk();
+			pseudobulkNames = psdef.getPseudobulkNames();
+			context.getLog().info("Output conditions n="+pseudobulkNames.length);
+		}
+		else {
+			context.getLog().info("Using output conditions as in experimental design");
+			targetMapping = null;
+			pseudobulkNames = null;
+		}
+		
 		
 		MismatchMatrix mmMat = new MismatchMatrix(mmFile, design, subreads);
 		
@@ -128,7 +155,9 @@ public class Grand3Resimulate<A extends AlignedReadsData> extends GediProgram {
 				getOutputFile(0),
 				design,
 				subreads,
-				resim);
+				resim,
+				pseudobulkNames,
+				targetMapping);
 		
 		
 		return null;

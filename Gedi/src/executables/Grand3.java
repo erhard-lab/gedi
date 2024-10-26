@@ -38,7 +38,7 @@ public class Grand3 {
 				new Grand3ProcessTargets(params, hasMappedTarget, hasTargetMixmat),
 				hasTargetMixmat? null: new Grand3OutputFlatfiles(params, hasMappedTarget),
 				new Grand3WriteAllPseudobulkFile(params),
-				hasTargetMixmat? null: new Grand3Resimulate<>(params),
+				hasTargetMixmat? null: new Grand3Resimulate<>(params, hasMappedTarget),
 				new Grand3BurstMcmcOutput<>(params)
 				);
 		

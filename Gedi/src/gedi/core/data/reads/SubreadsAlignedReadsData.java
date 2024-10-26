@@ -11,6 +11,8 @@ import gedi.core.region.GenomicRegionStorage;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.core.region.ReferenceGenomicRegion;
 import gedi.util.ArrayUtils;
+import gedi.util.datastructure.array.sparse.AutoSparseDenseIntArrayCollector;
+import gedi.util.datastructure.collections.intcollections.IntArrayList;
 import gedi.util.datastructure.collections.intcollections.IntIterator;
 import gedi.util.functions.EI;
 import gedi.util.io.randomaccess.BinaryReader;
@@ -173,8 +175,89 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 		return re;
 	}
 	
-
+	/**
+	 * 
+	 * @param mapping is oldconditions->newconditions
+	 * @return
+	 */
+	public SubreadsAlignedReadsData selectMergeConditions(int numNewConditions, int[][] mapping) {
+		int[][] nonzerore = new int[getDistinctSequences()][];
+		int[][] countre = new int[getDistinctSequences()][];
+		
+		if (hasNonzeroInformation()) {
+			if (numNewConditions>5) {
+				IntArrayList nonzerol = new IntArrayList(3);
+				IntArrayList countl = new IntArrayList(3);
+				for (int d=0; d<getDistinctSequences(); d++)  {
+					for (int n=0; n<nonzeros[d].length; n++) {
+						int oldcond = nonzeros[d][n];
+						int count = this.count[d][n];
+						
+						for (int newcond : mapping[oldcond]) {
+							nonzerol.add(newcond);
+							countl.add(count);
+						}
+					}
+					
+					// now we collected everything, but it might not be unique (and is not sorted)
+					int[] nonzeroraw = nonzerol.getRaw();
+					int[] countraw = countl.getRaw();
+					ArrayUtils.parallelSort(nonzeroraw, countraw,0,nonzerol.size());
+					int newlen = makeUnique(nonzerol.size(), nonzeroraw,countraw);
+					
+					nonzerore[d] = ArrayUtils.slice(nonzeroraw, 0, newlen);
+					countre[d] = ArrayUtils.slice(countraw, 0, newlen);
+					
+					countl.clear();
+					nonzerol.clear();
+				}
+			} else {
+				for (int d=0; d<getDistinctSequences(); d++)  {
+					countre[d] = new int[numNewConditions];
+					
+					for (int n=0; n<nonzeros.length; n++) {
+						int oldcond = nonzeros[d][n];
+						int count = this.count[d][n];
+						
+						for (int newcond : mapping[oldcond]) {
+							countre[d][newcond]+=count;							
+						}
+					}
+				}
+			}
+		} else {
+			for (int d=0; d<getDistinctSequences(); d++)  {
+				countre[d] = new int[numNewConditions];
+				
+				for (int n=0; n<count.length; n++) {
+					int oldcond = n;
+					int count = this.count[d][n];
+					
+					for (int newcond : mapping[oldcond]) {
+						countre[d][newcond]+=count;							
+					}
+				}
+			}
+		}
+		
+		return SubreadsAlignedReadsData.create(numNewConditions, countre, nonzerore, this.var, this.indels, this.subreadGeom, this.gaps);
+	}
 	
+	private static int makeUnique(int len, int[] s, int[] c) {
+		int index = 0;
+		for (int i=index+1; i<len; i++) {
+			if (s[i]!=s[index]) {
+				index++;
+				s[index]=s[i];
+				c[index]=c[i];
+			} else {
+				c[index]+=c[i];
+			}
+		}
+		return index+1;
+	}
+
+
 	public static int compare(SubreadsAlignedReadsData a, int ai, SubreadsAlignedReadsData b, int bi) {
 		int re = ArrayUtils.compare(a.var[ai],b.var[bi]);
 		if (re!=0) return re;
@@ -197,6 +280,8 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 			System.out.println();
 			
 		}
+		
+		
 	}
 
 

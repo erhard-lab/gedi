@@ -112,6 +112,10 @@ public abstract class GediProgram {
 		return (T)inputSpec.get(index).get();
 	}
 	
+	protected <T> GediParameter<T> getInput(int index) {
+		return (GediParameter)inputSpec.get(index);
+	}
+	
 	protected <T> ArrayList<T> getParameters(int index) {
 		return ( ArrayList<T>)inputSpec.get(index).getList();
 	}
@@ -136,6 +140,9 @@ public abstract class GediProgram {
 		return (T)inputSpec.get(name).get();
 	}
 
+	protected <T> GediParameter<T> getInput(String name) {
+		return (GediParameter)inputSpec.get(name);
+	}
 	
 	protected void setOutput(int index, int value) {
 		GediParameter p = outputSpec.get(index);

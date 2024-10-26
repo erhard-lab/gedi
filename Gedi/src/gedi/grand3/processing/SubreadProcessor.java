@@ -25,6 +25,8 @@ import gedi.grand3.reads.ReadSource;
 import gedi.grand3.targets.SnpData;
 import gedi.grand3.targets.TargetCollection;
 import gedi.util.SequenceUtils;
+import gedi.util.datastructure.collections.intcollections.IntArrayList;
+import gedi.util.datastructure.mapping.OneToManyMapping;
 import gedi.util.dynamic.DynamicObject;
 import gedi.util.functions.CompoundParallelizedState;
 import gedi.util.functions.EI;
@@ -64,34 +66,38 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 	
 	
 	public void writeSubreads(Supplier<Progress> progress, 
-			TargetCollection targets, File output, ExperimentalDesign design, String[] subreads, Resimulator resimulator) throws IOException {
+			TargetCollection targets, File output, ExperimentalDesign design, String[] subreads, Resimulator resimulator, String[] newConditions, int[][] conditionMapping) throws IOException {
+		
+		
+		ExtendedIterator<ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>> srit = targets.iterateRegions()
+			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r.getData()))
+			.parallelizedState(nthreads, 5, resimulator==null?null:resimulator.createState(),(ei,resim)->ei.unfold(target->{
+				
+				if (resimulator==null) 
+					return source.getSubReads(target, null);
+				
+				ImmutableReferenceGenomicRegion<String>  currentTargetExtended = new ImmutableReferenceGenomicRegion<>(
+						target.getReference(), 
+						target.getRegion().extendAll(100000, 100000).intersect(0, genomic.getLength(target.getReference().getName())),
+						target.getData());
+				char[] targetSeq = genomic.getSequence(currentTargetExtended).toString().toUpperCase().toCharArray();
+				resim.setSequence(currentTargetExtended,targetSeq);
+				
+				return source.getSubReads(target,null).map(r->{
+					targets.classify(target, r, source.getStrandness(), true, resim);
+					return resimulator.resimulate(resim,r);
+				}).removeNulls();
+			}))
+			.iff(progress!=null,ei->ei.progress(progress.get(), -1, r->"Finished subreads"));
+		
+		if (newConditions!=null) {
+			srit = srit.map(r->new ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>(r.getReference(),r.getRegion(),r.getData().selectMergeConditions(newConditions.length, conditionMapping )));		
+		}
 		
 		CenteredDiskIntervalTreeStorage<SubreadsAlignedReadsData> scit = new CenteredDiskIntervalTreeStorage<>(output.getPath(),SubreadsAlignedReadsData.class);
+		scit.fill(srit,progress.get());
 		
-		scit.fill(targets.iterateRegions()
-				.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r.getData()))
-				.parallelizedState(nthreads, 5, resimulator==null?null:resimulator.createState(),(ei,resim)->ei.unfold(target->{
-					
-					if (resimulator==null) 
-						return source.getSubReads(target, null);
-					
-					ImmutableReferenceGenomicRegion<String>  currentTargetExtended = new ImmutableReferenceGenomicRegion<>(
-							target.getReference(), 
-							target.getRegion().extendAll(100000, 100000).intersect(0, genomic.getLength(target.getReference().getName())),
-							target.getData());
-					char[] targetSeq = genomic.getSequence(currentTargetExtended).toString().toUpperCase().toCharArray();
-					resim.setSequence(currentTargetExtended,targetSeq);
-					
-					return source.getSubReads(target,null).map(r->{
-						targets.classify(target, r, source.getStrandness(), true, resim);
-						return resimulator.resimulate(resim,r);
-					}).removeNulls();
-				}))
-				.iff(progress!=null,ei->ei.progress(progress.get(), -1, r->"Finished subreads")),
-				progress.get()
-				);
-		
-		DynamicObject cond = DynamicObject.from("conditions", DynamicObject.arrayOfObjects("name", EI.seq(0, design.getCount()).map(index->design.getFullName(index))));
+		DynamicObject cond = newConditions!=null?DynamicObject.from("conditions", DynamicObject.arrayOfObjects("name", newConditions)):DynamicObject.from("conditions", DynamicObject.arrayOfObjects("name", EI.seq(0, design.getCount()).map(index->design.getFullName(index))));
 		DynamicObject subr = DynamicObject.from("subreads", DynamicObject.from(subreads));
 		scit.setMetaData(DynamicObject.merge(cond,subr));
 
@@ -103,7 +109,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 			SubreadCounter... counter) {
 		
 		process(progress,
-				targets,a->a,
+				targets,new OneToManyMapping<String,String>(),
 				new DummyTargetCounter(),
 				counter)
 		.drain();
@@ -111,7 +117,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 	}
 	
 	public <T extends TargetCounter<T,R>,R> ExtendedIterator<R> process(Supplier<Progress> progress, 
-			TargetCollection targets, UnaryOperator<String> mapper,
+			TargetCollection targets, OneToManyMapping<String,String> mapper,
 			T res,
 			SubreadCounter... counter) {
 		
@@ -125,7 +131,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		int num;
 		if (res.mergeWithSameName()) {
 			logger.info("Checking target names...");
-			HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<String>>> merge = targets.iterateRegions().indexMulti(r->mapper.apply(r.getData()));
+			HashMap<String, ArrayList<ImmutableReferenceGenomicRegion<String>>> merge = targets.iterateRegions().indexMulti(r->mapper.inverse(r.getData()));
 			num = merge.size();
 			it = EI.wrap(merge.values());
 			
@@ -143,11 +149,11 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 			.iff(progress!=null,ei->ei.progress(progress.get(), num, r->"Processing "+r.get(0).getData()))
 			.parallelizedState(nthreads, 5, state, (ei,b)->ei.map(targetset->{
 				TargetCounter<T, R> t = b.get(1);
-				t.startTarget(mapper.apply(targetset.get(0).getData()));
+				t.startChunk();
 				for (ImmutableReferenceGenomicRegion<String> target : targetset) {
 					processTarget(targets,target,b);
 				}
-				return t.getResultForCurrentTarget();
+				return t.getResultsForCurrentTargets();
 			}))
 			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Finished"))
 			.unfold(l->EI.wrap(l));
@@ -294,7 +300,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		}
 		
 		@Override
-		public void startTarget(String currentTarget) {
+		public void startChunk() {
 		}
 
 		@Override
@@ -302,7 +308,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		}
 
 		@Override
-		public List<Integer> getResultForCurrentTarget() {
+		public List<Integer> getResultsForCurrentTargets() {
 			return Arrays.asList(1);
 		}
 		

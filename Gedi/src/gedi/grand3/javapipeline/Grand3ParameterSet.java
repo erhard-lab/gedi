@@ -86,9 +86,10 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<Boolean> profile = new GediParameter<Boolean>(this,"profile", "Compute and output the likelihood profiles (implies -ci)!",false, new BooleanParameterType());
 	
 	public GediParameter<Boolean> resim = new GediParameter<Boolean>(this,"resim", "Resimulate reads",false, new BooleanParameterType());
+	public GediParameter<String> resimName = new GediParameter<String>(this,"resimName", "Name for resim",false, new StringParameterType(),"resim");
 	public GediParameter<ResimulatorModelType> resimModelType = new GediParameter<ResimulatorModelType>(this,"resim-model", "Which model for resimulate (default: Do not resimulate, but write the reads as is).",false, new EnumParameterType<ResimulatorModelType>(ResimulatorModelType.class),true);
 	public GediParameter<Long> resimSeed = new GediParameter<Long>(this,"resim-seed", "Seed for resimulation.",false, new LongParameterType(),1337L);
-	public GediParameter<File> resimFile = new GediParameter<File>(this,"${prefix}.resim.${resim-model}.cit", "File containing the resimulated reads", false, new FileParameterType());
+	public GediParameter<File> resimFile = new GediParameter<File>(this,"${prefix}.${resimName}.${resim-model}.cit", "File containing the resimulated reads", false, new FileParameterType());
 	
 	public GediParameter<File> burstMCMCFile = new GediParameter<File>(this,"${prefix}.burstMCMC.txt", "File containing the burstMCMC inputs", false, new FileParameterType());
 	
@@ -111,7 +112,7 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<Double> pseudobulkMinimalPurity = new GediParameter<Double>(this,"pseudobulkPurity", "The minimal purity (how many cells are from a single library/sample) of a pseudobulk sample to estimate the parameters.", false, new DoubleParameterType(),0.95);
 	
 	public GediParameter<File> pseudobulkBinFile = new GediParameter<File>(this,"${prefix}.pseudobulk.${targetsName}.${pseudobulkName}.bin", "File containing the raw estimates per pseudobulk target", false, new FileParameterType(true)) ;
-	public GediParameter<File> pseudobulkFolder = new GediParameter<File>(this,"${prefix}.pseudobulk.${targetsName}.${pseudobulkName}", "Folder containing sparse matrices of all estimates per pseudobulk target", false, new FileParameterType());
+	public GediParameter<File> pseudobulkFolder = new GediParameter<File>(this, "${prefix}.pseudobulk.${targetsName}.${pseudobulkName}", "Folder containing sparse matrices of all estimates per pseudobulk target", false, new FileParameterType());
 
 	public GediParameter<String> jointModel = new GediParameter<String>(this,"jointModel", "Definition of which models to estimate jointly (done on the . separated name, i.e. this should be a 1010110 with as many digits as . separated fields, and samples with the same remaining name after removing 0 fields are joined)", false, new StringParameterType(),true);
 
