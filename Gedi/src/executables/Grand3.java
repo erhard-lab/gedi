@@ -53,7 +53,9 @@ public class Grand3 {
 		return "3.0.3:\n"
 				+ " introduced the -restrict-subreads parameter\n\n"+
 				"3.0.4:\n"
-				+ " implemented 5' sequencing (10x): antisense with UMIs\n per gene output for the MixMatrices\n\n"
+				+ " implemented 5' sequencing (10x): antisense with UMIs\n per gene output for the MixMatrices\n\n"+
+				"3.0.5:\n"
+				+ " implemented output for splice acceptor sites\n\n"
 				;
 	}
 		
