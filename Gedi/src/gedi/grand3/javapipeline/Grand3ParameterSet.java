@@ -98,6 +98,7 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<File> modelBinFile = new GediParameter<File>(this,"${prefix}.model.parameters.bin", "File containing the mixture model parameters", false, new FileParameterType());
 	
 	public GediParameter<ModelEstimationMethod> estimMethod = new GediParameter<ModelEstimationMethod>(this, "estim", "Which method to use for estimating the global parameters. If more than one are given, the first is used to estimate target parameters", true, new EnumParameterType<>(ModelEstimationMethod.class),ModelEstimationMethod.Full);
+	public GediParameter<Integer> maxIter = new GediParameter<Integer>(this, "maxit", "Maximal number of iterations for Nelder Mead", false, new IntParameterType(),1000);
 	
 	public GediParameter<String> targetMixmat = new GediParameter<String>(this,"targetMixmat", "Which target to output the MixMatrix for", false, new StringParameterType(),true);
 	public GediParameter<File> targetMixmatFile = new GediParameter<File>(this,"${prefix}.mixmatrices/${targetMixmat}.knmatrix.tsv.gz", "Mixmatrix for the given target", false, new FileParameterType());

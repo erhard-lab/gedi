@@ -123,6 +123,8 @@ public class MaskErrorComponentModelEstimator extends ModelEstimator {
 		KNMatrixElement[] masked = computeOnlyConversionComponent(data, m);
 		
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
+		estimator.setMaxIter(maxIter);
+		
 		Grand3MaskedBinomialModel model = new Grand3MaskedBinomialModel();
 		MaximumLikelihoodParametrization re = estimator.fit(model,model.createPar(0.05), masked);
 
@@ -153,6 +155,8 @@ public class MaskErrorComponentModelEstimator extends ModelEstimator {
 		KNMatrixElement[] masked = computeOnlyConversionComponent(data, m);
 		
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
+		estimator.setMaxIter(maxIter);
+		
 		Grand3MaskedTruncatedBetaBinomialModel model = new Grand3MaskedTruncatedBetaBinomialModel(m);
 		MaximumLikelihoodParametrization re = estimator.fit(model,model.createPar(0.05,4.5), masked);
 		//estimator.computeProfileLikelihoodPointwiseConfidenceIntervals(model, re, masked);
@@ -181,6 +185,7 @@ public class MaskErrorComponentModelEstimator extends ModelEstimator {
 		double r = (pre_perr[1]-pre_perr[0])/2;
 		
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
+		estimator.setMaxIter(maxIter);
 		
 		// part 1: p.conv or p.mconv/shape
 		Grand3MaskedBinomialModel binomModel = new Grand3MaskedBinomialModel(2);

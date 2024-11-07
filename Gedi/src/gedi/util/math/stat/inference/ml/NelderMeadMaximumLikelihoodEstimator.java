@@ -26,13 +26,15 @@ public class NelderMeadMaximumLikelihoodEstimator implements MaximumLikelihoodEs
 	private int nthreads = Math.max(Runtime.getRuntime().availableProcessors(),8);
 	private double bounds_eps = 1E-4;
 	private int profilePoints = 100;
+	private int maxIter = 1000;
 	
 	
 	public NelderMeadMaximumLikelihoodEstimator() {
 	}
-	public NelderMeadMaximumLikelihoodEstimator(double confidenceLevel, int nthreads, double bounds_eps, int profilePoints) {
+	public NelderMeadMaximumLikelihoodEstimator(double confidenceLevel, int nthreads, int maxIter, double bounds_eps, int profilePoints) {
 		this.confidenceLevel = 1-0.5*(1-confidenceLevel);
 		this.nthreads = nthreads;
+		this.maxIter = maxIter;
 		this.bounds_eps = bounds_eps;
 		this.profilePoints = profilePoints;
 	}
@@ -40,6 +42,10 @@ public class NelderMeadMaximumLikelihoodEstimator implements MaximumLikelihoodEs
 	
 	public void setNthreads(int nthreads) {
 		this.nthreads = nthreads;
+	}
+	
+	public void setMaxIter(int maxIter) {
+		this.maxIter = maxIter;
 	}
 
 	protected NelderMeadSetup addParameterBounds(MaximumLikelihoodParametrization par, NelderMeadSetup setup, boolean[] fixed) {
@@ -66,7 +72,7 @@ public class NelderMeadMaximumLikelihoodEstimator implements MaximumLikelihoodEs
 //		nm.setReltol(0);
 		nm.setAbstol(1E-4);
 		nm.setFnscale(-1);
-		nm.setMaxit(1000);
+		nm.setMaxit(maxIter);
 		
 		double[] param = par.params.clone();
 		double start = model.logLik(data,param);
@@ -111,7 +117,7 @@ public class NelderMeadMaximumLikelihoodEstimator implements MaximumLikelihoodEs
 //		nm.setReltol(0);
 		nm.setAbstol(1E-4);
 		nm.setFnscale(-1);
-		nm.setMaxit(1000);
+		nm.setMaxit(maxIter);
 		double opt = model.logLik(data, par);//par.logLik;
 		Vector<String> errs = new Vector<>();
 		
@@ -203,7 +209,7 @@ public class NelderMeadMaximumLikelihoodEstimator implements MaximumLikelihoodEs
 //		nm.setReltol(0);
 		nm.setAbstol(1E-4);
 		nm.setFnscale(-1);
-		nm.setMaxit(1000);
+		nm.setMaxit(maxIter);
 		
 		double[] ox = x.clone();
 		double d = 0.001*x[p];

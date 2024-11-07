@@ -55,6 +55,7 @@ public class Grand3EstimateModel extends GediProgram {
 		addInput(params.introntol);
 		addInput(params.jointModel);
 		addInput(params.estimMethod);
+		addInput(params.maxIter);
 		
 		addInput(params.prefix);
 		addInput(params.test);
@@ -82,7 +83,7 @@ public class Grand3EstimateModel extends GediProgram {
 		int introntol = getIntParameter(pind++);
 		String joinModels = getParameter(pind++);
 		ArrayList<ModelEstimationMethod> estim = getParameters(pind++);
-
+		int maxIter = getIntParameter(pind++);
 		
 		String prefix = getParameter(pind++);
 		String test = getParameter(pind++);
@@ -171,6 +172,10 @@ public class Grand3EstimateModel extends GediProgram {
 			
 			context.getLog().info("Estimating models using "+method+" method...");
 			context.getLog().info(" with prior p.err distribution: "+estimator.getPriorPerr());
+			context.getLog().info(" and maximal number of iterations: "+maxIter);
+			
+			estimator.setMaxIter(maxIter);
+			
 			
 			ArrayList<ModelStructure> models = 
 				EI.seq(0, subreads.length)

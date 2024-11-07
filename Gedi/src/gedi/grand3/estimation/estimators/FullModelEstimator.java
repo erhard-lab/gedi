@@ -66,6 +66,7 @@ public class FullModelEstimator extends ModelEstimator {
 	protected MaximumLikelihoodParametrization fitBinom(KNMatrixElement[] data, double[] pre_perr, int t) {
 		Grand3BinomialMixtureModel binomModel = new Grand3BinomialMixtureModel();
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
+		estimator.setMaxIter(maxIter);
 		
 		double m = (pre_perr[0]+pre_perr[1])/2;
 		double r = (pre_perr[1]-pre_perr[0])/2;
@@ -108,7 +109,8 @@ public class FullModelEstimator extends ModelEstimator {
 		
 		Grand3SubreadsJointBinomialMixtureModel model = new Grand3SubreadsJointBinomialMixtureModel(deco);
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
-
+		estimator.setMaxIter(maxIter);
+		
 		
 		MaximumLikelihoodParametrization par = model.createPar(para);
 		MaximumLikelihoodParametrization re = estimator.fit(model,par, data);
@@ -122,6 +124,7 @@ public class FullModelEstimator extends ModelEstimator {
 		
 		Grand3TruncatedBetaBinomialMixtureModel tbbinomModel = new Grand3TruncatedBetaBinomialMixtureModel();
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
+		estimator.setMaxIter(maxIter);
 		
 		
 		double m = (pre_perr[0]+pre_perr[1])/2;
@@ -186,6 +189,7 @@ public class FullModelEstimator extends ModelEstimator {
 		
 		Grand3SubreadsJointTruncatedBetaBinomialMixtureModel model = new Grand3SubreadsJointTruncatedBetaBinomialMixtureModel(deco);
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
+		estimator.setMaxIter(maxIter);
 		
 		MaximumLikelihoodParametrization par = model.createPar(para);
 		MaximumLikelihoodParametrization re = estimator.fit(model,par, data);
@@ -201,6 +205,7 @@ public class FullModelEstimator extends ModelEstimator {
 		Grand3BinomialMixtureModel binomModel = new Grand3BinomialMixtureModel();
 		Grand3TruncatedBetaBinomialMixtureModel tbbinomModel = new Grand3TruncatedBetaBinomialMixtureModel();
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
+		estimator.setMaxIter(maxIter);
 		
 		
 		double[] pre_perr = this.pre_perr[model.getSubread()][model.getType()][model.getSample()];

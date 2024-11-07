@@ -55,7 +55,9 @@ public class Grand3 {
 				"3.0.4:\n"
 				+ " implemented 5' sequencing (10x): antisense with UMIs\n per gene output for the MixMatrices\n\n"+
 				"3.0.5:\n"
-				+ " implemented output for splice acceptor sites\n\n"
+				+ " implemented output for splice acceptor sites\n\n"+
+				"3.0.5a:\n"
+				+ " can now change maximal number of iterations\n\n"
 				;
 	}
 		

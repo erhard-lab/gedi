@@ -21,6 +21,7 @@ public abstract class ModelEstimator {
 	protected String[] subreads;
 	protected ExperimentalDesign design;
 	private boolean useGaussianWithoutno4sU;
+	protected int maxIter;
 	
 	public ModelEstimator(ExperimentalDesign design, Function<int[], KNMatrixElement[]> stiToData, double[][][][] pre_perr, String[] subreads, boolean useGaussianWithoutno4sU) {
 		this.design = design;
@@ -50,6 +51,10 @@ public abstract class ModelEstimator {
 		}
 		
 		return EI.wrap(new ModelStructure(s, t, i, binom, tbbinom));
+	}
+	
+	public void setMaxIter(int maxIter) {
+		this.maxIter = maxIter;
 	}
 	
 	
