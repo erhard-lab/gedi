@@ -505,6 +505,20 @@ public class SlamParameterEstimation {
 //		return EI.wrap(readBinomFile(path)).mapToDouble(m->m.total()).toDoubleArray();
 //	}
 	
+	public static void main(String[] args) throws IOException {
+		SlamParameterEstimation est = new SlamParameterEstimation(true);
+		BinomialMatrix[] As = readBinomFile("/home/erhard/tmp/lior/run_with_mereged/slam.binom.tsv", "", new String[] {"2_D_alk_75","4sUTP_0_hpf_75","4sUTP_0_hpf_comb_75","uninj_no_alk_75_forbg"});
+		System.out.println(As.length);
+		System.out.println(As[2].A.length);
+		double pre = Math.max(0, est.estimate(As[2].A,0.0006578,false));
+		System.out.println(Arrays.toString(As[2].A[0]));
+		System.out.println(Arrays.toString(As[2].A[1]));
+		System.out.println(Arrays.toString(As[2].A[51]));
+		System.out.println(Arrays.toString(As[2].A[52]));
+		System.out.println(pre);
+	}
+	
+	
 	/**
 	 * re is [conditions]
 	 * @param path

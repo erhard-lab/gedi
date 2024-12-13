@@ -34,12 +34,21 @@ cd bin
 mvn -f $INSTALL_DIR/gedi/Gedi package 
 ```
 
-This will create the folder defined in $INSTALL_DIR, and inside of $INSTALL_DIR, will generate a folder named gedi (containing the source code) and a folder named bin (containing the scripts and compiled program files) The second command just created a temporary variable containing the current working directory.
+This will create the folder defined in $INSTALL_DIR, and inside of $INSTALL_DIR, will generate a folder named gedi (containing the source code) and a folder named bin (containing the scripts and compiled program files). The second command just created a temporary variable containing the current working directory.
+
+The bin directory should contain the following files
+- bamlist2cit
+- gedi
+- Gedi-<VERSION>.jar
+- gedi.jar (softlink)
+- lib (subfolder)
+
+**Important**: Pay attention that the folder where you execute 'mvn ...' is empty!
 
 
 ## How to run
 There are two options:
-- Always call it with its full path (use the bin folder generated above instead of <BIN-FOLDER>):
+- Always call it with its full path (use the full path to the bin folder generated above instead of <BIN-FOLDER>):
 ```bash
 <BIN-FOLDER>/gedi -e Version
 ```

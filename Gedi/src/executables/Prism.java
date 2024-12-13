@@ -139,7 +139,9 @@ public class Prism {
 				+ "1.1.5a:\n"
 				+ "Set lower default priority to OtherIntoIntron.\n\n"
 				+ "1.1.6:\n"
-				+ "Fixed prioritization of genomic categories (prior to that if the same location was e.g. CDS for one and 5UTR for another transcript, CDS always won (no matter what priorities were defined).\n\n";
+				+ "Fixed prioritization of genomic categories (prior to that if the same location was e.g. CDS for one and 5UTR for another transcript, CDS always won (no matter what priorities were defined).\n\n"
+				+ "1.1.7:\n"
+				+ "If there are non-decoys in a lower priority category, they are now preferred over decoys in higher categories.\n\n";
 	}
 
 
@@ -1297,7 +1299,17 @@ public class Prism {
 				
 		
 		MutableMonad<HeaderLine> uheader = header;
-		if (restrictToBestAnnotation!=null)
+		if (restrictToBestAnnotation!=null) {
+			// if there are non-decoys, remove all decoys first!
+			re = re.map(af->{
+				boolean hasnondecoy = false;
+				for (int i=0; i<af.length; i++)
+					hasnondecoy |= !af[i][uheader.Item.get("Decoy")].equals("D");
+				if (!hasnondecoy)
+					return af;
+				return ArrayUtils.restrict(af, i->!af[i][uheader.Item.get("Decoy")].equals("D"));
+			});
+			// now restrict to best category
 			re = re.map(af->{
 				int best = restrictToBestAnnotation.valueOfCategory(af[0][uheader.Item.get("Category")]).ordinal();
 				for (int i=1; i<af.length; i++)
@@ -1306,6 +1318,7 @@ public class Prism {
 				int ubest = best;
 				return ArrayUtils.restrict(af, i->restrictToBestAnnotation.valueOfCategory(af[i][uheader.Item.get("Category")]).ordinal()==ubest);
 			});
+		}
 		
 		return re;
 	}
