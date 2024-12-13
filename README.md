@@ -39,7 +39,7 @@ This will create the folder defined in $INSTALL_DIR, and inside of $INSTALL_DIR,
 The bin directory should contain the following files
 - bamlist2cit
 - gedi
-- Gedi-<VERSION>.jar
+- Gedi-VERSION.jar (VERSION is the current version of gedi)
 - gedi.jar (softlink)
 - lib (subfolder)
 
