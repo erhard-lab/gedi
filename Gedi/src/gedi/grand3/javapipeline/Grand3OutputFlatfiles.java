@@ -160,7 +160,10 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		if (!res.isExonic()) System.out.println("Sparse output for introns not implemented yet!");
 		
 			numFeatures++; // must start with 1 in mm file, so this is correct
-			features.writef("%s\t%s\tGene Expression\t%s\t%d\n",res.getTarget(),sym.apply(res.getTarget()),res.getGenome(),g2l.get(res.getTarget()).N);
+			int len = 0;
+			if (g2l.get(res.getTarget())!=null)
+				len = g2l.get(res.getTarget()).N;
+			features.writef("%s\t%s\tGene Expression\t%s\t%d\n",res.getTarget(),sym.apply(res.getTarget()),res.getGenome(),len);
 			
 			IntIterator it = res.iterateCounts();
 			while (it.hasNext()) {
