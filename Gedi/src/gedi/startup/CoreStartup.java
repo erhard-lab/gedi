@@ -17,6 +17,7 @@ import gedi.util.io.text.jhp.display.DisplayTemplateGeneratorExtensionPoint;
 import gedi.util.io.text.tsv.formats.BedFileLoader;
 import gedi.util.io.text.tsv.formats.GediViewFileLoader;
 import gedi.util.io.text.tsv.formats.GffFileLoader;
+import gedi.util.io.text.tsv.formats.GtfFileLoader;
 import gedi.util.io.text.tsv.formats.LocationsFileLoader;
 import gedi.util.io.text.tsv.formats.NarrowPeakFileLoader;
 import gedi.util.job.pipeline.ClusterPipelineRunner;
@@ -42,6 +43,9 @@ public class CoreStartup implements Startup {
 
 		for (String ext : GffFileLoader.extensions)
 			WorkspaceItemLoaderExtensionPoint.getInstance().addExtension(GffFileLoader.class,ext);
+		
+		for (String ext : GtfFileLoader.extensions)
+			WorkspaceItemLoaderExtensionPoint.getInstance().addExtension(GtfFileLoader.class,ext);
 		
 		for (String ext : GediViewFileLoader.extensions)
 			WorkspaceItemLoaderExtensionPoint.getInstance().addExtension(GediViewFileLoader.class,ext);

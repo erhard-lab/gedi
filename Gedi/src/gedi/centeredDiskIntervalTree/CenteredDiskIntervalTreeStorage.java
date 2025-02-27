@@ -33,12 +33,6 @@ import gedi.util.mutable.MutableLong;
 import gedi.util.userInteraction.progress.Progress;
 
 
-/**
- * Does still not support paired end reads (MissingInformationIntronInformation)
- * @author erhard
- *
- * @param <D>
- */
 public class CenteredDiskIntervalTreeStorage<D>  implements GenomicRegionStorage<D> {
 	
 	public static final String MAGIC = "CDITS";
