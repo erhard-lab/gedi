@@ -12,8 +12,10 @@ public class BiMixtureModelResult implements BinarySerializable{
 	private double upper;
 	private double alpha;
 	private double beta;
+	private double integral;
+	
 	public BiMixtureModelResult() {}
-	public BiMixtureModelResult(double lower, double map, double upper, double alpha, double beta) {
+	public BiMixtureModelResult(double lower, double map, double upper, double alpha, double beta, double integral) {
 		if (Double.isNaN(lower) || Double.isNaN(map) || Double.isNaN(upper) || lower<0 || map<0 || upper<lower || map>1 || upper>1)
 			throw new RuntimeException("Invalid parameters!");
 		this.lower = lower;
@@ -21,6 +23,7 @@ public class BiMixtureModelResult implements BinarySerializable{
 		this.upper = upper;
 		this.alpha = alpha;
 		this.beta = beta;
+		this.integral = integral;
 	}
 	public double getLower() {
 		return lower;
@@ -37,10 +40,13 @@ public class BiMixtureModelResult implements BinarySerializable{
 	public double getBeta() {
 		return beta;
 	}
+	public double getIntegral() {
+		return integral;
+	}
 	@Override
 	public String toString() {
 		return "lower=" + lower + ", map=" + map + ", upper=" + upper + ", alpha=" + alpha + ", beta="
-				+ beta ;
+				+ beta + ", integral="+integral;
 	}
 	@Override
 	public int hashCode() {
@@ -49,7 +55,9 @@ public class BiMixtureModelResult implements BinarySerializable{
 		long temp;
 		temp = Double.doubleToLongBits(alpha);
 		result = prime * result + (int) (temp ^ (temp >>> 32));
-		temp = Double.doubleToLongBits(beta);
+		temp = Double.doubleToLongBits(upper);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		temp = Double.doubleToLongBits(integral);
 		result = prime * result + (int) (temp ^ (temp >>> 32));
 		temp = Double.doubleToLongBits(lower);
 		result = prime * result + (int) (temp ^ (temp >>> 32));
@@ -72,6 +80,8 @@ public class BiMixtureModelResult implements BinarySerializable{
 			return false;
 		if (Double.doubleToLongBits(beta) != Double.doubleToLongBits(other.beta))
 			return false;
+		if (Double.doubleToLongBits(integral) != Double.doubleToLongBits(other.integral))
+			return false;
 		if (Double.doubleToLongBits(lower) != Double.doubleToLongBits(other.lower))
 			return false;
 		if (Double.doubleToLongBits(map) != Double.doubleToLongBits(other.map))
@@ -91,6 +101,7 @@ public class BiMixtureModelResult implements BinarySerializable{
 			out.putFloat(upper);
 			out.putFloat(alpha);
 			out.putFloat(beta);
+			out.putFloat(integral);
 		}
 	}
 	@Override
@@ -103,10 +114,12 @@ public class BiMixtureModelResult implements BinarySerializable{
 			upper=-upper;
 			alpha = Double.NaN;
 			beta = Double.NaN;
+			integral = Double.NaN;
 		}
 		else {
 			alpha = in.getFloat();
 			beta = in.getFloat();
+			integral = in.getFloat();
 		}
 	}
 	

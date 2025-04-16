@@ -146,6 +146,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		LineWriter[][] ntrUpper = mkWriter(dir,"upper","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[][] ntrAlpha = mkWriter(dir,"alpha","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[][] ntrBeta = mkWriter(dir,"beta","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
+		LineWriter[][] ntrInte = mkWriter(dir,"integral","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shape = mkWriter2(dir,"shape","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shapeLLR = mkWriter2(dir,"llr","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shapeLL = mkWriter2(dir,"ll","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
@@ -186,6 +187,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 						ntrUpper[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getUpper());
 						ntrAlpha[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getAlpha());
 						ntrBeta[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBeta());
+						ntrInte[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getIntegral());
 					}
 					shape[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getShape());
 					shapeLLR[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getLogLikShape()-val.getShape().getLogLikGlobal());
@@ -203,6 +205,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		finishWriters(ntrUpper);
 		finishWriters(ntrAlpha);
 		finishWriters(ntrBeta);
+		finishWriters(ntrInte);
 		finishWriters(shape);
 		finishWriters(shapeLLR);
 		finishWriters(shapeLL);
@@ -314,16 +317,17 @@ public class Grand3OutputFlatfiles extends GediProgram {
 					for (int i=0; i<columnNames.length; i++)
 						if (design.getLabelForSample(columnToSample[i], design.getTypes()[t])!=null) {
 							if (res.get(t,i)!=null) {
-								out.writef("\t%.3f\t%.3f\t%.3f\t%.4f\t%.4f",
+								out.writef("\t%.3f\t%.3f\t%.3f\t%.4f\t%.4f\t%.4f",
 										res.get(t,i).getModel(type).getLower(),
 										res.get(t,i).getModel(type).getMap(),
 										res.get(t,i).getModel(type).getUpper(),
 										res.get(t,i).getModel(type).getAlpha(),
-										res.get(t,i).getModel(type).getBeta()
+										res.get(t,i).getModel(type).getBeta(),
+										res.get(t,i).getModel(type).getIntegral()
 										);
 							}
 							else
-								out.writef("\tNA\tNA\tNA\tNA\tNA");
+								out.writef("\tNA\tNA\tNA\tNA\tNA\tNA");
 						}
 			for (int t=0; t<design.getTypes().length; t++)
 				for (int i=0; i<columnNames.length; i++)
@@ -360,7 +364,8 @@ public class Grand3OutputFlatfiles extends GediProgram {
 			for (MetabolicLabelType t: design.getTypes())
 				for (int i=0; i<columnNames.length; i++)
 					if (design.getLabelForSample(columnToSample[i], t)!=null)
-						out.writef("\t%s %s %s NTR Lower CI\t%s %s %s NTR MAP\t%s %s %s NTR Upper CI\t%s %s %s alpha\t%s %s %s beta",
+						out.writef("\t%s %s %s NTR Lower CI\t%s %s %s NTR MAP\t%s %s %s NTR Upper CI\t%s %s %s alpha\t%s %s %s beta\t%s %s %s integral",
+								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString(),

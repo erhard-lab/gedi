@@ -291,12 +291,23 @@ public class RiboView {
 			experimentNames[e] = FileUtils.getFullNameWithoutExtension(prefix[e]);
 			models[e] = prefix[e]+".model";
 			
-			if (totalCountFile[e].endsWith("metadata.json")) {
+			Path p = Paths.get(prefix[e]+".orfs.cit");
+			GenomicRegionStorage<?> orfs = ((GenomicRegionStorage<?>) WorkspaceItemLoaderExtensionPoint.getInstance().get(p).load(p)).toMemory();
+
+			
+			if (totalCountFile[e]==null) {
+				log.info("Extract total read info from orfs.cit: "+prefix[e]);
+				totals[e] = orfs.ei().map(r->((PriceOrf)r.getData()).getActivitiesPerCondition()).reduce((n,re)->ArrayUtils.add(re,n));
+				names[e] = orfs.getMetaDataConditions();
+				
+			} else if (totalCountFile[e].endsWith("metadata.json")) {
+				log.info("Read total read info from metadata: "+prefix[e]);
 				DynamicObject json = DynamicObject.parseJson(new LineOrientedFile(totalCountFile[e]).readAllText2());
 				totals[e] = EI.wrap(json.getEntry("conditions").asArray()).mapToDouble(c->Math.max(1, c.getEntry("total").asDouble())).toDoubleArray();
 				names[e] = EI.wrap(json.getEntry("conditions").asArray()).map(c->c.getEntry("name").asString()).toArray(String.class);
 			}
 			else {
+				log.info("Read total read info from table: "+prefix[e]);
 				DataFrame df = Csv.toDataFrame(totalCountFile[e],true,0,null);
 				df.remove(df.getColumn(0));
 				names[e] = EI.seq(0, df.columns()).map(c->df.getColumn(c).name()).toArray(String.class);
@@ -309,9 +320,7 @@ public class RiboView {
 			condoptRmq[e] = EI.seq(0,names[e].length).map(s->uprefix+".opt."+s+".codons.rmq").toArray(String.class);
 			
 			
-			Path p = Paths.get(prefix[e]+".orfs.cit");
-			GenomicRegionStorage<?> orfs = ((GenomicRegionStorage<?>) WorkspaceItemLoaderExtensionPoint.getInstance().get(p).load(p)).toMemory();
-
+			
 			context.put("orfs"+e, orfs);
 			orfclass = orfs.getType();
 			
