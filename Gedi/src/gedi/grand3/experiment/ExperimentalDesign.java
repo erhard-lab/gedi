@@ -71,7 +71,7 @@ public class ExperimentalDesign {
 	private String[] libraries;
 	private String[] samples;
 	private String[] barcodes;
-	private MetabolicLabel[][] labels;
+	private MetabolicLabelType[][] labels;
 	
 	private int[] indexToIndex; // a dummy mapper for using it just like indexToSampleId
 	private int[] indexToSampleId;
@@ -79,10 +79,10 @@ public class ExperimentalDesign {
 	private int[][] sampleIdToIndices;
 	private int[][] libraryIdToIndices;
 	
-	private MetabolicLabel[][] labelsOfSamples; // as many as there are samples!
+	private MetabolicLabelType[][] labelsOfSamples; // as many as there are samples!
 	
 	
-	public ExperimentalDesign(String[] libraries, String[] samples, String[] barcodes, MetabolicLabel[][] labels) {
+	public ExperimentalDesign(String[] libraries, String[] samples, String[] barcodes, MetabolicLabelType[][] labels) {
 		
 		int n = libraries.length;
 		
@@ -100,7 +100,7 @@ public class ExperimentalDesign {
 		for (int i=0; i<n; i++) 
 			for (int l=0; l<labels[i].length; l++) 
 				if (labels[i][l]!=null)
-					typeOrder[l]=labels[i][l].getType();
+					typeOrder[l]=labels[i][l];
 		
 		for (int l=0; l<typeOrder.length; l++)
 			if (typeOrder[l]==null)
@@ -110,7 +110,7 @@ public class ExperimentalDesign {
 		this.indexToSampleId = new int[n];
 		this.indexToLibraryId = new int[n];
 		
-		ArrayList<MetabolicLabel[]> labelsOfSamples = new ArrayList<>();
+		ArrayList<MetabolicLabelType[]> labelsOfSamples = new ArrayList<>();
 		
 		HashMap<String,Integer> libraryId = new HashMap<String, Integer>();
 		HashMap<String,Integer> sampleId = new HashMap<String, Integer>();
@@ -137,9 +137,9 @@ public class ExperimentalDesign {
 			// as it is unclear where the labels are defined, just check this here (i.e. in every line)
 			for (int l=0; l<labels[i].length; l++) {
 				if (labels[i][l]!=null){
-					labelNameToLibraryId.computeIfAbsent(labels[i][l].getType(), x->new IntArrayList()).add(libraryId.get(libraries[i]));
+					labelNameToLibraryId.computeIfAbsent(labels[i][l], x->new IntArrayList()).add(libraryId.get(libraries[i]));
 					if (firstInSample) 
-						labelNameToSamples.computeIfAbsent(labels[i][l].getType(), x->new IntArrayList()).add(sampleId.get(sname));
+						labelNameToSamples.computeIfAbsent(labels[i][l], x->new IntArrayList()).add(sampleId.get(sname));
 				} 
 				else if (firstInSample) 
 					labelNameToSamplesNot.computeIfAbsent(typeOrder[l], x->new IntArrayList()).add(sampleId.get(sname));
@@ -158,7 +158,7 @@ public class ExperimentalDesign {
 		sampleIdToIndices = index(sampleId.size(), indexToSampleId);
 		libraryIdToIndices = index(libraryId.size(), indexToLibraryId);
 		
-		this.labelsOfSamples = labelsOfSamples.toArray(new MetabolicLabel[0][]);
+		this.labelsOfSamples = labelsOfSamples.toArray(new MetabolicLabelType[0][]);
 				
 	}
 
@@ -232,12 +232,12 @@ public class ExperimentalDesign {
 	}
 
 	
-	public MetabolicLabel getLabelForSample(int sampleId, MetabolicLabelType type) {
+	public MetabolicLabelType getLabelForSample(int sampleId, MetabolicLabelType type) {
 		int ti = ArrayUtils.linearSearch(typeOrder, type);
 		if (ti==-1) throw new RuntimeException("Fatal exception in experimental design: "+type);
 		return labelsOfSamples[sampleId][ti];
 	}
-	public MetabolicLabel getLabelForIndex(int index, MetabolicLabelType type) {
+	public MetabolicLabelType getLabelForIndex(int index, MetabolicLabelType type) {
 		int ti = ArrayUtils.linearSearch(typeOrder, type);
 		if (ti==-1) throw new RuntimeException("Fatal exception in experimental design: "+type);
 		return labels[index][ti];
@@ -276,15 +276,15 @@ public class ExperimentalDesign {
 		LineWriter out = new LineOrientedFile(f.getPath()).write();
 		out.write("Library\tSample\tBarcode");
 		for (MetabolicLabelType l : getTypes())
-			out.write("\t"+l.toString()+" concentration\t"+l.toString()+" duration\t"+l.toString()+" chase");
+			out.write("\t"+l.toString());
 		out.writeLine();
 		
 		int n = libraries.length;
 		for (int i=0; i<n; i++) {
 			out.writef("%s\t%s\t%s", libraries[i],samples[i],barcodes[i]);
 			for (int l=0; l<labels[i].length; l++) {
-				if (labels[i][l]==null) out.writef("\tNA\tNA\tNA");
-				else out.writef("\t%.0f\t%.2f\t%.2f",labels[i][l].getConcentration(),labels[i][l].getDuration(),labels[i][l].getChase());
+				if (labels[i][l]==null) out.writef("\t0");
+				else out.writef("\t1");
 			}
 			out.writeLine();
 		}
@@ -295,21 +295,21 @@ public class ExperimentalDesign {
 		ArrayList<String> libraries = new ArrayList<>();
 		ArrayList<String> samples = new ArrayList<>();
 		ArrayList<String> barcodes = new ArrayList<>();
-		ArrayList<MetabolicLabel[]> labels = new ArrayList<>();
+		ArrayList<MetabolicLabelType[]> labels = new ArrayList<>();
 		
 		ExtendedIterator<String[]> it = EI.lines(f).split('\t');
 		String[] header = it.next();
-		MetabolicLabelType[] types = EI.wrap(header).filter(s->s.endsWith(" concentration")).map(s->MetabolicLabelType.fromString(s.substring(0,s.indexOf(' ')))).toArray(MetabolicLabelType.class);
+		MetabolicLabelType[] types = EI.wrap(header).skip(3).map(s->MetabolicLabelType.fromString(s)).toArray(MetabolicLabelType.class);
 		
 		if (header[0].equals("Sample")) {
 			for (String[] a : it.loop()) {
 				libraries.add(a[0]);
 				samples.add("");
 				barcodes.add(a[1]);
-				MetabolicLabel[] label = new MetabolicLabel[types.length];
+				MetabolicLabelType[] label = new MetabolicLabelType[types.length];
 				for (int i=0; i<types.length; i++)
 					if (!a[i*3+2].equals("NA"))
-						label[i] = new MetabolicLabel(types[i],Double.parseDouble(a[i*3+2]), Double.parseDouble(a[i*3+3]), Double.parseDouble(a[i*3+4]));
+						label[i] = types[i];
 				labels.add(label);
 			}
 		}
@@ -318,26 +318,26 @@ public class ExperimentalDesign {
 				libraries.add(a[0]);
 				samples.add(a[1]);
 				barcodes.add(a[2]);
-				MetabolicLabel[] label = new MetabolicLabel[types.length];
+				MetabolicLabelType[] label = new MetabolicLabelType[types.length];
 				for (int i=0; i<types.length; i++)
 					if (!a[i*3+3].equals("NA"))
-						label[i] = new MetabolicLabel(types[i],Double.parseDouble(a[i*3+3]), Double.parseDouble(a[i*3+4]), Double.parseDouble(a[i*3+5]));
+						label[i] = types[i];
 				labels.add(label);
 			}
 		}
-		return new ExperimentalDesign(libraries.toArray(new String[0]),samples.toArray(new String[0]),barcodes.toArray(new String[0]),labels.toArray(new MetabolicLabel[0][0]));
+		return new ExperimentalDesign(libraries.toArray(new String[0]),samples.toArray(new String[0]),barcodes.toArray(new String[0]),labels.toArray(new MetabolicLabelType[0][0]));
 	}
 	
 	
-	public static final Pattern regex_no4sU = Pattern.compile("no4sU|no4TU|nos4U|\\.no\\.",Pattern.CASE_INSENSITIVE);
+	public static final Pattern[] regex_no_labels = {
+			Pattern.compile("(\\.|^)no4TU(\\.|$)|(\\.|^)no4sU(\\.|$)|(\\.|^)nos4U(\\.|$)",Pattern.CASE_INSENSITIVE),
+			Pattern.compile("(\\.|^)no6TG(\\.|$)|(\\.|^)no6sG(\\.|$)|(\\.|^)nos6G(\\.|$)",Pattern.CASE_INSENSITIVE)
+	};
 	public static final Pattern[] regex_labels = {
-			Pattern.compile("\\.4TU\\.|\\.4sU\\.|\\.s4U\\.",Pattern.CASE_INSENSITIVE),
-			Pattern.compile("\\.6TG\\.|6sG\\.|\\.s6G\\.",Pattern.CASE_INSENSITIVE)
+			Pattern.compile("(\\.|^)4TU(\\.|$)|(\\.|^)4sU(\\.|$)|(\\.|^)s4U(\\.|$)",Pattern.CASE_INSENSITIVE),
+			Pattern.compile("(\\.|^)6TG(\\.|$)|(\\.|^)6sG(\\.|$)|(\\.|^)s6G(\\.|$)",Pattern.CASE_INSENSITIVE)
 	};
 	public static final MetabolicLabelType[] types = {MetabolicLabelType._4sU,MetabolicLabelType._6sG};
-
-	public static final Pattern regex_duration = Pattern.compile("([0-9]+)(h|min)(\\.|$)");
-	public static final Pattern regex_conc = Pattern.compile("(\\d+)uM(\\.|$)");
 
 
 	public static ExperimentalDesign infer(Logger log, String[] libraryNames, File barcodeFile) throws IOException {
@@ -360,114 +360,60 @@ public class ExperimentalDesign {
 				barcodeMap.put(sample,new String[][] {new String[] {""},new String[] {""}});
 		}
 		
-		
-		int nlabels = EI.wrap(regex_labels).filter(regex->EI.wrap(libraryNames).str().filter(s->!regex_no4sU.matcher(s).find() && regex.matcher(s).find()).count()>0).countInt();
-		boolean hasno4sU = false;
-		if (nlabels==0)
-			for (int cond=0; cond<libraryNames.length; cond++) {
-				String[][] two = barcodeMap.get(libraryNames[cond]);
-				for (int i=0; i<two[0].length; i++) {
-					String c = libraryNames[cond]+"."+two[0][i];
-					if (regex_no4sU.matcher(c).find())
-						hasno4sU=true;
+		boolean[] haslabel = new boolean[types.length];
+		for (int l=0; l<libraryNames.length; l++) {
+			for (String[] sb : barcodeMap.get(libraryNames[l])) {
+				for (int p=0; p<types.length; p++) {
+					if (regex_no_labels[p].matcher(libraryNames[l]+"."+sb[0]).find())
+							haslabel[p]=true;
+					else if (regex_labels[p].matcher(libraryNames[l]+"."+sb[0]).find())
+						haslabel[p]=true;
 				}
 			}
+		}
+				
+		int nlabels = 0; for (boolean x : haslabel) if (x) nlabels++;
+		if (nlabels==0) {
+			haslabel[0] = true;
+			nlabels = 1;
+		}
 		
 		int total = EI.wrap(barcodeMap.values()).mapToInt(a->a[0].length).sum();
-		
-//		if (hasno4sU && nlabels>0)
-//			throw new RuntimeException("Cannot infer experimental design, there are sample named no4sU AND 4sU/6sG!");
 		
 		String[] libraries = new String[total];
 		String[] samples = new String[total];
 		String[] barcodes = new String[total];
-		MetabolicLabel[][] labels = new MetabolicLabel[total][];
+		MetabolicLabelType[][] labels = new MetabolicLabelType[total][];
 		int index = 0;
 		for (int cond=0; cond<libraryNames.length; cond++) {
 			String[][] two = barcodeMap.get(libraryNames[cond]);
 			for (int i=0; i<two[0].length; i++) {
 				String c = libraryNames[cond]+"."+two[0][i];
-				MetabolicLabel[] l = new MetabolicLabel[hasno4sU?1:Math.max(nlabels, 1)];
+				MetabolicLabelType[] lab = new MetabolicLabelType[nlabels];
 				
-				
-				if (hasno4sU) {
-					if (!regex_no4sU.matcher(c).find()) {
-						l[0]=new MetabolicLabel(types[0],inferNumber(regex_conc,c), inferNumber(regex_duration,c), 0);
-						if (l[0].getConcentration()==0 || l[0].getDuration()==0) 
-							l[0]=null;
-					}
-				}
-				else if (nlabels==0) {
-					l[0]=new MetabolicLabel(types[0],inferNumber(regex_conc,c), inferNumber(regex_duration,c), 0);
-					if (l[0].getConcentration()==0 || l[0].getDuration()==0) 
-						l[0]=null;
-				}
-				else {
-					for (int r=0; r<regex_labels.length; r++) {
-						Matcher m = regex_labels[r].matcher(c);
-						if (m.find()) {
-								l[r]=new MetabolicLabel(types[r],inferNumber(regex_conc,c), inferNumber(regex_duration,c), 0);
-								if (l[r].getConcentration()==0 || l[r].getDuration()==0) 
-									l[r]=null;
+				int li=0;
+				for (int l=0; l<haslabel.length; l++) {
+					if (haslabel[l]) {
+						lab[li]=types[0];
+						if (regex_no_labels[l].matcher(c).find()) {
+							lab[li]=null;
 						} 
+						li++;
 					}
 				}
-			
 			
 				libraries[index] = libraryNames[cond];
 				samples[index] = two[0][i];
 				barcodes[index] = two[1][i];
-				labels[index++] = l;
+				labels[index++] = lab;
 			}
 				
 			
 		}
 		
-		if (EI.wrap(labels).filter(a->a.length>1|a[0]!=null).count()==0) {
-			// only no4sU, this would crash grand3, but might be important for just counting reads the grand3 way
-			for (int i=0; i<labels.length; i++) 
-				labels[i][0] = new MetabolicLabel(types[0],1, 1, 0);
-		}
-		
-		
-//		if (
-//				EI.wrap(samples).mapToInt(s->s.length()==0?0:1).sum()==0 &&
-//						EI.wrap(barcodes).mapToInt(s->s.length()==0?0:1).sum()==0 &&
-//						EI.wrap(libraries).mapToInt(s->StringUtils.countChar(s, '.')>=2?0:1).sum()==0) {
-//			for (int i=0; i<libraries.length; i++) {
-//				int s = libraries[i].indexOf('.');
-//				int e = libraries[i].lastIndexOf('.');
-//				barcodes[i]=libraries[i].substring(e+1);
-//				samples[i]=libraries[i].substring(s+1,e);
-//				libraries[i]=libraries[i].substring(0,s);
-//			}
-//				
-//		}
-			
-		
-		
 		return new ExperimentalDesign(libraries, samples, barcodes, labels);
 	}
 
-	private static double inferNumber(Pattern pat, String s) {
-		Matcher m = pat.matcher(s);
-		double re = 1;
-		while (m.find()) {
-			re = Double.parseDouble(m.group(1));
-			// if directly followed by 4sU etc, return it immediately, otherwise use the last occurrence
-			for (int i=0; i<regex_labels.length; i++) {
-				Matcher m2 = regex_labels[i].matcher(s.substring(m.end()-1));
-				if (m2.find() && m2.start()==0) return re;
-			}
-		}
-		return re;
-	}
-
-
-	
-
-	
-	
 	
 
 }

@@ -73,7 +73,7 @@ public class ReadSource<A extends AlignedReadsData> {
 	
 	
 	public ExtendedIterator<ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>> getSubReads(ImmutableReferenceGenomicRegion<String> location, MismatchReporter reporter){
-		return converter.convert(location.toLocationString()+":"+location.getData(),location.getReference(), getReads(location).list(), reporter);
+		return converter.convert(location.toLocationString()+":"+location.getData(),location.getReference(), getReads(location).list(), reporter,null);
 	}
 	
 }

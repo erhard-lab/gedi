@@ -2,6 +2,7 @@ package gedi.core.data.reads.subreads;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.BarcodedAlignedReadsData;
@@ -10,6 +11,7 @@ import gedi.core.reference.ReferenceSequence;
 import gedi.core.region.GenomicRegionStorage;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.util.FileUtils;
+import gedi.util.functions.BiIntConsumer;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
 import gedi.util.io.text.HeaderLine;
@@ -28,8 +30,14 @@ public interface ToSubreadsConverter<A extends AlignedReadsData> {
 	String[] getSemantic();
 	boolean isReadByRead();
 	
+	default void logUsedTotal(Logger logger, int used, int total) {
+		logger.info(String.format("Reads or UMIs used/encountered: %d/%d (%.2f%%)\n", used, total,used*100.0/total));
+		if (total==0) logger.severe("No reads or UMIs encountered at all!");
+	}
+	
 	default ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> convert(
-			ImmutableReferenceGenomicRegion<? extends A> read, boolean sense, MismatchReporter reporter) {
+			ImmutableReferenceGenomicRegion<? extends A> read, boolean sense, MismatchReporter reporter,
+			BiIntConsumer usedTotal) {
 		throw new RuntimeException("can't do!");
 	}
 
@@ -37,9 +45,10 @@ public interface ToSubreadsConverter<A extends AlignedReadsData> {
 			String id,
 			ReferenceSequence reference, 
 			ArrayList<ImmutableReferenceGenomicRegion<A>> cluster,
-			MismatchReporter reporter) {
+			MismatchReporter reporter,
+			BiIntConsumer usedTotal) {
 		return EI.wrap(cluster).
-				map(r->convert(r,r.getReference().getStrand().equals(reference.getStrand()),reporter));
+				map(r->convert(r,r.getReference().getStrand().equals(reference.getStrand()),reporter,usedTotal));
 	}
 	
 	public static <A extends AlignedReadsData> ToSubreadsConverter<A> infer(GenomicRegionStorage<A> reads, boolean debug) {

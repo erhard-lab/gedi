@@ -48,6 +48,8 @@ public class MismatchPerPositionStatistics extends MismatchReporterWithSequence<
 		this.numCond = numCond;
 		
 		pCounter = new PositionCounter[catIndex(targets.getCategories()[targets.getCategories().length-1], true, true, true)+1];
+		for (int i=0; i<pCounter.length; i++)
+			pCounter[i] = new PositionCounter(rl1+rl2);
 	}
 	
 	public MismatchPerPositionStatistics setDebug(boolean debug) {
@@ -432,7 +434,7 @@ public class MismatchPerPositionStatistics extends MismatchReporterWithSequence<
 		System.out.println(r2);
 		
 		new GeneSpecificUmiSenseToSubreadsConverter(new String[] {"C"}, new String[] {"C"}, new String[] {"AA"})
-			.convert("ENSG00000228776",tr.getReference(), new ArrayList<>(Arrays.asList(r1,r2)), mm)
+			.convert("ENSG00000228776",tr.getReference(), new ArrayList<>(Arrays.asList(r1,r2)), mm,null)
 			.drain();
 		
 		mm.write(targets.getCategories(), new File("normal.tsv"),Strandness.Sense, new String[] {"Test"});

@@ -57,7 +57,11 @@ public class Grand3 {
 				"3.0.5:\n"
 				+ " implemented output for splice acceptor sites\n\n"+
 				"3.0.5a:\n"
-				+ " can now change maximal number of iterations\n\n"
+				+ " can now change maximal number of iterations\n\n"+
+				"3.0.6:\n"
+				+ " integral output\n experimental design now only contains a boolean for each label\n\n"+
+				"3.0.6a:\n"
+				+ " improved output for no cell barcode matching the barcodes.tsv; fixed a,b for sparse data\n\n"
 				;
 	}
 		

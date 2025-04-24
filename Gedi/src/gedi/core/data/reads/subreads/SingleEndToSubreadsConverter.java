@@ -8,6 +8,7 @@ import gedi.core.data.reads.HasSubreads;
 import gedi.core.data.reads.SubreadsAlignedReadsData;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.util.SequenceUtils;
+import gedi.util.functions.BiIntConsumer;
 
 public class SingleEndToSubreadsConverter implements ReadByReadToSubreadsConverter<DefaultAlignedReadsData> {
 	
@@ -31,7 +32,7 @@ public class SingleEndToSubreadsConverter implements ReadByReadToSubreadsConvert
 	
 	@Override
 	public ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> convert(
-			ImmutableReferenceGenomicRegion<? extends DefaultAlignedReadsData> read, boolean sense, MismatchReporter reporter) {
+			ImmutableReferenceGenomicRegion<? extends DefaultAlignedReadsData> read, boolean sense, MismatchReporter reporter,BiIntConsumer usedTotal) {
 
 		
 		HasSubreads subr = read.getData().asSubreads(sense);
@@ -87,6 +88,7 @@ public class SingleEndToSubreadsConverter implements ReadByReadToSubreadsConvert
 		fac.makeDistinct();
 		SubreadsAlignedReadsData data = fac.createSubread();
 		
+		if (usedTotal!=null) usedTotal.accept(1, 1);
 		ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> sread = new ImmutableReferenceGenomicRegion<>(sense?read.getReference():read.getReference().toOppositeStrand(), read.getRegion(), data);
 		if (debug) {
 			System.out.println("Convert:");

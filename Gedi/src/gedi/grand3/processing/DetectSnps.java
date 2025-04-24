@@ -7,16 +7,20 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.ReadCountMode;
 import gedi.core.data.reads.SubreadsAlignedReadsData;
+import gedi.core.data.reads.subreads.MismatchReporterWithSequence;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.grand3.reads.MismatchPerPositionStatistics;
 import gedi.grand3.reads.ReadSource;
 import gedi.grand3.targets.TargetCollection;
 import gedi.util.FunctorUtils.FilteredIterator;
 import gedi.util.datastructure.array.NumericArray;
+import gedi.util.datastructure.array.NumericArray.NumericArrayType;
+import gedi.util.functions.CompoundParallelizedState;
 import gedi.util.functions.ExtendedIterator;
 import gedi.util.genomic.CoverageAlgorithm;
 import gedi.util.userInteraction.progress.Progress;
@@ -71,17 +75,20 @@ public class DetectSnps<A extends AlignedReadsData>  {
 	 * @param posstat 
 	 * @throws IOException
 	 */
-	public void process(Supplier<Progress> progress, 
+	public void process(Logger log, Supplier<Progress> progress, 
 			TargetCollection targets,
 			String output, 
 			MismatchPerPositionStatistics posstat) throws IOException {
 		
 		AtomicLong senseCounter = new AtomicLong();
 		AtomicLong antisenseCounter = new AtomicLong();
+		CompoundParallelizedState state = new CompoundParallelizedState(posstat, NumericArray.createMemory(2, NumericArrayType.Integer));
 		
 		FilteredIterator<String> it = targets.iterateRegions()
 			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r.getData()))
-			.parallelizedState(nthreads, 5, posstat, (ei,pos)->ei.map(l->{
+			.parallelizedState(nthreads, 5, state, (ei,ss)->ei.map(l->{
+				MismatchReporterWithSequence<MismatchPerPositionStatistics> pos = ((MismatchReporterWithSequence<MismatchPerPositionStatistics>) ss.get(0));
+				NumericArray aa = ((NumericArray) ss.get(1));
 				
 				if (pos!=null)
 					pos.cacheRegion(l, 100_000);
@@ -93,7 +100,8 @@ public class DetectSnps<A extends AlignedReadsData>  {
 				}).list(); 
 						
 				// obtain all reads from both strands, in sense! does not matter, as mismatches per genomic position are counted, without paying attention to which mismatch it is!
-				ExtendedIterator<ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>> mapped = source.getConverter().convert(l.toLocationString()+":"+l.getData(),l.getReference(),list,pos);
+				ExtendedIterator<ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>> mapped = 
+						source.getConverter().convert(l.toLocationString()+":"+l.getData(),l.getReference(),list,pos,(u,t)->{aa.add(0, u); aa.add(1,t);});
 				
 				String re = findSnps(new ImmutableReferenceGenomicRegion<>(l.getReference().toStrandIndependent(),l.getRegion(),mapped));
 				senseCounter.addAndGet(co[0]);
@@ -110,6 +118,9 @@ public class DetectSnps<A extends AlignedReadsData>  {
 		
 		senseAntisense[0] = senseCounter.get();
 		senseAntisense[1] = antisenseCounter.get();
+		
+		NumericArray aa = ((NumericArray) state.get(1));
+		source.getConverter().logUsedTotal(log, aa.getInt(0), aa.getInt(1));
 		
 	}
 
@@ -194,5 +205,6 @@ public class DetectSnps<A extends AlignedReadsData>  {
 		return sb.toString();
 		
 	}
+
 	
 }

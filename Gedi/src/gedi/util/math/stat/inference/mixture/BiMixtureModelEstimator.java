@@ -53,13 +53,42 @@ public class BiMixtureModelEstimator {
 		double upper = 1-lower;
 		
 		double max = computeMAP();
+		
+		double ll_0 = loglik(0);
+		double ll_1 = loglik(1);
 		double ymax = loglik(max);
 		
-//		double left = bisect_inc(0,max,ymax+log(1E-3),1000,1E-6);
-//		double right = bisect_dec(max,1,ymax+log(1E-3),1000,1E-6);
+		double left;
+		double right;
+
+		if (ll_0>ymax && ll_1>max) {
+			
+			if (ll_0>ll_1) {
+				max = 0;
+				ymax = ll_0;
+			} else {
+				max = 1;
+				ymax = ll_1;
+			}
+			
+			left = 0;
+			right = 1;
+			
+		} else if (ll_0>ymax) {
+			max = 0;
+			ymax = ll_0;
+			left = 0;
+			right = ymax-ll_1<FastMath.log(1E3)?1:bisect(max,1,ymax+FastMath.log(1E-3),1000,1E-3);
+		} else if (ll_1>ymax) {
+			max = 1;
+			ymax = ll_1;
+			left = ymax-ll_0<FastMath.log(1E3)?0:bisect(0,max,ymax+FastMath.log(1E-3),1000,1E-3);
+			right = 1;
+		} else {
+			left = ymax-ll_0<FastMath.log(1E3)?0:bisect(0,max,ymax+FastMath.log(1E-3),1000,1E-3);
+			right = ymax-ll_1<FastMath.log(1E3)?1:bisect(max,1,ymax+FastMath.log(1E-3),1000,1E-3);
+		}
 		
-		double left = bisect(0,max,ymax+FastMath.log(1E-3),1000,1E-3);
-		double right = bisect(max,1,ymax+FastMath.log(1E-3),1000,1E-3);
 		double[] x = new double[100];
 		for (int i=0; i<x.length; i++)
 			x[i] = left+i/99.*(right-left);
@@ -242,22 +271,28 @@ public class BiMixtureModelEstimator {
 	
 	
 	public static void main(String[] args) {
-		BinomialDistribution e10 = new BinomialDistribution(10, 4E-4);
-		BinomialDistribution e11 = new BinomialDistribution(11, 4E-4);
-		BinomialDistribution m10 = new BinomialDistribution(10, 0.05);
-		BinomialDistribution m11 = new BinomialDistribution(11, 0.05);
-		//> set.seed(42)
-		//> mm=CreateMixMatrix(n.vector=c(0,0,0,0,0,0,0,0,0,10,10),par=model.par(ntr=0.5))
-		//> fit.ntr(mm,model.par(),beta.approx = TRUE,plot=TRUE)
-		BiMixtureModelData[] data = {
-				new BiMixtureModelData(m10.logProbability(0), e10.logProbability(0), 6),
-				new BiMixtureModelData(m10.logProbability(1), e10.logProbability(1), 3),
-				new BiMixtureModelData(m10.logProbability(2), e10.logProbability(2), 1),
-				new BiMixtureModelData(m11.logProbability(0), e11.logProbability(0), 7),
-				new BiMixtureModelData(m11.logProbability(1), e11.logProbability(1), 0),
-				new BiMixtureModelData(m11.logProbability(2), e11.logProbability(2), 3)
-		};
+//		BinomialDistribution e10 = new BinomialDistribution(10, 4E-4);
+//		BinomialDistribution e11 = new BinomialDistribution(11, 4E-4);
+//		BinomialDistribution m10 = new BinomialDistribution(10, 0.05);
+//		BinomialDistribution m11 = new BinomialDistribution(11, 0.05);
+//		//> set.seed(42)
+//		//> mm=CreateMixMatrix(n.vector=c(0,0,0,0,0,0,0,0,0,10,10),par=model.par(ntr=0.5))
+//		//> fit.ntr(mm,model.par(),beta.approx = TRUE,plot=TRUE)
+//		BiMixtureModelData[] data = {
+//				new BiMixtureModelData(m10.logProbability(0), e10.logProbability(0), 6),
+//				new BiMixtureModelData(m10.logProbability(1), e10.logProbability(1), 3),
+//				new BiMixtureModelData(m10.logProbability(2), e10.logProbability(2), 1),
+//				new BiMixtureModelData(m11.logProbability(0), e11.logProbability(0), 7),
+//				new BiMixtureModelData(m11.logProbability(1), e11.logProbability(1), 0),
+//				new BiMixtureModelData(m11.logProbability(2), e11.logProbability(2), 3)
+//		};
 		
+		
+		BinomialDistribution e = new BinomialDistribution(21, 0.002109);
+		BinomialDistribution m = new BinomialDistribution(21, 0.0452);
+		BiMixtureModelData[] data = {
+				new BiMixtureModelData(m.logProbability(1), e.logProbability(1), 1)
+		};
 
 		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
 	}

@@ -2,6 +2,7 @@ package gedi.core.data.reads.subreads;
 
 import gedi.core.data.reads.SubreadsAlignedReadsData;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
+import gedi.util.functions.BiIntConsumer;
 
 public class NoopToSubreadsConverter implements ReadByReadToSubreadsConverter<SubreadsAlignedReadsData> {
 	
@@ -25,7 +26,7 @@ public class NoopToSubreadsConverter implements ReadByReadToSubreadsConverter<Su
 	
 	@Override
 	public ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> convert(
-			ImmutableReferenceGenomicRegion<? extends SubreadsAlignedReadsData> read, boolean sense, MismatchReporter reporter) {
+			ImmutableReferenceGenomicRegion<? extends SubreadsAlignedReadsData> read, boolean sense, MismatchReporter reporter,BiIntConsumer usedTotal) {
 		
 		SubreadsAlignedReadsData re = read.getData();
 		for (int d=0; d<re.getDistinctSequences(); d++) {
@@ -37,7 +38,7 @@ public class NoopToSubreadsConverter implements ReadByReadToSubreadsConverter<Su
 						reporter.reportMismatch(v, re.getSubreadIndexForPosition(d, re.getMismatchPos(d, v), read.getRegion().getTotalLength())>0, true);
 			}
 		}
-		
+		if (usedTotal!=null) usedTotal.accept(1, 1);
 		return (ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>) read;
 		
 	}

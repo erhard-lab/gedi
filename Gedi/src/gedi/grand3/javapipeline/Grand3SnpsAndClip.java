@@ -123,7 +123,7 @@ public class Grand3SnpsAndClip<A extends AlignedReadsData> extends GediProgram {
 		
 		DetectSnps<A> algo = new DetectSnps<>(source, conv, pvalCutoff, blacklist);
 		algo.setNthreads(nthreads);
-		algo.process(context::getProgress, 
+		algo.process(context.getLog(),context::getProgress, 
 				targets,
 				snps==null && !nosnps?getOutputFile(0).getPath():null, 
 				posstat);

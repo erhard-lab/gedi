@@ -7,6 +7,13 @@ public class CompoundParallelizedState implements ParallelizedState<CompoundPara
 
 	private ArrayList<ParallelizedState> states = new ArrayList<ParallelizedState>();
 	
+	public CompoundParallelizedState() {}
+	public CompoundParallelizedState(ParallelizedState...states) {
+		for (ParallelizedState s : states)
+			add(s);
+	}
+	
+	
 	public <T extends ParallelizedState<T>> CompoundParallelizedState add(T state) {
 		states.add(state);
 		return this;

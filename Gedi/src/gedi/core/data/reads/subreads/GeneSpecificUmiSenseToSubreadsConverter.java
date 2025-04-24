@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Logger;
 
 import gedi.core.data.reads.AlignedReadsDataFactory;
 import gedi.core.data.reads.AlignedReadsDataFactory.VarIndel;
@@ -23,6 +24,7 @@ import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.util.ArrayUtils;
 import gedi.util.StringUtils;
 import gedi.util.datastructure.collections.intcollections.IntArrayList;
+import gedi.util.functions.BiIntConsumer;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
 import gedi.util.functions.IntToBooleanFunction;
@@ -65,7 +67,7 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 			Integer cind=cmap.get(conditions[i]);
 			if (cind==null) throw new AssertionError("Condition name unknown: "+conditions[i]);
 			if (cells[i].length()!=cellBarcodeLength) throw new AssertionError("Cell barcode length not unique!");
-			cellIndex[cind].put(cells[i], i);
+			cellIndex[cind].put(new DnaSequence(cells[i]).toString(), i);
 		}
 		
 		semantic = new String[MAX_COV];
@@ -94,9 +96,17 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 	}
 
 	@Override
+	public void logUsedTotal(Logger logger, int used, int total) {
+		ToSubreadsConverter.super.logUsedTotal(logger, used, total);
+		if (total>0 && used==0) logger.severe("No UMIs used at all! Check your barcodes!");
+		else if (total>0 && used<total/2) logger.warning("Very low usage ratio. Check your barcodes!");
+	}
+	
+	
+	@Override
 	public ExtendedIterator<ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>> convert(String id,
 			ReferenceSequence reference, ArrayList<ImmutableReferenceGenomicRegion<BarcodedAlignedReadsData>> cluster,
-			MismatchReporter reporter) {
+			MismatchReporter reporter,BiIntConsumer usedTotal) {
 		
 		// TODO: Extend reporter to measure (i) number of positions in each subread cat, and (ii) specifically here, the reads per UMI statistics
 		if (cluster.isEmpty()) return EI.empty();
@@ -147,13 +157,16 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 				}
 			}
 		}
-		
+		int used = 0;
+		int total = 0;
 		for (int cond=0; cond<numCond; cond++) {
 			for (DnaSequence barcode : map[cond].keySet()) {
+				total++;
 				String cb = barcode.substring(0, cellBarcodeLength);
 				Integer ccond = cellIndex[cond].get(cb);
 				int[][] histo = readsPerNonUmi;
 				if (ccond!=null) {
+					used++;
 					GenomicRegion region = EI.wrap(map[cond].get(barcode)).map(r->r.getRegion()).reduce(new GenomicRegionArithmetic(),(r,a)->a.union(r)).toRegion();
 	//					GenomicRegion region = EI.wrap(map.get(barcode)).map(r->r.getRegion()).reduce((r,a)->a.union(r));
 	//					AlignedReadsDataFactory fac = factories.computeIfAbsent(region, x->new AlignedReadsDataFactory(cells.length).start());
@@ -203,6 +216,7 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 			re.add(new ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>(reference,regions.get(order[s]),merge(reference,regions,subreads,barcodes,order,s,regions.size())));
 		}
 		
+		if (usedTotal!=null) usedTotal.accept(used, total);
 		MutableInteger count = new MutableInteger();
 		int uExpectedReads = expectedReads;
 		return EI.wrap(re)
@@ -557,7 +571,7 @@ public class GeneSpecificUmiSenseToSubreadsConverter implements ToSubreadsConver
 		
 		new GeneSpecificUmiSenseToSubreadsConverter(new String[] {"C"}, new String[] {"C"}, new String[] {"AA"})
 			.setDebug(true)
-			.convert("Test",Chromosome.obtain("1+"), new ArrayList<>(Arrays.asList(r1,r2,r3)), null)
+			.convert("Test",Chromosome.obtain("1+"), new ArrayList<>(Arrays.asList(r1,r2,r3)), null,null)
 			.drain();
 		
 		ImmutableReferenceGenomicRegion<SingleUmiAlignedReadsData> s1 = ImmutableReferenceGenomicRegion.parse("1-:100-110",new SingleUmiAlignedReadsData(r1.getData(),0,0));
