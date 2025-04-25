@@ -100,17 +100,6 @@ public class SingleEndToSubreadsConverter implements ReadByReadToSubreadsConvert
 		
 	}
 
-	public static void main(String[] args) {
-		AlignedReadsDataFactory fac = new AlignedReadsDataFactory(1);
-		fac.start();
-		fac.newDistinctSequence();
-		fac.addMismatch(10, 'C', 'T', false);
-		ImmutableReferenceGenomicRegion<DefaultAlignedReadsData> read = ImmutableReferenceGenomicRegion.parse("1+:0-130",fac.create());
-		System.out.println(read);
-		System.out.println(new PairedEndToSubreadsConverter(false).convert(read, true, null));
-		System.out.println(new PairedEndToSubreadsConverter(false).convert(read, false, null));
-		
-	}
 	
 
 }

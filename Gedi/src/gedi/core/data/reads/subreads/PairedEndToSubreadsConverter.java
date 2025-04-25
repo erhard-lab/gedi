@@ -8,6 +8,7 @@ import gedi.core.data.reads.HasSubreads;
 import gedi.core.data.reads.SubreadsAlignedReadsData;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.util.SequenceUtils;
+import gedi.util.functions.BiIntConsumer;
 
 public class PairedEndToSubreadsConverter implements ReadByReadToSubreadsConverter<DefaultAlignedReadsData> {
 	
@@ -51,8 +52,10 @@ public class PairedEndToSubreadsConverter implements ReadByReadToSubreadsConvert
 		return 0;
 	}
 	
+	@Override
 	public ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> convert(
-			ImmutableReferenceGenomicRegion<? extends DefaultAlignedReadsData> read, boolean sense, MismatchReporter reporter) {
+			ImmutableReferenceGenomicRegion<? extends DefaultAlignedReadsData> read, boolean sense, MismatchReporter reporter,
+			BiIntConsumer usedTotal) {
 
 		
 		HasSubreads subr = read.getData().asSubreads(sense);
@@ -139,6 +142,7 @@ public class PairedEndToSubreadsConverter implements ReadByReadToSubreadsConvert
 		fac.makeDistinct();
 		SubreadsAlignedReadsData data = fac.createSubread();
 		
+		if (usedTotal!=null) usedTotal.accept(1, 1);
 		ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> sread = new ImmutableReferenceGenomicRegion<>(sense?read.getReference():read.getReference().toOppositeStrand(), read.getRegion(), data);
 		if (debug) {
 			System.out.println("Convert:");
@@ -174,8 +178,8 @@ public class PairedEndToSubreadsConverter implements ReadByReadToSubreadsConvert
 		fac.addMismatch(10, 'C', 'T', false);
 		ImmutableReferenceGenomicRegion<DefaultAlignedReadsData> read = ImmutableReferenceGenomicRegion.parse("1+:0-130",fac.create());
 		System.out.println(read);
-		System.out.println(new PairedEndToSubreadsConverter(false).convert(read, true, null));
-		System.out.println(new PairedEndToSubreadsConverter(false).convert(read, false, null));
+		System.out.println(new PairedEndToSubreadsConverter(false).convert(read, true, null,null));
+		System.out.println(new PairedEndToSubreadsConverter(false).convert(read, false, null,null));
 		
 	}
 	

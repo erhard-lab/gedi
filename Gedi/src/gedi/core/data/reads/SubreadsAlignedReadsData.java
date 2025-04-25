@@ -273,10 +273,10 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 		for (ImmutableReferenceGenomicRegion<DefaultAlignedReadsData> r : st.ei().loop()) {
 			System.out.println(r);
 			System.out.println(r.getData().getNumParts(r, 0));
-			System.out.println(conv.convert(r, true,null));
-			System.out.println(conv.convert(r, true,null).getData().getNumParts(conv.convert(r, true,null), 0));
-			System.out.println(conv.convert(r, false,null));
-			System.out.println(conv.convert(r, false,null).getData().getNumParts(conv.convert(r, false,null), 0));
+			System.out.println(conv.convert(r, true,null,null));
+			System.out.println(conv.convert(r, true,null,null).getData().getNumParts(conv.convert(r, true,null,null), 0));
+			System.out.println(conv.convert(r, false,null,null));
+			System.out.println(conv.convert(r, false,null,null).getData().getNumParts(conv.convert(r, false,null,null), 0));
 			System.out.println();
 			
 		}
