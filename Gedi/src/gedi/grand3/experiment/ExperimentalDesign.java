@@ -301,29 +301,15 @@ public class ExperimentalDesign {
 		String[] header = it.next();
 		MetabolicLabelType[] types = EI.wrap(header).skip(3).map(s->MetabolicLabelType.fromString(s)).toArray(MetabolicLabelType.class);
 		
-		if (header[0].equals("Sample")) {
-			for (String[] a : it.loop()) {
-				libraries.add(a[0]);
-				samples.add("");
-				barcodes.add(a[1]);
-				MetabolicLabelType[] label = new MetabolicLabelType[types.length];
-				for (int i=0; i<types.length; i++)
-					if (!a[i*3+2].equals("NA"))
-						label[i] = types[i];
-				labels.add(label);
-			}
-		}
-		else {
-			for (String[] a : it.loop()) {
-				libraries.add(a[0]);
-				samples.add(a[1]);
-				barcodes.add(a[2]);
-				MetabolicLabelType[] label = new MetabolicLabelType[types.length];
-				for (int i=0; i<types.length; i++)
-					if (!a[i*3+3].equals("NA"))
-						label[i] = types[i];
-				labels.add(label);
-			}
+		for (String[] a : it.loop()) {
+			libraries.add(a[0]);
+			samples.add(a[1]);
+			barcodes.add(a[2]);
+			MetabolicLabelType[] label = new MetabolicLabelType[types.length];
+			for (int i=0; i<types.length; i++)
+				if (a[i+3].equals("1"))
+					label[i] = types[i];
+			labels.add(label);
 		}
 		return new ExperimentalDesign(libraries.toArray(new String[0]),samples.toArray(new String[0]),barcodes.toArray(new String[0]),labels.toArray(new MetabolicLabelType[0][0]));
 	}

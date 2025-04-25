@@ -31,7 +31,7 @@ public interface ToSubreadsConverter<A extends AlignedReadsData> {
 	boolean isReadByRead();
 	
 	default void logUsedTotal(Logger logger, int used, int total) {
-		logger.info(String.format("Reads or UMIs used/encountered: %d/%d (%.2f%%)\n", used, total,used*100.0/total));
+		logger.info(String.format("Reads or UMIs used/encountered: %d/%d (%.2f%%)", used, total,used*100.0/total));
 		if (total==0) logger.severe("No reads or UMIs encountered at all!");
 	}
 	
