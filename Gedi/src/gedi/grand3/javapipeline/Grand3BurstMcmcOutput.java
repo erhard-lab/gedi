@@ -117,7 +117,7 @@ public class Grand3BurstMcmcOutput<A extends AlignedReadsData> extends GediProgr
 		}
 		public int getCellIndex(DnaSequence bc) {
 			Integer re = bcToIndex.get(bc.subSequence(0, cellLength));
-			return re==null?-1:0;
+			return re==null?-1:re;
 		}
 		public DnaSequence getUmi(DnaSequence bc) {
 			return bc.subSequence(cellLength, bc.length());

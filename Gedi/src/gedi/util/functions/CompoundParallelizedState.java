@@ -10,7 +10,8 @@ public class CompoundParallelizedState implements ParallelizedState<CompoundPara
 	public CompoundParallelizedState() {}
 	public CompoundParallelizedState(ParallelizedState...states) {
 		for (ParallelizedState s : states)
-			add(s);
+			if (s!=null)
+				add(s);
 	}
 	
 	
