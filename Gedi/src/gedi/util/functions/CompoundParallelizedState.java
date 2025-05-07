@@ -10,8 +10,7 @@ public class CompoundParallelizedState implements ParallelizedState<CompoundPara
 	public CompoundParallelizedState() {}
 	public CompoundParallelizedState(ParallelizedState...states) {
 		for (ParallelizedState s : states)
-			if (s!=null)
-				add(s);
+			add(s);
 	}
 	
 	
@@ -28,14 +27,17 @@ public class CompoundParallelizedState implements ParallelizedState<CompoundPara
 	public CompoundParallelizedState spawn(int index) {
 		CompoundParallelizedState re = new CompoundParallelizedState();
 		for (ParallelizedState s : states)
-			re.add(s.spawn(index));
+			re.add(s==null?null:s.spawn(index));
 		return re;
 	}
 
 	@Override
 	public void integrate(CompoundParallelizedState other) {
 		for (int i=0; i<states.size(); i++)
-			states.get(i).integrate(other.states.get(i));
+			if (states.get(i)==null)
+				states.set(i, other.states.get(i));
+			else if (other.states.get(i)!=null)
+				states.get(i).integrate(other.states.get(i));
 	}
 
 	public int size() {
