@@ -61,7 +61,9 @@ public class Grand3 {
 				"3.0.6:\n"
 				+ " integral output\n experimental design now only contains a boolean for each label\n\n"+
 				"3.0.6a:\n"
-				+ " improved output for no cell barcode matching the barcodes.tsv; fixed a,b for sparse data\n\n"
+				+ " improved output for no cell barcode matching the barcodes.tsv; fixed a,b for sparse data\n\n"+
+				"3.0.7:\n"
+				+ " fit beta mixture approximation\n\n"
 				;
 	}
 		

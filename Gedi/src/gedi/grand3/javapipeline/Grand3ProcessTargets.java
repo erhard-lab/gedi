@@ -66,6 +66,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		addInput(params.pseudobulkMinimalPurity);
 		addInput(params.targetMixmat);
 		addInput(params.targetMergeTable);
+		addInput(params.outputMixBeta);
 		
 		addInput(params.prefix);
 		addInput(params.debug);
@@ -105,6 +106,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		double pseudobulkMinimalPurity = getDoubleParameter(pind++);
 		String targetMixmat = getParameter(pind++);
 		String targetMergeTab = getParameter(pind++);
+		boolean writeMix = getBooleanParameter(pind++);
 		
 		String prefix = getParameter(pind++);
 		boolean debug = getBooleanParameter(pind++);
@@ -182,7 +184,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		}
 		
 		context.getLog().info("Filling likelihood cache...");
-		TargetEstimator targetEstimatorObject = new TargetEstimator(design, models, targetMapping, targetToSample, 0.01,context::getProgress,nthreads);
+		TargetEstimator targetEstimatorObject = new TargetEstimator(design, models, targetMapping, targetToSample, 0.01,context::getProgress,nthreads,writeMix);
 		context.getLog().info("Done filling likelihood cache.");
 
 		

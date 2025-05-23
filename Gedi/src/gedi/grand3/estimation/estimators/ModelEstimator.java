@@ -1,16 +1,25 @@
 package gedi.grand3.estimation.estimators;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 import java.util.logging.Logger;
 
 import gedi.grand3.estimation.ModelStructure;
+import gedi.grand3.estimation.models.Grand3Model;
+import gedi.grand3.estimation.models.Grand3TruncatedBetaBinomialMixtureModel;
 import gedi.grand3.experiment.ExperimentalDesign;
+import gedi.grand3.knmatrix.KnMatrixKey;
 import gedi.grand3.knmatrix.KNMatrix.KNMatrixElement;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
 import gedi.util.io.text.LineWriter;
+import gedi.util.math.stat.inference.ml.MaximumLikelihoodModelPriorDecorator;
 import gedi.util.math.stat.inference.ml.MaximumLikelihoodParametrization;
+import gedi.util.math.stat.inference.ml.NelderMeadMaximumLikelihoodEstimator;
 import jdistlib.Normal;
 
 public abstract class ModelEstimator {
@@ -20,7 +29,7 @@ public abstract class ModelEstimator {
 	protected double[][][][] pre_perr;
 	protected String[] subreads;
 	protected ExperimentalDesign design;
-	private boolean useGaussianWithoutno4sU;
+	protected boolean useGaussianWithoutno4sU;
 	protected int maxIter;
 	
 	public ModelEstimator(ExperimentalDesign design, Function<int[], KNMatrixElement[]> stiToData, double[][][][] pre_perr, String[] subreads, boolean useGaussianWithoutno4sU) {
@@ -96,6 +105,66 @@ public abstract class ModelEstimator {
 		};
 		
 		public abstract double logdens(double x, double mean, double rad);
+	}
+	
+	
+	public static void main(String[] args) throws IOException {
+		HashMap<KnMatrixKey, KNMatrixElement[]> dataMap = Grand3Model.dataFromStatFile("/home/erhard/test/iter_117.conversion.knmatrix.tsv.gz");
+		KNMatrixElement[] data = dataMap.values().iterator().next();
+		
+		Grand3TruncatedBetaBinomialMixtureModel tbbinomModel = new Grand3TruncatedBetaBinomialMixtureModel();
+		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
+		estimator.setMaxIter(10000);
+		
+		
+		double m = 0.0002;
+		double r = 0.00002;
+		int perr = 1;
+		ToDoubleFunction<double[]> perr_prior = a->LogDensityPrior.Epanechnikov.logdens(a[perr],m,r);
+		
+		MaximumLikelihoodModelPriorDecorator<KNMatrixElement[]> deco = new MaximumLikelihoodModelPriorDecorator<>(tbbinomModel,perr_prior);
+
+		
+		System.out.println(deco.logLik(data, new double[] {0.1118,0.0002374,0.1184,-1.57}));
+		System.out.println(deco.logLik(data, new double[] {0.1718,0.0002374,0.1184,-1.57}));
+		System.out.println(deco.logLik(data, new double[] {0.0591,0.0002,0.05,4.75}));
+		
+		MaximumLikelihoodParametrization par = tbbinomModel.createPar()
+				.setParameter("shape", -1.6)
+				.setParameter("p.err", 0.0002);
+		System.out.println(estimator.fit(tbbinomModel, par,data));
+		par = tbbinomModel.createPar()
+				.setParameter("shape", -1.6)
+				.setParameter("p.err", 0.0002);
+		System.out.println(estimator.fit(deco, par,data));
+		par = tbbinomModel.createPar()
+				.setParameter("p.mconv", 0.1196)
+				.setParameter("shape", -1.6)
+				.setParameter("p.err", 0.0002);
+		tbbinomModel.setNtrByFirstMoment(par,data);
+		System.out.println("pre");
+		System.out.println(par);
+		System.out.println(estimator.fit(deco, par,data));
+//		
+//		
+//		par = tbbinomModel.createPar()
+//				.setParameter("shape", -1.6)
+//				.setParameter("p.err", 0.0002);
+//		DoubleFunction<MaximumLikelihoodParametrization> fit1 = s->{
+//			MaximumLikelihoodParametrization par1= tbbinomModel.createPar()
+//					.setParameter("shape", s)
+//					.setParameter("p.err", m);
+//			tbbinomModel.setNtrByFirstMoment(par1,data);
+//			MaximumLikelihoodParametrization re = estimator.fit(deco,par1,data);
+//			return re;
+//		};
+//		
+//		System.out.println(fit1.apply(-1.6));
+//		
+		FullModelEstimator est = new FullModelEstimator(null, null, null, null);
+		est.useGaussianWithoutno4sU = false;
+		System.out.println(est.fitTBBinom(data,new double[] {0,0.0004},0));
+
 	}
 	
 	

@@ -50,10 +50,13 @@ public class TargetEstimator {
 	private double[] shapes;
 	private int[][] conditionMapping;
 	
-	public TargetEstimator(ExperimentalDesign design, ModelStructure[][][] models, int[][] conditionMapping, int[] conditionToSampleId, double shapeStep, Supplier<Progress> progress, int nthreads) {
+	private boolean fitMix;
+	
+	public TargetEstimator(ExperimentalDesign design, ModelStructure[][][] models, int[][] conditionMapping, int[] conditionToSampleId, double shapeStep, Supplier<Progress> progress, int nthreads, boolean fitMix) {
 		this.models = models;
 		this.conditionMapping = conditionMapping;
 		this.conditionToSampleId = conditionToSampleId;
+		this.fitMix = fitMix;
 		for (ModelStructure[][] l2 : models)
 			for (ModelStructure[] l1 : l2)
 				for (ModelStructure m : l1) 
@@ -250,15 +253,18 @@ public class TargetEstimator {
 		// estimate mixtures 
 		if (!binomMixData.isEmpty()) {
 			BiMixtureModelEstimator model = new BiMixtureModelEstimator(binomMixData.toArray(new BiMixtureModelData[binomMixData.size()]));
+			model.setFitMix(fitMix);
 			BiMixtureModelResult result = model.estimate(ci, betaApprox);
 			rec.setTargetEstimateBinom(t,i,result);
 			
 			model = new BiMixtureModelEstimator(tbbinomMixData.toArray(new BiMixtureModelData[tbbinomMixData.size()]));
+			model.setFitMix(fitMix);
 			result = model.estimate(ci, betaApprox);
 			rec.setTargetEstimateTbBinom(t,i, result);
 			
 			if (!Double.isNaN(shape)) {
 				model = new BiMixtureModelEstimator(tbbinomShapeMixData.toArray(new BiMixtureModelData[tbbinomShapeMixData.size()]));
+				model.setFitMix(fitMix);
 				result = model.estimate(ci, betaApprox);
 				rec.setTargetEstimateTbBinomShape(t,i, result);
 			}

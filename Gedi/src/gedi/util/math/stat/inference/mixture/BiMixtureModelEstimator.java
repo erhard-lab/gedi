@@ -18,8 +18,11 @@ import org.apache.commons.math3.optim.univariate.BrentOptimizer;
 import org.apache.commons.math3.optim.univariate.SearchInterval;
 import org.apache.commons.math3.optim.univariate.UnivariateObjectiveFunction;
 
+import gedi.util.ArrayUtils;
 import gedi.util.math.optim.NelderMead;
+import gedi.util.math.optim.NelderMead.NelderMeadResult;
 import gedi.util.math.optim.NelderMead.NelderMeadSetup;
+import gedi.util.math.stat.RandomNumbers;
 import jdistlib.Beta;
 import net.jafama.FastMath;
 
@@ -28,11 +31,22 @@ public class BiMixtureModelEstimator {
 	private BiMixtureModelData[] data;
 //	private double priorAlpha = 1;
 //	private double priorBeta = 1;
-
+	
+	private RandomNumbers rng = RandomNumbers.getGlobal();
+	private boolean fitMix = true;
 	
 
 	public BiMixtureModelEstimator(BiMixtureModelData[] data) {
 		this.data = data;
+	}
+	
+	
+	public void setFitMix(boolean fitMix) {
+		this.fitMix = fitMix;
+	}
+	
+	public void setRandom(RandomNumbers rng) {
+		this.rng = rng;
 	}
 	
 //	public BiMixtureModel(BiMixtureModelData[] data, double priorAlpha, double priorBeta) {
@@ -96,7 +110,7 @@ public class BiMixtureModelEstimator {
 		double inte = 0;
 		double[] fs = new double[x.length];
 		double[] fs2 = new double[x.length];
-		double E = 0;
+//		double E = 0;
 		
 		for (int i=0; i<fs.length; i++) {
 			double l = loglik(x[i]);
@@ -117,8 +131,8 @@ public class BiMixtureModelEstimator {
 			fs[i] = lse(fs[i-1],fs[i]);
 		}
 		
-		for (int i=0; i<fs.length; i++) 
-			E+=x[i]*FastMath.exp(p[i]-fs2[fs2.length-1]);
+//		for (int i=0; i<fs.length; i++) 
+//			E+=x[i]*FastMath.exp(p[i]-fs2[fs2.length-1]);
 		
 		// normalizing
 		for (int i=0; i<fs.length; i++) 
@@ -177,7 +191,11 @@ public class BiMixtureModelEstimator {
 				
 				inte = inte+FastMath.log(x[1]-x[0]);
 				
-				return new BiMixtureModelResult(lowerCI, map, upperCI, alpha, beta,inte);
+				double[] mix = null;
+				if (fitMix) mix = fitBetaMixture(x, fs2, 10, 0, 1, 1);
+				
+				return new BiMixtureModelResult(lowerCI, map, upperCI, alpha, beta,inte,mix);
+				
 		}
 
 		int l = Arrays.binarySearch(fs2, lower);
@@ -190,7 +208,137 @@ public class BiMixtureModelEstimator {
 		double map = max;
 		double upperCI = x[u];
 		
-		return new BiMixtureModelResult(lowerCI, map, upperCI, Double.NaN, Double.NaN, Double.NaN);
+		return new BiMixtureModelResult(lowerCI, map, upperCI, Double.NaN, Double.NaN, Double.NaN,null);
+	}
+	
+	public double[] fitBetaMixture(double[] x, double[] Femp,
+			int nstart, double minp, double maxp, double shapeLower) {
+
+		if (x.length != Femp.length) throw new IllegalArgumentException("x and Femp must be same length.");
+		for (int i = 1; i < x.length; i++) if (x[i] <= x[i - 1]) throw new IllegalArgumentException("x must be strictly increasing.");
+
+		// Method-of-moments init
+		int n = x.length;
+		double[] dx = new double[n - 1];
+		double[] xm = new double[n - 1];
+		double[] dens = new double[n - 1];
+		double[] w = new double[n - 1];
+
+		for (int i = 0; i < n - 1; i++) {
+			dx[i] = x[i + 1] - x[i];
+			xm[i] = (x[i] + x[i + 1]) / 2;
+			dens[i] = Math.max((Femp[i + 1] - Femp[i]) / dx[i], 0);
+			w[i] = dens[i] * dx[i];
+		}
+		int[] ord = ArrayUtils.seq(0, xm.length-1, 1);
+		ArrayUtils.parallelSort(xm, ord);
+		double cumw = 0;
+		double cut = 0;
+		for (int i = 0; i < ord.length; i++) {
+			cumw += w[ord[i]];
+			if (cumw >= 0.5) {
+				cut = xm[ord[i]];
+				break;
+			}
+		}
+
+		int[] cl = new int[n - 1];
+		for (int i = 0; i < xm.length; i++) cl[i] = (xm[i] <= cut) ? 1 : 2;
+
+		double[][] ab_init = new double[2][2];
+		for (int j = 1; j <= 2; j++) {
+			double sumW = 0, sumX = 0, sumX2 = 0;
+			for (int i = 0; i < cl.length; i++) {
+				if (cl[i] == j) {
+					sumW += w[i];
+					sumX += xm[i] * w[i];
+				}
+			}
+			double m = sumX / sumW;
+			for (int i = 0; i < cl.length; i++) {
+				if (cl[i] == j) {
+					sumX2 += Math.pow(xm[i] - m, 2) * w[i];
+				}
+			}
+			double v = sumX2 / sumW;
+			double t = (m * (1 - m) / v) - 1;
+			ab_init[j - 1][0] = Math.max(m * t, shapeLower);
+			ab_init[j - 1][1] = Math.max((1 - m) * t, shapeLower);
+		}
+
+		double p_init = 0;
+		for (int i = 0; i < cl.length; i++) if (cl[i] == 1) p_init += w[i];
+
+		double m1 = ab_init[0][0] / (ab_init[0][0] + ab_init[0][1]);
+		double m2 = ab_init[1][0] / (ab_init[1][0] + ab_init[1][1]);
+		if (m1 > m2) {
+			double[] tmp = ab_init[0];
+			ab_init[0] = ab_init[1];
+			ab_init[1] = tmp;
+			p_init = 1 - p_init;
+		}
+
+		double[] mom_init = new double[]{p_init, ab_init[0][0], ab_init[0][1], ab_init[1][0], ab_init[1][1]};
+		double[] bestParams = null;
+		double bestSSE = Double.POSITIVE_INFINITY;
+
+		for (int i = 0; i < nstart; i++) {
+			double[] init;
+			if (i == 0) {
+				init = mom_init.clone();
+			} else if (i < nstart * 0.6) {
+				init = mom_init.clone();
+				for (int j = 0; j < init.length; j++) {
+					double jitter = Math.max(0.1, 0.2 * Math.abs(init[j]));
+					init[j] += rng.getNormal() * jitter;
+					init[j] = Math.min(Math.max(init[j], j == 0 ? minp : shapeLower), j == 0 ? maxp : 50);
+				}
+			} else {
+				init = new double[]{
+						minp + rng.getUnif() * (maxp - minp),
+						shapeLower + rng.getUnif() * (50 - shapeLower),
+						shapeLower + rng.getUnif() * (50 - shapeLower),
+						shapeLower + rng.getUnif() * (50 - shapeLower),
+						shapeLower + rng.getUnif() * (50 - shapeLower)
+				};
+				double mean1 = init[1] / (init[1] + init[2]);
+				double mean2 = init[3] / (init[3] + init[4]);
+				if (mean1 > mean2) {
+					double tmp1 = init[1], tmp2 = init[2];
+					init[1] = init[3];
+					init[2] = init[4];
+					init[3] = tmp1;
+					init[4] = tmp2;
+				}
+			}
+
+			ToDoubleFunction<double[]> sseFunction = par->{
+				double w1 = par[0], a1 = par[1], b1 = par[2], a2 = par[3], b2 = par[4];
+				double sse = 0;
+				for (int j = 0; j < x.length; j++) {
+					double Fmix = w1 * Beta.cumulative(x[j],a1,b1,true,false) + (1 - w1) * Beta.cumulative(x[j],a2,b2,true,false);
+					sse += Math.pow(Femp[j] - Fmix, 2);
+				}
+				return sse;
+			};
+
+			NelderMeadResult result = new NelderMead().minimize(init, sseFunction)
+					.addLowerBound(0,minp)
+					.addLowerBound(1,shapeLower)
+					.addLowerBound(2,shapeLower)
+					.addLowerBound(3,shapeLower)
+					.addLowerBound(4,shapeLower)
+					.addUpperBound(0, maxp).minimize();
+
+			if (result.getY() < bestSSE) {
+				bestSSE = result.getY();
+				bestParams = result.getX();
+			}
+		}
+
+		if (bestParams == null) throw new RuntimeException("All starts failed");
+
+		return bestParams;
 	}
 	
 	public final double computeMAP() {
@@ -288,10 +436,10 @@ public class BiMixtureModelEstimator {
 //		};
 		
 		
-		BinomialDistribution e = new BinomialDistribution(21, 0.002109);
-		BinomialDistribution m = new BinomialDistribution(21, 0.0452);
+		BinomialDistribution e = new BinomialDistribution(21, 0.0001);
+		BinomialDistribution m = new BinomialDistribution(21, 0.04);
 		BiMixtureModelData[] data = {
-				new BiMixtureModelData(m.logProbability(1), e.logProbability(1), 1)
+				new BiMixtureModelData(m.logProbability(0), e.logProbability(0), 1)
 		};
 
 		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));

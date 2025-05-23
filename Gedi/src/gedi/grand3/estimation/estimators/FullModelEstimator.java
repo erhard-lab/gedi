@@ -143,6 +143,8 @@ public class FullModelEstimator extends ModelEstimator {
 			return re;
 		};
 		
+		
+		
 		double bottom = tbbinomModel.createPar().getLowerBounds("shape")+maxShapeStep/2;
 		double top = tbbinomModel.createPar().getUpperBounds("shape")-maxShapeStep/2;
 		

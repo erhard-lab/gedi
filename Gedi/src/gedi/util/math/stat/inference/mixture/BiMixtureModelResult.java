@@ -1,7 +1,10 @@
 package gedi.util.math.stat.inference.mixture;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Objects;
 
+import gedi.util.ArrayUtils;
 import gedi.util.io.randomaccess.BinaryReader;
 import gedi.util.io.randomaccess.BinaryWriter;
 import gedi.util.io.randomaccess.serialization.BinarySerializable;
@@ -12,10 +15,11 @@ public class BiMixtureModelResult implements BinarySerializable{
 	private double upper;
 	private double alpha;
 	private double beta;
+	private double[] mixBeta;
 	private double integral;
 	
 	public BiMixtureModelResult() {}
-	public BiMixtureModelResult(double lower, double map, double upper, double alpha, double beta, double integral) {
+	public BiMixtureModelResult(double lower, double map, double upper, double alpha, double beta, double integral, double[] mixBeta) {
 		if (Double.isNaN(lower) || Double.isNaN(map) || Double.isNaN(upper) || lower<0 || map<0 || upper<lower || map>1 || upper>1)
 			throw new RuntimeException("Invalid parameters!");
 		this.lower = lower;
@@ -24,9 +28,25 @@ public class BiMixtureModelResult implements BinarySerializable{
 		this.alpha = alpha;
 		this.beta = beta;
 		this.integral = integral;
+		this.mixBeta = mixBeta;
 	}
 	public double getLower() {
 		return lower;
+	}
+	public double getMix() {
+		return mixBeta==null?Double.NaN:mixBeta[0];
+	}
+	public double getAlpha1() {
+		return mixBeta==null?Double.NaN:mixBeta[1];
+	}
+	public double getBeta1() {
+		return mixBeta==null?Double.NaN:mixBeta[2];
+	}
+	public double getAlpha2() {
+		return mixBeta==null?Double.NaN:mixBeta[3];
+	}
+	public double getBeta2() {
+		return mixBeta==null?Double.NaN:mixBeta[4];
 	}
 	public double getMap() {
 		return map;
@@ -46,25 +66,15 @@ public class BiMixtureModelResult implements BinarySerializable{
 	@Override
 	public String toString() {
 		return "lower=" + lower + ", map=" + map + ", upper=" + upper + ", alpha=" + alpha + ", beta="
-				+ beta + ", integral="+integral;
+				+ beta + ", integral="+integral+(mixBeta!=null?" mix,a1,b1,a2,b2="+Arrays.toString(mixBeta):"");
 	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		long temp;
-		temp = Double.doubleToLongBits(alpha);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
-		temp = Double.doubleToLongBits(upper);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
-		temp = Double.doubleToLongBits(integral);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
-		temp = Double.doubleToLongBits(lower);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
-		temp = Double.doubleToLongBits(map);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
-		temp = Double.doubleToLongBits(upper);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + Arrays.hashCode(mixBeta);
+		result = prime * result + Objects.hash(alpha, beta, integral, lower, map, upper);
 		return result;
 	}
 	@Override
@@ -76,23 +86,17 @@ public class BiMixtureModelResult implements BinarySerializable{
 		if (getClass() != obj.getClass())
 			return false;
 		BiMixtureModelResult other = (BiMixtureModelResult) obj;
-		if (Double.doubleToLongBits(alpha) != Double.doubleToLongBits(other.alpha))
-			return false;
-		if (Double.doubleToLongBits(beta) != Double.doubleToLongBits(other.beta))
-			return false;
-		if (Double.doubleToLongBits(integral) != Double.doubleToLongBits(other.integral))
-			return false;
-		if (Double.doubleToLongBits(lower) != Double.doubleToLongBits(other.lower))
-			return false;
-		if (Double.doubleToLongBits(map) != Double.doubleToLongBits(other.map))
-			return false;
-		if (Double.doubleToLongBits(upper) != Double.doubleToLongBits(other.upper))
-			return false;
-		return true;
+		return Double.doubleToLongBits(alpha) == Double.doubleToLongBits(other.alpha)
+				&& Double.doubleToLongBits(beta) == Double.doubleToLongBits(other.beta)
+				&& Double.doubleToLongBits(integral) == Double.doubleToLongBits(other.integral)
+				&& Double.doubleToLongBits(lower) == Double.doubleToLongBits(other.lower)
+				&& Double.doubleToLongBits(map) == Double.doubleToLongBits(other.map)
+				&& Arrays.equals(mixBeta, other.mixBeta)
+				&& Double.doubleToLongBits(upper) == Double.doubleToLongBits(other.upper);
 	}
 	@Override
 	public void serialize(BinaryWriter out) throws IOException {
-		out.putFloat(lower);
+		out.putFloat(mixBeta==null?lower:-lower);
 		out.putFloat(map);
 		if (Double.isNaN(alpha)) {
 			out.putFloat(-upper);
@@ -102,6 +106,13 @@ public class BiMixtureModelResult implements BinarySerializable{
 			out.putFloat(alpha);
 			out.putFloat(beta);
 			out.putFloat(integral);
+		}
+		if (mixBeta!=null) {
+			out.putFloat(mixBeta[0]);
+			out.putFloat(mixBeta[1]);
+			out.putFloat(mixBeta[2]);
+			out.putFloat(mixBeta[3]);
+			out.putFloat(mixBeta[4]);
 		}
 	}
 	@Override
@@ -121,6 +132,13 @@ public class BiMixtureModelResult implements BinarySerializable{
 			beta = in.getFloat();
 			integral = in.getFloat();
 		}
+		if (1/lower<0) {
+			lower = -lower;
+			mixBeta = new double[5];
+			for (int i=0; i<5; i++)
+				mixBeta[i] = in.getFloat();
+		} else
+			mixBeta = null;
 	}
 	
 	

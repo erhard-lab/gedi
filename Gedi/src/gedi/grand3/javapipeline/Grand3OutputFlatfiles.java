@@ -52,6 +52,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		addInput(params.pseudobulkName);
 		addInput(params.pseudobulkMinimalPurity);
 		addInput(params.targetMergeTable);
+		addInput(params.outputMixBeta);
 
 		
 		if (hasMappedTarget)
@@ -79,7 +80,9 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		String pseudobulkName = getParameter(pind++);
 		double pseudobulkMinimalPurity = getDoubleParameter(pind++);
 		String targetMergeTab = getParameter(pind++);
-
+		boolean writeMix = getBooleanParameter(pind++);
+		
+		
 		Strandness strandness = Grand3Utils.getStrandness(strandnessFile);
 		ExperimentalDesign design = ExperimentalDesign.fromTable(designFile);
 		
@@ -112,14 +115,14 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		}
 		
 		if (sparse) 
-			outputSparse(context,genomic,design,columnNames,columnToSample,targetFile,folder);
+			outputSparse(context,genomic,design,columnNames,columnToSample,targetFile,folder,writeMix);
 		else
-			outputDense(context,genomic,design,columnNames,columnToSample,targetFile,folder,map);
+			outputDense(context,genomic,design,columnNames,columnToSample,targetFile,folder,map,writeMix);
 
 		return null;
 	} 
 	
-	private void outputSparse(GediProgramContext context, Genomic genomic, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File dir) throws IOException {
+	private void outputSparse(GediProgramContext context, Genomic genomic, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File dir, boolean writeMix) throws IOException {
 		
 		HashMap<String,MutableInteger> g2l = new HashMap<>();
 		genomic.getTranscripts().ei().forEachRemaining(tr->g2l.computeIfAbsent(tr.getData().getGeneId(), x->new MutableInteger()).max(tr.getRegion().getTotalLength())); 
@@ -150,6 +153,13 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		LineWriter[] shape = mkWriter2(dir,"shape","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shapeLLR = mkWriter2(dir,"llr","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shapeLL = mkWriter2(dir,"ll","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
+		LineWriter[][][] mix = writeMix?new LineWriter[][][]{
+			mkWriter(dir,"mix","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
+			mkWriter(dir,"alpha1","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
+			mkWriter(dir,"beta1","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
+			mkWriter(dir,"alpha2","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
+			mkWriter(dir,"beta2","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr)
+		}:null;
 		
 		int numFeatures = 0;
 		long numCounts = 0;
@@ -188,6 +198,13 @@ public class Grand3OutputFlatfiles extends GediProgram {
 						ntrAlpha[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getAlpha());
 						ntrBeta[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBeta());
 						ntrInte[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getIntegral());
+						if (writeMix) {
+							mix[0][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getMix());
+							mix[1][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getAlpha1());
+							mix[2][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBeta1());
+							mix[3][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getAlpha2());
+							mix[4][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBeta2());
+						}
 					}
 					shape[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getShape());
 					shapeLLR[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getLogLikShape()-val.getShape().getLogLikGlobal());
@@ -209,6 +226,9 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		finishWriters(shape);
 		finishWriters(shapeLLR);
 		finishWriters(shapeLL);
+		if (writeMix) 
+			for (int x=0; x<mix.length; x++)
+				finishWriters(mix[x]);
 		
 		if (storedNumCounts!=numCounts) throw new RuntimeException("Targets file corrupted: NumCounts does not match!");
 		for (int i=0; i<storedNumNtr.length; i++)
@@ -251,7 +271,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 
 
 
-	private void outputDense(GediProgramContext context, Genomic g, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File folder, HashMap<String, ArrayList<String>> map) throws IOException {
+	private void outputDense(GediProgramContext context, Genomic g, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File folder, HashMap<String, ArrayList<String>> map, boolean writeMix) throws IOException {
 		context.getLog().info("Writing flat files (dense)...");
 		
 		HashMap<String,MutableInteger> e2l = new HashMap<>();
@@ -278,8 +298,8 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		
 		LineWriter exonic = exonicFile.write(); 
 		LineWriter intronic = intronicFile.write(); 
-		writeDenseHeader(exonic,design,columnNames,columnToSample);
-		writeDenseHeader(intronic,design,columnNames,columnToSample);
+		writeDenseHeader(exonic,design,columnNames,columnToSample,writeMix);
+		writeDenseHeader(intronic,design,columnNames,columnToSample,writeMix);
 		boolean hadExonic = false;
 		boolean hadIntronic = false;
 		
@@ -328,6 +348,19 @@ public class Grand3OutputFlatfiles extends GediProgram {
 							}
 							else
 								out.writef("\tNA\tNA\tNA\tNA\tNA\tNA");
+							if (writeMix) {
+								if (res.get(t,i)!=null) {
+									out.writef("\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
+											res.get(t,i).getModel(type).getMix(),
+											res.get(t,i).getModel(type).getAlpha1(),
+											res.get(t,i).getModel(type).getBeta1(),
+											res.get(t,i).getModel(type).getAlpha2(),
+											res.get(t,i).getModel(type).getBeta2()
+											);
+								}
+								else
+									out.writef("\tNA\tNA\tNA\tNA\tNA");
+							}
 						}
 			for (int t=0; t<design.getTypes().length; t++)
 				for (int i=0; i<columnNames.length; i++)
@@ -356,14 +389,14 @@ public class Grand3OutputFlatfiles extends GediProgram {
 
 
 
-	private void writeDenseHeader(LineWriter out, ExperimentalDesign design, String[] columnNames, int[] columnToSample) throws IOException {
+	private void writeDenseHeader(LineWriter out, ExperimentalDesign design, String[] columnNames, int[] columnToSample, boolean writeMix) throws IOException {
 		out.writef("Gene\tSymbol\tCategory\tLength");
 		for (int i=0; i<columnNames.length; i++)
 			out.writef("\t%s Read count",columnNames[i]);
 		for (ModelType type : ModelType.values())
 			for (MetabolicLabelType t: design.getTypes())
 				for (int i=0; i<columnNames.length; i++)
-					if (design.getLabelForSample(columnToSample[i], t)!=null)
+					if (design.getLabelForSample(columnToSample[i], t)!=null) {
 						out.writef("\t%s %s %s NTR Lower CI\t%s %s %s NTR MAP\t%s %s %s NTR Upper CI\t%s %s %s alpha\t%s %s %s beta\t%s %s %s integral",
 								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString(),
@@ -371,6 +404,14 @@ public class Grand3OutputFlatfiles extends GediProgram {
 								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString());
+						if (writeMix)
+							out.writef("%s %s %s mix\t%s %s %s alpha1\t%s %s %s beta1\t%s %s %s alpha2\t%s %s %s beta2",
+									columnNames[i],t.toString(),type.toString(),
+									columnNames[i],t.toString(),type.toString(),
+									columnNames[i],t.toString(),type.toString(),
+									columnNames[i],t.toString(),type.toString(),
+									columnNames[i],t.toString(),type.toString());
+					}
 		for (MetabolicLabelType t: design.getTypes())
 			for (int i=0; i<columnNames.length; i++)
 				if (design.getLabelForSample(columnToSample[i], t)!=null)
