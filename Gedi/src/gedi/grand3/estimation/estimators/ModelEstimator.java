@@ -1,5 +1,6 @@
 package gedi.grand3.estimation.estimators;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -16,6 +17,7 @@ import gedi.grand3.knmatrix.KnMatrixKey;
 import gedi.grand3.knmatrix.KNMatrix.KNMatrixElement;
 import gedi.util.functions.EI;
 import gedi.util.functions.ExtendedIterator;
+import gedi.util.io.randomaccess.PageFileWriter;
 import gedi.util.io.text.LineWriter;
 import gedi.util.math.stat.inference.ml.MaximumLikelihoodModelPriorDecorator;
 import gedi.util.math.stat.inference.ml.MaximumLikelihoodParametrization;
@@ -60,6 +62,16 @@ public abstract class ModelEstimator {
 		}
 		
 		return EI.wrap(new ModelStructure(s, t, i, binom, tbbinom));
+	}
+	
+	private void writeKnMatrixElements(KNMatrixElement[] data, File file) throws IOException {
+		PageFileWriter wr = new PageFileWriter(file.getPath());
+		wr.putInt(data.length);
+		for (int i=0; i<data.length; i++) {
+			wr.putInt(data[i].k);
+			wr.putInt(data[i].n);
+			wr.putDouble(data[i].count);
+		}
 	}
 	
 	public void setMaxIter(int maxIter) {

@@ -19,6 +19,7 @@ import org.apache.commons.math3.optim.univariate.SearchInterval;
 import org.apache.commons.math3.optim.univariate.UnivariateObjectiveFunction;
 
 import gedi.util.ArrayUtils;
+import gedi.util.math.optim.LBFGS;
 import gedi.util.math.optim.NelderMead;
 import gedi.util.math.optim.NelderMead.NelderMeadResult;
 import gedi.util.math.optim.NelderMead.NelderMeadSetup;
@@ -277,7 +278,7 @@ public class BiMixtureModelEstimator {
 			ab_init[1] = tmp;
 			p_init = 1 - p_init;
 		}
-
+double eps= 10E-4;
 		double[] mom_init = new double[]{p_init, ab_init[0][0], ab_init[0][1], ab_init[1][0], ab_init[1][1]};
 		double[] bestParams = null;
 		double bestSSE = Double.POSITIVE_INFINITY;
@@ -291,7 +292,7 @@ public class BiMixtureModelEstimator {
 				for (int j = 0; j < init.length; j++) {
 					double jitter = Math.max(0.1, 0.2 * Math.abs(init[j]));
 					init[j] += rng.getNormal() * jitter;
-					init[j] = Math.min(Math.max(init[j], j == 0 ? minp : shapeLower), j == 0 ? maxp : 50);
+					init[j] = Math.min(Math.max(init[j], j == 0 ? minp*(1+eps) : shapeLower*(1+eps)), j == 0 ? maxp*(1-eps) : 50);
 				}
 			} else {
 				init = new double[]{
@@ -321,7 +322,6 @@ public class BiMixtureModelEstimator {
 				}
 				return sse;
 			};
-
 			NelderMeadResult result = new NelderMead().minimize(init, sseFunction)
 					.addLowerBound(0,minp)
 					.addLowerBound(1,shapeLower)
