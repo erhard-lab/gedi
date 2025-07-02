@@ -1,18 +1,12 @@
 package gedi.riboseq.inference.orf;
 
 import java.io.IOException;
-import java.util.function.Consumer;
 
 import gedi.riboseq.inference.orf.StartCodonTraining.RangeAndStartClassifier;
 import gedi.riboseq.inference.orf.StartCodonTraining.StartCodonPredictionOrf;
 import gedi.util.io.randomaccess.BinaryReader;
 import gedi.util.io.randomaccess.BinaryWriter;
 import gedi.util.io.randomaccess.serialization.BinarySerializable;
-import gedi.util.orm.Orm;
-import gedi.util.orm.OrmSerializer;
-import jline.internal.Log;
-import smile.classification.LogisticRegression;
-import smile.classification.SoftClassifier;
 
 public class StartCodonScorePredictor implements BinarySerializable {
 

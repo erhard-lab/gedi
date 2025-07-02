@@ -122,7 +122,7 @@ public class CommandLineSession {
 
 	public RProcess getRProcess() throws IOException {
 		if (rprocess==null || !rprocess.isRunning())
-			rprocess = new RProcess();
+			rprocess = new RProcess(true);
 		return rprocess;
 	}
 	

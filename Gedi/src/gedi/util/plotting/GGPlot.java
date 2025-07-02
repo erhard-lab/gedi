@@ -88,7 +88,7 @@ public class GGPlot {
 			@Override
 			public void run() {
 				try {
-					r.eval(RProcess.LISTEN_CMD);
+					r.eval(RProcess.getListenCommand(RProcess.start_port));
 				} catch (RserveException e) {
 					tex.Item = e;
 				}
@@ -99,7 +99,7 @@ public class GGPlot {
 		Socket socket = null;
 		while (socket==null) {
 			try {
-				socket = new Socket("localhost",RProcess.port);
+				socket = new Socket("localhost",RProcess.start_port);
 			} catch (ConnectException e) {
 			}
 		}

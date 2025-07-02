@@ -63,7 +63,9 @@ public class Grand3 {
 				"3.0.6a:\n"
 				+ " improved output for no cell barcode matching the barcodes.tsv; fixed a,b for sparse data\n\n"+
 				"3.0.7:\n"
-				+ " fit beta mixture approximation\n\n"
+				+ " fit beta mixture approximation\n\n"+
+				"3.0.7a:\n"
+				+ " use R connection for beta mixture approximation\n\n"
 				;
 	}
 		

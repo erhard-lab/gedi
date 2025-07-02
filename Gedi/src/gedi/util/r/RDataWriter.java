@@ -187,6 +187,7 @@ public class RDataWriter {
 
 	
 	private RDataConn conn;
+	private Runnable finishCallback;
 
 
 	public RDataWriter(OutputStream out) {
@@ -197,6 +198,11 @@ public class RDataWriter {
 //				new AsciiRDataConn(System.out)
 //				)
 		;
+	}
+	
+	public RDataWriter setFinishCallback(Runnable finishCallback) {
+		this.finishCallback = finishCallback;
+		return this;
 	}
 	
 	public RDataWriter() {
@@ -228,6 +234,8 @@ public class RDataWriter {
 	
 	public void finish() throws IOException {
 		writeTerm();
+		if (finishCallback!=null)
+			finishCallback.run();
 		conn.flush();
 		conn.close();
 	}
@@ -254,11 +262,11 @@ public class RDataWriter {
 	private Method[] noarrayMethods;
 	
 	
-	public void write(String name, Object val) throws IOException {
+	public RDataWriter write(String name, Object val) throws IOException {
 		if (val==null) {
 			if (name!=null) throw new RuntimeException("A named object cannot be NULL!");
 			writeTerm();
-			return;
+			return this;
 		}
 		if (allMethods==null) {
 			allMethods = new HashMap<>();
@@ -288,45 +296,50 @@ public class RDataWriter {
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			throw new IOException("Could not write object!",e);
 		}
+		return this;
 	}
 
-	public void write(String name, boolean[] vector) throws IOException {
+	public RDataWriter write(String name, boolean[] vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(LOGICAL);
 		conn.writeInt(vector.length);
 		for(int i=0;i!=vector.length;++i) {
 			conn.writeInt(vector[i]?1:0);
 		}
+		return this;
 	}
 	
-	public void write(String name, Boolean[] vector) throws IOException {
+	public RDataWriter write(String name, Boolean[] vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(LOGICAL);
 		conn.writeInt(vector.length);
 		for(int i=0;i!=vector.length;++i) {
 			conn.writeInt(vector[i]?1:0);
 		}
+		return this;
 	}
 
-	public void write(String name, BitSet vector) throws IOException {
+	public RDataWriter write(String name, BitSet vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(LOGICAL);
 		conn.writeInt(vector.length());
 		for(int i=0;i!=vector.length();++i) {
 			conn.writeInt(vector.get(i)?1:0);
 		}
+		return this;
 	}
 	
-	public void write(String name, BitVector vector) throws IOException {
+	public RDataWriter write(String name, BitVector vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(LOGICAL);
 		conn.writeInt(vector.size());
 		for(int i=0;i!=vector.size();++i) {
 			conn.writeInt(vector.getQuick(i)?1:0);
 		}
+		return this;
 	}
 	
-	public void write(String name, boolean[][] matrix) throws IOException {
+	public RDataWriter write(String name, boolean[][] matrix) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(LOGICAL | HAS_ATTRIBUTES);
 		conn.writeInt(matrix.length*matrix[0].length);
@@ -336,9 +349,10 @@ public class RDataWriter {
 		
 		write("dim", new int[] {matrix.length, matrix[0].length});
 		writeTerm();
+		return this;
 	}
 	
-	public void write(String name, BitMatrix matrix) throws IOException {
+	public RDataWriter write(String name, BitMatrix matrix) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(LOGICAL | HAS_ATTRIBUTES);
 		conn.writeInt(matrix.size());
@@ -348,14 +362,16 @@ public class RDataWriter {
 		
 		write("dim", new int[] {matrix.rows(), matrix.columns()});
 		writeTerm();
+		return this;
 	}
 	
-	public void write(String name, int[] vector) throws IOException {
+	public RDataWriter write(String name, int[] vector) throws IOException {
 		write(name,vector,null);
+		return this;
 	}
 
 	
-	public void write(String name, int[] vector, LinkedHashMap<String, Object> attributes) throws IOException {
+	public RDataWriter write(String name, int[] vector, LinkedHashMap<String, Object> attributes) throws IOException {
 		writeEnvAndName(name);
 		if (attributes!=null)
 			conn.writeInt(INT|HAS_ATTRIBUTES);
@@ -369,17 +385,19 @@ public class RDataWriter {
 				write(n,attributes.get(n));
 			writeTerm();
 		}
+		return this;
 	}
 	
-	public void write(String name, Integer[] vector) throws IOException {
+	public RDataWriter write(String name, Integer[] vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(INT);
 		conn.writeInt(vector.length);
 		for(int i=0;i!=vector.length;++i) 
 			conn.writeInt(vector[i]);
+		return this;
 	}
 	
-	public void write(String name, int[][] matrix) throws IOException {
+	public RDataWriter write(String name, int[][] matrix) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(INT | HAS_ATTRIBUTES);
 		conn.writeInt(matrix.length*matrix[0].length);
@@ -389,18 +407,20 @@ public class RDataWriter {
 		
 		write("dim", new int[] {matrix.length, matrix[0].length});
 		writeTerm();
+		return this;
 	}
 
-	public void write(String name, NumericArray vector) throws IOException {
+	public RDataWriter write(String name, NumericArray vector) throws IOException {
 		if (vector.isIntegral() && vector.getType()!=NumericArrayType.Long)
 			write(name,vector.toIntArray());
 		else
 			write(name,vector.toDoubleArray());
+		return this;
 	}
 
 	
 	 public static final long NA_BITS = 0x7FF00000000007A2L;
-	public void write(String name, double[] vector) throws IOException {
+	public RDataWriter write(String name, double[] vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(REAL);
 		conn.writeInt(vector.length);
@@ -411,9 +431,10 @@ public class RDataWriter {
 				conn.writeDouble(vector[i]);
 			}
 		}
+		return this;
 	}
 
-	public void write(String name, Double[] vector) throws IOException {
+	public RDataWriter write(String name, Double[] vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(REAL);
 		conn.writeInt(vector.length);
@@ -424,9 +445,10 @@ public class RDataWriter {
 				conn.writeDouble(vector[i]);
 			}
 		}
+		return this;
 	}
 	
-	public void write(String name, double[][] matrix) throws IOException {
+	public RDataWriter write(String name, double[][] matrix) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(REAL | HAS_ATTRIBUTES);
 		conn.writeInt(matrix.length*matrix[0].length);
@@ -440,9 +462,10 @@ public class RDataWriter {
 		
 		write("dim", new int[] {matrix.length, matrix[0].length});
 		writeTerm();
+		return this;
 	}
 	
-	public void write(String name, ArrayList<double[]> matrix, LinkedHashMap<String, Object> attributes, String[] cls) throws IOException {
+	public RDataWriter write(String name, ArrayList<double[]> matrix, LinkedHashMap<String, Object> attributes, String[] cls) throws IOException {
 		writeEnvAndName(name);
 		if (cls!=null)
 			conn.writeInt(REAL | HAS_ATTRIBUTES | IS_CLASS);
@@ -464,27 +487,30 @@ public class RDataWriter {
 		if (cls!=null)
 			write("class", cls);
 		writeTerm();
+		return this;
 	}
 
-	public void write(String name, List<?> vector) throws IOException {
+	public RDataWriter write(String name, List<?> vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(VECTOR);
 		conn.writeInt(vector.size());
 		for(int i=0;i!=vector.size();++i) {
 			write(null,vector.get(i));
 		}
+		return this;
 	}
 
-	public void write(String name, String[] vector) throws IOException {
+	public RDataWriter write(String name, String[] vector) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(STRING);
 		conn.writeInt(vector.length);
 		for(int i=0;i!=vector.length;++i) {
 			writeCharExp(vector[i]);
 		}
+		return this;
 	}
 	
-	public void write(String name, String[][] matrix) throws IOException {
+	public RDataWriter write(String name, String[][] matrix) throws IOException {
 		writeEnvAndName(name);
 		conn.writeInt(STRING | HAS_ATTRIBUTES);
 		conn.writeInt(matrix.length*matrix[0].length);
@@ -494,10 +520,11 @@ public class RDataWriter {
 		
 		write("dim", new int[] {matrix.length, matrix[0].length});
 		writeTerm();
+		return this;
 	}
 
-	public void write(String name, Factor[] vector) throws IOException {
-		if (vector.length==0) return;
+	public RDataWriter write(String name, Factor[] vector) throws IOException {
+		if (vector.length==0) return this;
 		
 		writeEnvAndName(name);
 		conn.writeInt(INT | HAS_ATTRIBUTES | IS_CLASS);
@@ -508,10 +535,11 @@ public class RDataWriter {
 		write("levels", vector[0].getNames());
 		write("class", new String[] {"factor"});
 		writeTerm();
+		return this;
 	}
 	
-	public void write(String name, Enum<?>[] vector) throws IOException {
-		if (vector.length==0) return;
+	public RDataWriter write(String name, Enum<?>[] vector) throws IOException {
+		if (vector.length==0) return this;
 		
 		writeEnvAndName(name);
 		conn.writeInt(INT | HAS_ATTRIBUTES | IS_CLASS);
@@ -527,9 +555,10 @@ public class RDataWriter {
 		write("levels", names);
 		write("class", new String[] {"factor"});
 		writeTerm();
+		return this;
 	}
 	
-	public void write(String name, Table<?> df) throws IOException {
+	public RDataWriter write(String name, Table<?> df) throws IOException {
 		TableMetaInformation<?> meta = df.getMetaInfo();
 		
 		writeEnvAndName(name);
@@ -548,9 +577,10 @@ public class RDataWriter {
 //		conn.writeInt(DATAFRAME);
 		write("class", new String[] {"data.frame"});
 		writeTerm();
+		return this;
 	}
 	
-	public void write(String name, DataFrame df) throws IOException {
+	public RDataWriter write(String name, DataFrame df) throws IOException {
 		
 		writeEnvAndName(name);
 		conn.writeInt(VECTOR | HAS_ATTRIBUTES | IS_CLASS);
@@ -568,14 +598,16 @@ public class RDataWriter {
 //		conn.writeInt(DATAFRAME);
 		write("class", new String[] {"data.frame"});
 		writeTerm();
+		return this;
 	}
 
 
-	private void writeCharExp(String string) throws IOException {
+	private RDataWriter writeCharExp(String string) throws IOException {
 		conn.writeInt( CHAR | UTF8_MASK );
 		byte[] bytes = string.getBytes("UTF8");
 		conn.writeInt(bytes.length);
 		conn.write(bytes);
+		return this;
 	}
 
 }
