@@ -237,7 +237,6 @@ public class RDataWriter {
 		if (finishCallback!=null)
 			finishCallback.run();
 		conn.flush();
-		conn.close();
 	}
 	
 	private void writeTerm() throws IOException {

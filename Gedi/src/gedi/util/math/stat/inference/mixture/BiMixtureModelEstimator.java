@@ -249,7 +249,6 @@ public class BiMixtureModelEstimator {
 			
 			proc.library("grandR");
 			double[] re = proc.callNumericFunction("grandR:::fit.ntr.betamix(ll0,ll1,c)");
-			
 			return Arrays.copyOfRange(re, 0, 6);
 			
 		} catch (Exception e) {

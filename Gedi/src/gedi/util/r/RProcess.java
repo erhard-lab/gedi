@@ -10,6 +10,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.ProcessBuilder.Redirect;
 import java.net.ConnectException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -24,10 +25,10 @@ public class RProcess implements AutoCloseable {
 
 	private Thread thread;
 	private Process process;
-	private int port;
+	private int port = -1;
 	private BufferedReader rReader;
 	private BufferedWriter rWriter;
-    
+	private Socket socket;
 	
 	// Thread-local instance storage
     private static final ThreadLocal<RProcess> threadLocalInstance = ThreadLocal.withInitial(() -> {
@@ -44,7 +45,6 @@ public class RProcess implements AutoCloseable {
     }
 	
 	public RProcess(boolean interactive) throws IOException {
-		port = counter.getAndIncrement()+start_port;
 		ProcessBuilder b = new ProcessBuilder();
 		b.redirectError(Redirect.INHERIT);
 		if (interactive) {
@@ -105,6 +105,7 @@ public class RProcess implements AutoCloseable {
             }
             rWriter.close();
             rReader.close();
+            socket.close();
             process.waitFor();
         } catch (Exception e) {
             e.printStackTrace();
@@ -117,16 +118,31 @@ public class RProcess implements AutoCloseable {
 	public boolean isRunning() {
 		return process.isAlive();
 	}
-
-	public RDataWriter startSetting() throws UnknownHostException, IOException {
-		getStdin().append(getListenCommand(port)).flush();
-		Socket socket = null;
-		while (socket==null) {
-			try {
-				socket = new Socket("localhost",port);
-			} catch (ConnectException e) {
+	
+	private synchronized void connectIfNotConnected() throws IOException {
+		if (port==-1) {
+			ServerSocket probe = new ServerSocket(0);
+			port = probe.getLocalPort();
+			probe.close();
+			getStdin().append("con<-socketConnection(port = "+port+", blocking = TRUE, server = TRUE, open = \"rb\")\n").flush();
+			while (socket==null) {
+				try {
+					socket = new Socket("localhost",port);
+				} catch (ConnectException e) {
+				}
 			}
 		}
+	}
+	
+	private synchronized void acceptConnection() throws IOException {
+		if (port==-1) throw new RuntimeException("Not connected!");
+		getStdin().append(".Internal(loadFromConn2(con,environment(),F))\n").flush();
+	}
+
+	public RDataWriter startSetting() throws UnknownHostException, IOException {
+		 connectIfNotConnected(); 
+		 acceptConnection();
+		
 		RDataWriter re = new RDataWriter(socket.getOutputStream());
 //		re.setFinishCallback(()->{
 //			try {
@@ -190,16 +206,16 @@ public class RProcess implements AutoCloseable {
 			
 		
 		
-//		EI.seq(0, 10).parallelized(5, 1, ei->ei.map(ind -> {
-//			try {
-//				RProcess rproc = RProcess.getForCurrentThread();
-//				rproc.startSetting().write("a", new double[] {ind,ind*2}).finish();
-//				double[] a = rproc.callNumericFunction("a+1");
-//				return a[0];
-//			} catch (Exception e) {
-//				throw new RuntimeException(e);
-//			}
-//		})).sort().print();
+		EI.seq(0, 10).parallelized(5, 1, ei->ei.map(ind -> {
+			try {
+				RProcess rproc = RProcess.getForCurrentThread();
+				rproc.startSetting().write("a", new double[] {ind,ind*2}).finish();
+				double[] aa = rproc.callNumericFunction("a+1");
+				return aa[0];
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		})).sort().print();
 	}
 
 	
