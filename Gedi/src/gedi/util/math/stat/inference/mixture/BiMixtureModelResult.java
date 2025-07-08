@@ -33,20 +33,30 @@ public class BiMixtureModelResult implements BinarySerializable{
 	public double getLower() {
 		return lower;
 	}
-	public double getMix() {
+	
+	public double getBetaMixNtr() {
 		return mixBeta==null?Double.NaN:mixBeta[0];
 	}
-	public double getAlpha1() {
+	public double getBetaMixMix() {
 		return mixBeta==null?Double.NaN:mixBeta[1];
 	}
-	public double getBeta1() {
+	public double getBetaMixAlpha1() {
 		return mixBeta==null?Double.NaN:mixBeta[2];
 	}
-	public double getAlpha2() {
+	public double getBetaMixBeta1() {
 		return mixBeta==null?Double.NaN:mixBeta[3];
 	}
-	public double getBeta2() {
+	public double getBetaMixAlpha2() {
 		return mixBeta==null?Double.NaN:mixBeta[4];
+	}
+	public double getBetaMixBeta2() {
+		return mixBeta==null?Double.NaN:mixBeta[5];
+	}
+	public double getBetaMixSSE() {
+		return mixBeta==null?Double.NaN:mixBeta[6];
+	}
+	public double getBetaMixIntegral() {
+		return mixBeta==null?Double.NaN:mixBeta[7];
 	}
 	public double getMap() {
 		return map;

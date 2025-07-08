@@ -158,7 +158,8 @@ public class Grand3OutputFlatfiles extends GediProgram {
 			mkWriter(dir,"alpha1","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
 			mkWriter(dir,"beta1","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
 			mkWriter(dir,"alpha2","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
-			mkWriter(dir,"beta2","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr)
+			mkWriter(dir,"beta2","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
+			mkWriter(dir,"bmintegral","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr)
 		}:null;
 		
 		int numFeatures = 0;
@@ -199,11 +200,12 @@ public class Grand3OutputFlatfiles extends GediProgram {
 						ntrBeta[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBeta());
 						ntrInte[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getIntegral());
 						if (writeMix) {
-							mix[0][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getMix());
-							mix[1][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getAlpha1());
-							mix[2][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBeta1());
-							mix[3][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getAlpha2());
-							mix[4][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBeta2());
+							mix[0][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixMix());
+							mix[1][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixAlpha1());
+							mix[2][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixBeta1());
+							mix[3][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixAlpha2());
+							mix[4][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixBeta2());
+							mix[5][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixIntegral());
 						}
 					}
 					shape[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getShape());
@@ -350,12 +352,13 @@ public class Grand3OutputFlatfiles extends GediProgram {
 								out.writef("\tNA\tNA\tNA\tNA\tNA\tNA");
 							if (writeMix) {
 								if (res.get(t,i)!=null) {
-									out.writef("\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
-											res.get(t,i).getModel(type).getMix(),
-											res.get(t,i).getModel(type).getAlpha1(),
-											res.get(t,i).getModel(type).getBeta1(),
-											res.get(t,i).getModel(type).getAlpha2(),
-											res.get(t,i).getModel(type).getBeta2()
+									out.writef("\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
+											res.get(t,i).getModel(type).getBetaMixMix(),
+											res.get(t,i).getModel(type).getBetaMixAlpha1(),
+											res.get(t,i).getModel(type).getBetaMixBeta1(),
+											res.get(t,i).getModel(type).getBetaMixAlpha2(),
+											res.get(t,i).getModel(type).getBetaMixBeta2(),
+											res.get(t,i).getModel(type).getBetaMixIntegral()
 											);
 								}
 								else
@@ -405,7 +408,8 @@ public class Grand3OutputFlatfiles extends GediProgram {
 								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString());
 						if (writeMix)
-							out.writef("%s %s %s mix\t%s %s %s alpha1\t%s %s %s beta1\t%s %s %s alpha2\t%s %s %s beta2",
+							out.writef("%s %s %s mix\t%s %s %s alpha1\t%s %s %s beta1\t%s %s %s alpha2\t%s %s %s beta2\t%s %s %s bmintegral",
+									columnNames[i],t.toString(),type.toString(),
 									columnNames[i],t.toString(),type.toString(),
 									columnNames[i],t.toString(),type.toString(),
 									columnNames[i],t.toString(),type.toString(),

@@ -227,6 +227,10 @@ public class BiMixtureModelEstimator {
 		return new BiMixtureModelResult(lowerCI, map, upperCI, Double.NaN, Double.NaN, Double.NaN,null);
 	}
 	
+	/**
+	 * 
+	 * @return ntr, w, a1, b1, a2, b2, SSE, integral
+	 */
 	public double[] fitBetaMixture() {
 		double[] ll0 = new double[data.length];
 		double[] ll1 = new double[data.length];
@@ -249,7 +253,7 @@ public class BiMixtureModelEstimator {
 			
 			proc.library("grandR");
 			double[] re = proc.callNumericFunction("grandR:::fit.ntr.betamix(ll0,ll1,c)");
-			return Arrays.copyOfRange(re, 0, 6);
+			return re;
 			
 		} catch (Exception e) {
 			throw new RuntimeException("Cannot call R!",e);
