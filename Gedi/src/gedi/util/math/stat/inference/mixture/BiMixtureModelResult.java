@@ -118,11 +118,8 @@ public class BiMixtureModelResult implements BinarySerializable{
 			out.putFloat(integral);
 		}
 		if (mixBeta!=null) {
-			out.putFloat(mixBeta[0]);
-			out.putFloat(mixBeta[1]);
-			out.putFloat(mixBeta[2]);
-			out.putFloat(mixBeta[3]);
-			out.putFloat(mixBeta[4]);
+			for (int i=0; i<8; i++)
+				out.putFloat(mixBeta[i]);
 		}
 	}
 	@Override
@@ -144,8 +141,8 @@ public class BiMixtureModelResult implements BinarySerializable{
 		}
 		if (1/lower<0) {
 			lower = -lower;
-			mixBeta = new double[5];
-			for (int i=0; i<5; i++)
+			mixBeta = new double[8];
+			for (int i=0; i<8; i++)
 				mixBeta[i] = in.getFloat();
 		} else
 			mixBeta = null;
