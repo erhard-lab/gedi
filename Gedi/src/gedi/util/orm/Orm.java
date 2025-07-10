@@ -531,7 +531,13 @@ public class Orm {
 
 
 	public static OrmInfo getInfo(Class<?> cls) {
-		return cache.computeIfAbsent(cls, c->new OrmInfo(c));
+		OrmInfo re = cache.get(cls);
+		if (re==null) {
+			synchronized (cache) {
+				cache.put(cls, re = new OrmInfo(cls));
+			}
+		}
+		return re;
 	}
 
 
