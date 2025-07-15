@@ -165,3 +165,19 @@
 	]
 }
 
+
+.SLAMTC012 {
+	"styles": [
+		{"name": "0 T>C", "color": "#737373", "lineWidth": 2},
+		{"name": "1 T>C", "color": "#d7301f", "lineWidth": 2},
+		{"name": ">1 T>C", "color": "#990000", "lineWidth": 2}
+	]
+}
+
+.SLAMAG012 {
+	"styles": [
+		{"name": "0 A>G", "color": "#737373", "lineWidth": 2},
+		{"name": "1 A>G", "color": "#d7301f", "lineWidth": 2},
+		{"name": ">1 A>G", "color": "#990000", "lineWidth": 2}
+	]
+}

@@ -81,6 +81,12 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 		<Strand strand="+"/>
 	</AlignedReadsDataToJunctionCountMapper>
 	<StorageNumericNormalize id="+.<?JS id ?>.junctionstc2" input="+.<?JS id ?>.junctionsnntc2" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
+	
+	<NumericComputeSumAll id="+.<?JS id ?>.coveragennsummed" input="+.<?JS id ?>.coveragenn" />
+	<NumericComputeSumAll id="+.<?JS id ?>.coveragenntcsummed" input="+.<?JS id ?>.coveragenntc" />
+	<NumericComputeSumAll id="+.<?JS id ?>.coveragenntc2summed" input="+.<?JS id ?>.coveragenntc2" />
+	<NumericMerge input="+.<?JS id ?>.coveragennsummed,+.<?JS id ?>.coveragenntcsummed,+.<?JS id ?>.coveragenntc2summed" id="+.<?JS id ?>.coveragenntcallsummed" />
+	
 
 <!--SLAM antisense-->
 	<AlignedReadsDataToCoverageMapper id="+.<?JS id ?>.coveragennag" input="+.<?JS id ?>.data">
@@ -119,7 +125,11 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 		<FivePrime />
 	</AlignedReadsDataToSoftclipMapper>
 
-
+	<NumericComputeSumAll id="+.<?JS id ?>.coveragennsummed" input="+.<?JS id ?>.coveragenn" />
+	<NumericComputeSumAll id="+.<?JS id ?>.coveragennagsummed" input="+.<?JS id ?>.coveragennag" />
+	<NumericComputeSumAll id="+.<?JS id ?>.coveragennag2summed" input="+.<?JS id ?>.coveragennag2" />
+	<NumericMerge input="+.<?JS id ?>.coveragennsummed,+.<?JS id ?>.coveragennagsummed,+.<?JS id ?>.coveragennag2summed" id="+.<?JS id ?>.coveragennagallsummed" />
+	
 
 
 <!--Normal-->
@@ -158,6 +168,11 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 	</AlignedReadsDataToJunctionCountMapper>
 	<StorageNumericNormalize id="-.<?JS id ?>.junctionstc2" input="-.<?JS id ?>.junctionsnntc2" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
 
+	<NumericComputeSumAll id="-.<?JS id ?>.coveragennsummed" input="-.<?JS id ?>.coveragenn" />
+	<NumericComputeSumAll id="-.<?JS id ?>.coveragenntcsummed" input="-.<?JS id ?>.coveragenntc" />
+	<NumericComputeSumAll id="-.<?JS id ?>.coveragenntc2summed" input="-.<?JS id ?>.coveragenntc2" />
+	<NumericMerge input="-.<?JS id ?>.coveragennsummed,-.<?JS id ?>.coveragenntcsummed,-.<?JS id ?>.coveragenntc2summed" id="-.<?JS id ?>.coveragenntcallsummed" />
+
 <!--SLAM antisense-->
 	<AlignedReadsDataToCoverageMapper id="-.<?JS id ?>.coveragennag" input="-.<?JS id ?>.data">
 		<ReadCountMode m="<?JS readmode ?>" />
@@ -183,6 +198,10 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 	</AlignedReadsDataToJunctionCountMapper>
 	<StorageNumericNormalize id="-.<?JS id ?>.junctionsag2" input="-.<?JS id ?>.junctionsnnag2" totals="<?JS print(EI.wrap(totals).concat(",")); ?>" />
 
+	<NumericComputeSumAll id="-.<?JS id ?>.coveragennsummed" input="-.<?JS id ?>.coveragenn" />
+	<NumericComputeSumAll id="-.<?JS id ?>.coveragennagsummed" input="-.<?JS id ?>.coveragennag" />
+	<NumericComputeSumAll id="-.<?JS id ?>.coveragennag2summed" input="-.<?JS id ?>.coveragennag2" />
+	<NumericMerge input="-.<?JS id ?>.coveragennsummed,-.<?JS id ?>.coveragennagsummed,-.<?JS id ?>.coveragennag2summed" id="-.<?JS id ?>.coveragennagallsummed" />
 
 
 
@@ -312,6 +331,13 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 		<? if (!nonorm) { ?><Hidden h="true" /><? } ?>
 	</NumericTrackGroup>
 
+	<LinesTrack input="+.<?JS id ?>.coveragenntcallsummed" id="+.<?JS id ?>.SLAM(sense).Grouped" class="SLAMTC012" >
+		<FixedMin min="0"/>
+		<Points p="false" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<? if (!slamsense) { ?><Hidden h="true" /><? } ?>
+	</LinesTrack>
+
 	<NumericTrackGroup id="+.<?JS id ?>.SLAM(sense).Normalized.Data" class="<?JS id ?>">
 		<? if (!nolog) { ?><LogScale base="10" /><? } ?>
 		<RegionLinesTrack input="+.<?JS id ?>.junctionstc" id="+.<?JS id ?>.SLAM(sense).Normalized.Junctions" class="<?JS id ?>" >
@@ -341,6 +367,14 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 		</LinesTrack>
 		<? if (!slamsense || !nonorm) { ?><Hidden h="true" /><? } ?>
 	</NumericTrackGroup>
+	
+	
+	<LinesTrack input="+.<?JS id ?>.coveragennagallsummed" id="+.<?JS id ?>.SLAM(antisense).Grouped" class="SLAMAG012" >
+		<FixedMin min="0"/>
+		<Points p="false" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<? if (!slamsense) { ?><Hidden h="true" /><? } ?>
+	</LinesTrack>
 
 	<NumericTrackGroup id="+.<?JS id ?>.SLAM(antisense).Normalized.Data" class="<?JS id ?>">
 		<? if (!nolog) { ?><LogScale base="10" /><? } ?>
@@ -529,6 +563,14 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 		<? if (!nonorm) { ?><Hidden h="true" /><? } ?>
 	</NumericTrackGroup>
 	
+		<LinesTrack input="-.<?JS id ?>.coveragenntcallsummed" id="-.<?JS id ?>.SLAM(sense).Grouped" class="SLAMTC012" >
+		<FixedMin min="0"/>
+		<Points p="false" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<? if (!slamsense) { ?><Hidden h="true" /><? } ?>
+	</LinesTrack>
+	
+	
 		<NumericTrackGroup id="-.<?JS id ?>.SLAM(sense).Normalized.Data" class="<?JS id ?>">
 		<? if (!nolog) { ?><LogScale base="10" /><? } ?>
 		<RegionLinesTrack input="-.<?JS id ?>.junctionstc" id="-.<?JS id ?>.SLAM(sense).Normalized.Junctions" class="<?JS id ?>" >
@@ -559,7 +601,14 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 		<? if (!slamsense || !nonorm) { ?><Hidden h="true" /><? } ?>
 	</NumericTrackGroup>
 
-	<NumericTrackGroup id="-.<?JS id ?>.SLAM(antisense).Normalized.Data" class="<?JS id ?>">
+	<LinesTrack input="-.<?JS id ?>.coveragennagallsummed" id="-.<?JS id ?>.SLAM(antisense).Grouped" class="SLAMAG012" >
+		<FixedMin min="0"/>
+		<Points p="false" />
+		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
+		<? if (!slamsense) { ?><Hidden h="true" /><? } ?>
+	</LinesTrack>
+	
+		<NumericTrackGroup id="-.<?JS id ?>.SLAM(antisense).Normalized.Data" class="<?JS id ?>">
 		<? if (!nolog) { ?><LogScale base="10" /><? } ?>
 		<RegionLinesTrack input="-.<?JS id ?>.junctionsag" id="-.<?JS id ?>.SLAM(antisense).Normalized.Junctions" class="<?JS id ?>" >
 			<? if (!nolog) { ?><LogScale base="10" /><? } ?>
