@@ -4,8 +4,6 @@ Gedi is a software platform for working with genomic data such as sequencing rea
 
 Gedi is developed in the [erhard-lab](https://erhard-lab.de).
 
-Most of the tools and methods developed in the group are part of, or a plugin to Gedi (e.g. [LFC](https://www.ncbi.nlm.nih.gov/pubmed/26160885), [PRICE](https://www.nature.com/articles/nmeth.4631), [GRAND-SLAM](https://academic.oup.com/bioinformatics/article/34/13/i218/5045735), [Peptide-PRISM](https://aacrjournals.org/cancerimmunolres/article/8/8/1018/470266/Identification-of-the-Cryptic-HLA-I)).
-
 For documentation, see [here](https://github.com/erhard-lab/gedi/wiki)!
 
 # News

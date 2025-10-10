@@ -552,20 +552,23 @@ public class BiMixtureModelEstimator {
 	public static void main(String[] args) {
 //		BinomialDistribution e10 = new BinomialDistribution(10, 4E-4);
 //		BinomialDistribution e11 = new BinomialDistribution(11, 4E-4);
-//		BinomialDistribution m10 = new BinomialDistribution(10, 0.05);
-//		BinomialDistribution m11 = new BinomialDistribution(11, 0.05);
+		BinomialDistribution m10 = new BinomialDistribution(10, 0.05);
+		BinomialDistribution m11 = new BinomialDistribution(11, 0.05);
 //		//> set.seed(42)
 //		//> mm=CreateMixMatrix(n.vector=c(0,0,0,0,0,0,0,0,0,10,10),par=model.par(ntr=0.5))
 //		//> fit.ntr(mm,model.par(),beta.approx = TRUE,plot=TRUE)
-//		BiMixtureModelData[] data = {
-//				new BiMixtureModelData(m10.logProbability(0), e10.logProbability(0), 6),
-//				new BiMixtureModelData(m10.logProbability(1), e10.logProbability(1), 3),
-//				new BiMixtureModelData(m10.logProbability(2), e10.logProbability(2), 1),
-//				new BiMixtureModelData(m11.logProbability(0), e11.logProbability(0), 7),
-//				new BiMixtureModelData(m11.logProbability(1), e11.logProbability(1), 0),
-//				new BiMixtureModelData(m11.logProbability(2), e11.logProbability(2), 3)
-//		};
+		BiMixtureModelData[] data = {
+				new BiMixtureModelData(new BinomialDistribution(8, 0.0473).logProbability(0), new BinomialDistribution(8, 0.003369).logProbability(0),1),
+				new BiMixtureModelData(new BinomialDistribution(9, 0.0473).logProbability(0), new BinomialDistribution(9, 0.003369).logProbability(0),4),
+				new BiMixtureModelData(new BinomialDistribution(15, 0.0473).logProbability(0), new BinomialDistribution(15, 0.003369).logProbability(0),3),
+				new BiMixtureModelData(new BinomialDistribution(16, 0.0473).logProbability(0), new BinomialDistribution(16, 0.003369).logProbability(0),1),
+				new BiMixtureModelData(new BinomialDistribution(18, 0.0473).logProbability(0), new BinomialDistribution(18, 0.003369).logProbability(0),3),
+				new BiMixtureModelData(new BinomialDistribution(20, 0.0473).logProbability(0), new BinomialDistribution(20, 0.003369).logProbability(0),1)
+		};
+		for (BiMixtureModelData d : data)
+			System.out.println(d);
 		
+		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
 		
 //		BinomialDistribution e = new BinomialDistribution(21, 0.0001);
 //		BinomialDistribution m = new BinomialDistribution(21, 0.04);
@@ -574,31 +577,40 @@ public class BiMixtureModelEstimator {
 //		};
 		
 
-		BiMixtureModelData[] data = {
-				new BiMixtureModelData(-0.984425711460142,-0.07074455952965866, 1)
-		};
-
-		long s = System.nanoTime();
-		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
-		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
 		
-		s = System.nanoTime();
-		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
-		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
-		s = System.nanoTime();
-		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
-		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
-		s = System.nanoTime();
-		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
-		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
-		s = System.nanoTime();
-		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
-		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
-		s = System.nanoTime();
-		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
-		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
-		s = System.nanoTime();
-		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
-		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
+		
+		
+		BiMixtureModelData[] data2 = {
+				new BiMixtureModelData(-0.43636748110048107,-0.030375366392205783, 1),
+				new BiMixtureModelData(-0.304628430698524,-0.0037972450581003035, 1),
+				new BiMixtureModelData(-0.34814677794117027,-0.004339708637828918, 1),
+				new BiMixtureModelData(-1.0009219865808647,-0.012476662333758139, 1),
+				new BiMixtureModelData(-0.6527752086396943,-0.008136953695929221, 1),
+				new BiMixtureModelData(-0.6962935558823405,-0.008679417275657835, 1)
+		};
+		System.out.println(new BiMixtureModelEstimator(data2).estimate(0.95, true));
+//
+//		long s = System.nanoTime();
+//		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
+//		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
+//		
+//		s = System.nanoTime();
+//		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
+//		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
+//		s = System.nanoTime();
+//		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
+//		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
+//		s = System.nanoTime();
+//		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
+//		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
+//		s = System.nanoTime();
+//		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
+//		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
+//		s = System.nanoTime();
+//		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
+//		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
+//		s = System.nanoTime();
+//		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
+//		System.out.println(StringUtils.getHumanReadableTimespanNano(System.nanoTime()-s));
 	}
 }

@@ -247,6 +247,8 @@ public class TargetEstimator {
 				tbbinomMixData.add(createBiMixModelData(s->getTbBinomialLogLikComputer(s,t,i), key, count));
 				if (!Double.isNaN(shape))
 					tbbinomShapeMixData.add(createBiMixModelData(s->getTbBinomialLogLikComputer(shape,s,t,i), key, count));
+//				if (i==17)
+//					System.out.println(key+" "+createBiMixModelData(s->getBinomialLogLikComputer(s,t,i), key, count));
 			}
 		}
 		

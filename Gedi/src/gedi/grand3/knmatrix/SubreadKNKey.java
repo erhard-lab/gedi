@@ -51,6 +51,15 @@ public final class SubreadKNKey {
 		return true;
 	}
 	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		for (int i=0; i<k.length; i++) {
+			if (i>0) sb.append("|");
+			sb.append(k[i]).append("/").append(n[i]);
+		}
+		return sb.toString();
+	}
 	
 	
 	
