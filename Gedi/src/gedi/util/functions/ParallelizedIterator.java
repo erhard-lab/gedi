@@ -13,6 +13,8 @@ import java.util.function.IntFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import cern.colt.Arrays;
+
 
 /**
  * n+1 threads are started:
@@ -165,7 +167,7 @@ public class ParallelizedIterator<I,O,S> implements ExtendedIterator<O>{
 		tryNext();
 		if (checkQueue!=null) {
 			if (nindex<0 && !checkQueue.isEmpty())
-				fatal(new RuntimeException("Check failed: Additional objects in queue!"));
+				fatal(null,new RuntimeException("Check failed: Additional objects in queue!"));
 		}
 		return nindex>=0;
 	}
@@ -178,7 +180,7 @@ public class ParallelizedIterator<I,O,S> implements ExtendedIterator<O>{
 			O ce = checkQueue.poll();
 			String err = checker.apply(re, ce);
 			if (err!=null)
-				fatal(new RuntimeException(err));
+				fatal(new Object[] {re},new RuntimeException(err));
 			return re;
 		}
 		return (O) next[nindex++];
@@ -190,7 +192,7 @@ public class ParallelizedIterator<I,O,S> implements ExtendedIterator<O>{
 			return;
 		
 		synchronized (drainLock) {
-			if (ex!=null) fatal(ex);
+			if (ex!=null) fatal(null,ex);
 			drainThread = Thread.currentThread();
 		}
 		
@@ -201,10 +203,10 @@ public class ParallelizedIterator<I,O,S> implements ExtendedIterator<O>{
 				res = output.take();
 			} catch (InterruptedException e) {
 				nindex = -1;
-				if (ex!=null) fatal(ex);
+				if (ex!=null) fatal(null,ex);
 				return;
 			}
-			if (ex!=null) fatal(ex);
+			if (ex!=null) fatal(res.r,ex);
 			if (res.r==null) {
 				nindex = -1;
 				if (inputContr.get()!=inputWork.get())
@@ -225,18 +227,19 @@ public class ParallelizedIterator<I,O,S> implements ExtendedIterator<O>{
 		}
 		
 		synchronized (drainLock) {
-			if (ex!=null) fatal(ex);
+			if (ex!=null) fatal(null,ex);
 			drainThread = null;
 		}
 	}
 	
 	
-	private void fatal(Throwable e) {
+	private void fatal(Object[] current, Throwable e) {
 		for (int i=0; i<runners.length; i++) {
 			runners[i].shutdown();
 		}
 		controller.interrupt();
-		throw new RuntimeException("Exception in parallel iterator thread!",e);
+		if (current==null) throw new RuntimeException("Exception in parallel iterator thread",e);
+		throw new RuntimeException("Exception in parallel iterator thread while processing "+Arrays.toString(current),e);
 	}
 	
 	private int blockIndex = 0;

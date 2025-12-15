@@ -1,5 +1,7 @@
 package gedi.grand3.knmatrix;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.function.Predicate;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.grand3.estimation.TargetEstimationResult;
 import gedi.grand3.estimation.TargetEstimator;
+import gedi.grand3.experiment.ExperimentalDesign;
 import gedi.grand3.experiment.MetabolicLabel.MetabolicLabelType;
 import gedi.grand3.processing.SubreadCounter;
 import gedi.grand3.processing.SubreadProcessorMismatchBuffer;
@@ -15,6 +18,8 @@ import gedi.grand3.processing.TargetCounter;
 import gedi.grand3.targets.CompatibilityCategory;
 import gedi.util.datastructure.array.sparse.AutoSparseDenseDoubleArrayCollector;
 import gedi.util.datastructure.mapping.OneToManyMapping;
+import gedi.util.io.text.LineOrientedFile;
+import gedi.util.io.text.LineWriter;
 import gedi.util.mutable.MutableDouble;
 import gedi.util.mutable.MutableInteger;
 import gedi.util.mutable.MutablePair;
@@ -160,6 +165,37 @@ public class SubreadCounterKNMatrixPerTarget implements SubreadCounter<SubreadCo
 			}
 		}
 	}
+	
+	
+	public LineWriter prepareWrite(File out) throws IOException {
+		LineWriter wr = new LineOrientedFile(out.getPath()).write();
+		wr.writeLine("Condition\tSubread\tLabel\tk\tn\tCount");
+		return wr;
+	}
+	
+	public void write(LineWriter wr, String target, String[] columnNames) throws IOException {
+		
+		
+		int numCond = targetEstimator.getNumOutputConditions();
+
+		HashMap<SubreadKNKey, AutoSparseDenseDoubleArrayCollector>[][] counter = targetToTotalAndLLCounter.get(target).Item2;
+			
+		for (int cond=0; cond<numCond; cond++)
+			for (int c=0; c<counter.length; c++) if (counter[c]!=null)
+				for (int l=0; l<labels.length; l++) 
+					for (SubreadKNKey key : counter[c][l].keySet()) 
+						for (int s=0; s<key.k.length; s++ ) {
+							String prefix = String.format("%s_%s\t%d\t%s\t", 
+									columnNames[cond],
+									allCategories[c],
+									s,labels[l]);
+							
+							double count = counter[c][l].get(key).get(l);
+							if (count>0)
+								wr.writef("%s%d\t%d\t%.0f\n", prefix,key.k[s],key.n[s],count);
+						}
+	}
+	
 	
 	@Override
 	public List<TargetEstimationResult> getResultsForCurrentTargets() {

@@ -52,7 +52,7 @@ public class TargetEstimator {
 	
 	private boolean fitMix;
 	
-	public TargetEstimator(ExperimentalDesign design, ModelStructure[][][] models, int[][] conditionMapping, int[] conditionToSampleId, double shapeStep, Supplier<Progress> progress, int nthreads, boolean fitMix) {
+	public TargetEstimator(ExperimentalDesign design, ModelStructure[][][] models, int[][] conditionMapping, int[] conditionToSampleId, double shapeStep, boolean fitMix) {
 		this.models = models;
 		this.conditionMapping = conditionMapping;
 		this.conditionToSampleId = conditionToSampleId;
@@ -77,7 +77,9 @@ public class TargetEstimator {
 		shapes = new double[(int) (Math.ceil((top-bottom)/shapeStep))];
 		for (int sh=0; sh<shapes.length; sh++) 
 			shapes[sh] = Math.min(bottom+sh*shapeStep, top);
-		
+	}
+	
+	public void fillLikelihoodCache(Supplier<Progress> progress, int nthreads) {
 		
 		logLikComputerBinom = new OldNewLogLikCache[numSubreads][numTypes][numSamples];
 		logLikComputerTbBinom = new OldNewLogLikCache[numSubreads][numTypes][numSamples];

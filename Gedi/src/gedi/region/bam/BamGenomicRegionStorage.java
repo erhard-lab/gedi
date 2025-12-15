@@ -1240,7 +1240,7 @@ public class BamGenomicRegionStorage implements GenomicRegionStorage<AlignedRead
 	//				files[i].close();
 				}
 			} catch (htsjdk.samtools.util.RuntimeIOException e) {
-				return false;
+				throw new RuntimeException("Cannot open bam file",e);
 			}
 			
 //			for (SAMRecordList l : mateBuffer.values())

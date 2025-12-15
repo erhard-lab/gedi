@@ -150,6 +150,24 @@ public class Trie<T> implements Map<String,T> {
 		}
 		return false;
 	}
+	
+	
+	public boolean containsSequence(CharSequence key) {
+		if (key instanceof CharSequence) {
+			CharSequence s = (CharSequence) key;
+			Node n = root;
+			int i = 0;
+			for (Node t = n; t!=null && i<s.length(); ) {
+				t = n.findChild(s.charAt(i));
+				if (t!=null) {
+					n = t;
+					i++;
+				}
+			}
+			return i==s.length()&&n.value!=null;
+		}
+		return false;
+	}
 
 
 	/**

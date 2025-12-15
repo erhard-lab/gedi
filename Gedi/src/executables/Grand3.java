@@ -65,7 +65,9 @@ public class Grand3 {
 				"3.0.7:\n"
 				+ " fit beta mixture approximation\n\n"+
 				"3.0.7a:\n"
-				+ " use R connection for beta mixture approximation\n\n"
+				+ " use R connection for beta mixture approximation\n\n"+
+				"3.0.7b:\n"
+				+ " target mixmat output for pseudobulks\n\n"
 				;
 	}
 		

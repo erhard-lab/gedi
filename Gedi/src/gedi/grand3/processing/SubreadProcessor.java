@@ -162,31 +162,15 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 	
 	public void processTarget(Supplier<Progress> progress, String name, 
 			TargetCollection targets,
-			SubreadCounterKNMatrices res) throws IOException {
+			SubreadCounter res) throws IOException {
 		
 		CompoundParallelizedState state = new CompoundParallelizedState();
 		state.add(new SubreadProcessorMismatchBuffer(source.getConverter().getSemantic().length));
 		state.add(res);
 		
-		if (new File(name).exists()) {
-			
-			EI.lines(new File(name))
-					.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r))
-					.map(tname->{
-						ImmutableReferenceGenomicRegion<String> target = targets.getRegion(tname);
-						if (target==null) throw new RuntimeException("Target with name "+tname+" unknown!");
-						processTarget(targets,target,state);
-						return 1;
-					})
-					.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Finished"))
-					.drain();
-			
-		} 
-		else {
-			ImmutableReferenceGenomicRegion<String> target = targets.getRegion(name);
-			if (target==null) throw new RuntimeException("Target with name "+name+" unknown!");
-			processTarget(targets,target,state);
-		}
+		ImmutableReferenceGenomicRegion<String> target = targets.getRegion(name);
+		if (target==null) throw new RuntimeException("Target with name "+name+" unknown!");
+		processTarget(targets,target,state);
 	}
 
 	

@@ -12,6 +12,7 @@ import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.genomic.Genomic;
 import gedi.core.reference.Strandness;
 import gedi.core.region.GenomicRegionStorage;
+import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.grand3.Grand3Utils;
 import gedi.grand3.estimation.ModelStructure;
 import gedi.grand3.estimation.TargetEstimationResult;
@@ -31,6 +32,7 @@ import gedi.util.ArrayUtils;
 import gedi.util.datastructure.mapping.OneToManyMapping;
 import gedi.util.functions.EI;
 import gedi.util.io.randomaccess.PageFileWriter;
+import gedi.util.io.text.LineWriter;
 import gedi.util.program.GediProgram;
 import gedi.util.program.GediProgramContext;
 import gedi.util.r.RRunner;
@@ -143,6 +145,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		targets.checkValid();
 		context.getLog().info("Using the following categories for estimating target parameters: "+EI.wrap(targets.getCategories(c->c.useToEstimateTargetParameters())).concat(","));
 		
+		String[] columnNames; 
 		int[][] targetMapping;
 		int[] targetToSample;
 		if (pseudobulkFile!=null) {
@@ -150,6 +153,8 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 			PseudobulkDefinition psdef = new PseudobulkDefinition(pseudobulkFile,design,context.getLog(),pseudobulkMinimalPurity);
 			targetMapping = psdef.getCellsToPseudobulk();
 			targetToSample = psdef.getSampleForPseudobulks();
+			columnNames = psdef.getPseudobulkNames();
+
 		}
 		else {
 			context.getLog().info("Using output conditions as in experimental design");
@@ -157,6 +162,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 			for (int i=0; i<targetMapping.length; i++)
 				targetMapping[i] = new int[] {i};
 			targetToSample = design.getIndexToSampleId();
+			columnNames = EI.seq(0, design.getCount()).map(i->design.getFullName(i)).toArray(String.class);
 		}
 		if (EI.wrap(targetMapping).mapToInt(a->ArrayUtils.max(a)).max()+1!=targetToSample.length) throw new RuntimeException("Assertion failed!");
 		context.getLog().info("Output conditions n="+targetToSample.length);
@@ -167,28 +173,62 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		algo.setNthreads(nthreads);
 		algo.setDebug(debug);
 		
+	
+		OneToManyMapping<String, String> mapper = new OneToManyMapping<String, String>();
+		if (targetMergeTab!=null) {
+			mapper = OneToManyMapping.fromFile(targetMergeTab, "merged", "name");
+			context.getLog().info("Loaded merge table with "+mapper.getFromUniverse().size()+" entries.");
+		}
+		
+
+		TargetEstimator targetEstimatorObject = new TargetEstimator(design, models, targetMapping, targetToSample, 0.01,writeMix);
+		
 		if (targetMixmat!=null) {
 			context.getLog().info("Will only compute parameters and mix matrix for "+targetMixmat+"...");
-			SubreadCounterKNMatrices binom = new SubreadCounterKNMatrices(c->c.useToEstimateTargetParameters(),design.getNumSamples(), targetToSample,source.getConverter().getSemantic().length,design.getTypes());
-			binom.setDebug(debug);
-			algo.processTarget(context::getProgress,targetMixmat, targets, binom);
-			binom.write(getOutputFile(0), design);
+			
+			SubreadCounterKNMatrixPerTarget targetEstimator = new SubreadCounterKNMatrixPerTarget(targets.getCategories(),c->c.useToEstimateTargetParameters(), targetEstimatorObject, design.getTypes(),subreadsToUse,mapper);
+			getOutputFile(0).getParentFile().mkdirs();
+			LineWriter lw = targetEstimator.prepareWrite(getOutputFile(0));
+			if (new File(targetMixmat).exists()) {
+				EI.lines(new File(targetMixmat))
+						.progress(context.getProgress(), targets.getNumRegions(), r->"Processing "+r)
+						.map(tname->{
+							ImmutableReferenceGenomicRegion<String> target = targets.getRegion(tname);
+							if (target==null) throw new RuntimeException("Target with name "+tname+" unknown!");
+							try {
+								algo.processTarget(context::getProgress,tname, targets, targetEstimator);
+								targetEstimator.write(lw, tname, columnNames);	
+							} catch (IOException e) {
+								throw new RuntimeException("Could not process "+tname+"!",e);
+							}
+							return 1;
+						})
+						.progress(context.getProgress(), targets.getNumRegions(), r->"Finished")
+						.drain();
+				
+				
+			} 
+			else {
+				ImmutableReferenceGenomicRegion<String> target = targets.getRegion(targetMixmat);
+				if (target==null) throw new RuntimeException("Target with name "+targetMixmat+" unknown!");
+				
+				algo.processTarget(context::getProgress,targetMixmat, targets, targetEstimator);
+				targetEstimator.write(lw, targetMixmat, columnNames);		
+			}
+			lw.close();
+				
+//			SubreadCounterKNMatrices binom = new SubreadCounterKNMatrices(c->c.useToEstimateTargetParameters(),design.getNumSamples(), targetToSample,source.getConverter().getSemantic().length,design.getTypes());
+//			binom.setDebug(debug);
+//			algo.processTarget(context::getProgress,targetMixmat, targets, binom);
+//			binom.write(getOutputFile(0), design);
 			
 			return null;
 		}
 		
 		context.getLog().info("Filling likelihood cache...");
-		TargetEstimator targetEstimatorObject = new TargetEstimator(design, models, targetMapping, targetToSample, 0.01,context::getProgress,nthreads,writeMix);
+		targetEstimatorObject.fillLikelihoodCache(context::getProgress,nthreads);
 		context.getLog().info("Done filling likelihood cache.");
 
-		
-		OneToManyMapping<String, String> mapper = new OneToManyMapping<String, String>();
-		if (targetMergeTab!=null) {
-			
-			
-			mapper = OneToManyMapping.fromFile(targetMergeTab, "merged", "name");
-			context.getLog().info("Loaded merge table with "+mapper.getFromUniverse().size()+" entries.");
-		}
 		
 		SubreadCounterKNMatrixPerTarget targetEstimator = new SubreadCounterKNMatrixPerTarget(targets.getCategories(),c->c.useToEstimateTargetParameters(), targetEstimatorObject, design.getTypes(),subreadsToUse,mapper);
 		

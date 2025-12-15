@@ -112,7 +112,7 @@ public class DetectSnps<A extends AlignedReadsData>  {
 			.filter(s->s.length()>0);
 		
 		if (output!=null)
-			it.print("Location\tCoverage\tMismatches\tP value",output);
+			it.print("Location\tMismatches\tCoverage\tP value",output);
 		else
 			it.drain();
 		
