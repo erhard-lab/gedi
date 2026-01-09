@@ -13,6 +13,7 @@ import gedi.core.data.annotation.Transcript;
 import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.ConditionMappedAlignedReadsData;
 import gedi.core.data.reads.ContrastMapping;
+import gedi.core.data.reads.DefaultAlignedReadsData;
 import gedi.core.data.reads.DigitalAlignedReadsData;
 import gedi.core.data.reads.ReadCountMode;
 import gedi.core.genomic.Genomic;
@@ -184,7 +185,8 @@ public class ViewCIT {
 		if (tExpr!=null) {
 			if (tExpr.equals("digital")) type = (Class<T>) DigitalAlignedReadsData.class;
 		}
-		
+		if (conditions!=null) type = (Class<T>) DefaultAlignedReadsData.class;
+		 
 		LineWriter wr = mode!=CitOutputMode.Cit?output.write():null;
 		CenteredDiskIntervalTreeStorage citout = mode==CitOutputMode.Cit?new CenteredDiskIntervalTreeStorage(output.getPath(), type):null;
 		

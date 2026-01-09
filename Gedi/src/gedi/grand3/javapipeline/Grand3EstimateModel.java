@@ -119,8 +119,9 @@ public class Grand3EstimateModel extends GediProgram {
 				
 			for (int s=0; s<subreads.length; s++) 
 				for (int i=0; i<design.getNumSamples(); i++)
-					if (design.getLabelForSample(i,design.getTypes()[t])!=null)
+					if (design.getLabelForSample(i,design.getTypes()[t])!=null) {
 						pre_perr[s][t][i] = est.estimate(i, s, design.getTypes()[t]);
+					}
 		}
 		
 		

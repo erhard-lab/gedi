@@ -72,7 +72,6 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		ExtendedIterator<ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>> srit = targets.iterateRegions()
 			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r.getData()))
 			.parallelizedState(nthreads, 5, resimulator==null?null:resimulator.createState(),(ei,resim)->ei.unfold(target->{
-				
 				if (resimulator==null) 
 					return source.getSubReads(target, null);
 				
@@ -90,6 +89,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 			}))
 			.iff(progress!=null,ei->ei.progress(progress.get(), -1, r->"Finished subreads"));
 		
+
 		if (newConditions!=null) {
 			srit = srit.map(r->new ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>(r.getReference(),r.getRegion(),r.getData().selectMergeConditions(newConditions.length, conditionMapping )));		
 		}

@@ -92,7 +92,8 @@ public class Resimulator  {
 		
 		
 		fac.makeDistinct();
-		return new ImmutableReferenceGenomicRegion<>(t.getReference(), t.getRegion(),fac.createSubread());
+		ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> re = new ImmutableReferenceGenomicRegion<>(t.getReference(), t.getRegion(),fac.createSubread());
+		return re;
 	}
 
 

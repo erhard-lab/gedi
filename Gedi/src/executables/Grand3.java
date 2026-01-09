@@ -67,7 +67,11 @@ public class Grand3 {
 				"3.0.7a:\n"
 				+ " use R connection for beta mixture approximation\n\n"+
 				"3.0.7b:\n"
-				+ " target mixmat output for pseudobulks\n\n"
+				+ " target mixmat output for pseudobulks\n\n"+
+				"3.0.7c:\n"
+				+ " fixed bug (not in feasible region) when there are no data to estimate error model\n\n"+
+				"3.0.7d:\n"
+				+ " fixed bug (for resim with single cell data and pseudobulking)\n\n"
 				;
 	}
 		

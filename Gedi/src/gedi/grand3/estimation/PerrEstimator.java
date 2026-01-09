@@ -39,12 +39,18 @@ public class PerrEstimator extends MismatchMatrix {
 				if (re2[1]-re2[0]<re[1]-re[0])
 					re = re2;
 			}
-			return re;
+			if (re[1]-re[0]>0)
+				return re;
 		}
 		double[] f = flatten(mmtab[sample][subread],type);
 		double med = median.evaluate(f);
 		double d = Math.min(ArrayUtils.max(f)-med,med-ArrayUtils.min(f));
-		return new double[]{med-d,med+d};
+		double[] re = new double[]{med-d,med+d};
+		
+		if (re[1]-re[0]>0)
+			return re;
+		
+		return new double[] {0,4E-4};
 	}
 	
 	private double[] regress(double[] s, double[] on, MetabolicLabelType type) {

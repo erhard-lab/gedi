@@ -67,42 +67,33 @@
         </executions>
       </plugin>
        <plugin>
-   <artifactId>exec-maven-plugin</artifactId>
-   <groupId>org.codehaus.mojo</groupId>
-   <version>1.6.0</version>
-   <executions>
-     <execution>
-       <id>Creating softlink</id>
-       <phase>package</phase>
-       <goals>
-         <goal>exec</goal>
-       </goals>
-       <configuration>
-         <executable>ln</executable>
-         <arguments>
-            <argument>-fs</argument>
-            <argument>Gedi-${project.version}.jar</argument>
-            <argument>${user.dir}/gedi.jar</argument>
-         </arguments>
-       </configuration>
-     </execution>
-     <execution>
-       <id>Copying scripts</id>
-       <phase>package</phase>
-       <goals>
-         <goal>exec</goal>
-       </goals>
-       <configuration>
-         <executable>cp</executable>
-         <arguments>
-            <argument>gedi</argument>
-            <argument>bamlist2cit</argument>
-            <argument>${user.dir}/</argument>
-         </arguments>
-       </configuration>
-     </execution>
-   </executions>
- </plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-antrun-plugin</artifactId>
+  <version>3.1.0</version>
+  <executions>
+    <execution>
+      <id>cross-platform-file-ops</id>
+      <phase>package</phase>
+      <goals>
+        <goal>run</goal>
+      </goals>
+      <configuration>
+        <target>
+          <copy todir="${user.dir}">
+            <fileset dir="${project.basedir}">
+              <include name="gedi"/>
+              <include name="bamlist2cit"/>
+            </fileset>
+          </copy>
+
+          <copy file="${user.dir}/Gedi-${project.version}.jar" 
+                tofile="${user.dir}/gedi.jar" 
+                overwrite="true"/>
+        </target>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
       
     </plugins>
   </build>

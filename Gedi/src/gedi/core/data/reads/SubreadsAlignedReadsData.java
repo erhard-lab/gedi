@@ -181,11 +181,12 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 	 * @return
 	 */
 	public SubreadsAlignedReadsData selectMergeConditions(int numNewConditions, int[][] mapping) {
-		int[][] nonzerore = new int[getDistinctSequences()][];
+		int[][] nonzerore = null;
 		int[][] countre = new int[getDistinctSequences()][];
 		
 		if (hasNonzeroInformation()) {
 			if (numNewConditions>5) {
+				nonzerore = new int[getDistinctSequences()][];
 				IntArrayList nonzerol = new IntArrayList(3);
 				IntArrayList countl = new IntArrayList(3);
 				for (int d=0; d<getDistinctSequences(); d++)  {
@@ -215,7 +216,7 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 				for (int d=0; d<getDistinctSequences(); d++)  {
 					countre[d] = new int[numNewConditions];
 					
-					for (int n=0; n<nonzeros.length; n++) {
+					for (int n=0; n<nonzeros[d].length; n++) {
 						int oldcond = nonzeros[d][n];
 						int count = this.count[d][n];
 						

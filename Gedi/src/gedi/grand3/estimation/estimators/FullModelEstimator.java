@@ -1,12 +1,14 @@
 package gedi.grand3.estimation.estimators;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.util.Stack;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.logging.Logger;
 
+import cern.colt.Arrays;
 import gedi.grand3.estimation.ModelStructure;
 import gedi.grand3.estimation.models.Grand3BinomialMixtureModel;
 import gedi.grand3.estimation.models.Grand3SubreadsJointBinomialMixtureModel;
@@ -14,6 +16,7 @@ import gedi.grand3.estimation.models.Grand3SubreadsJointTruncatedBetaBinomialMix
 import gedi.grand3.estimation.models.Grand3TruncatedBetaBinomialMixtureModel;
 import gedi.grand3.experiment.ExperimentalDesign;
 import gedi.grand3.knmatrix.KNMatrix.KNMatrixElement;
+import gedi.util.io.text.LineOrientedFile;
 import gedi.util.io.text.LineWriter;
 import gedi.util.io.text.StringLineWriter;
 import gedi.util.math.stat.inference.ml.MaximumLikelihoodModelPriorDecorator;
@@ -80,10 +83,25 @@ public class FullModelEstimator extends ModelEstimator {
 				.setParameter("p.err", m);
 
 		binomModel.setNtrByFirstMoment(par,data);
-		MaximumLikelihoodParametrization re = estimator.fit(deco,par, data);
+		try {
+			MaximumLikelihoodParametrization re = estimator.fit(deco,par, data);
+			return re;
+		} catch (RuntimeException ex) {
+//			try {
+//				Writer lw = new LineOrientedFile("error.txt").startWriting();
+//				for (KNMatrixElement e : data)
+//					lw.write(e.toString());
+//				lw.write(Arrays.toString(pre_perr));
+//				lw.close();
+//			} catch (IOException e) {
+//				for (KNMatrixElement ee : data)
+//					System.out.println(ee.toString());
+//				System.out.println(Arrays.toString(pre_perr));
+//			}
+			throw ex;
+		}
 //		re.setLowerBounds("p.err", m-r);
 //		re.setUpperBounds("p.err", m+r); // not sensible for gaussian prior!
-		return re;
 		
 //		MaximumLikelihoodParametrization par = binomModel.createPar()
 //				.setParameter("p.err", (pre_perr[0]+pre_perr[1])/2);
