@@ -10,6 +10,7 @@ import gedi.core.region.ArrayGenomicRegion;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.grand3.estimation.MismatchMatrix;
 import gedi.grand3.estimation.ModelStructure;
+import gedi.grand3.estimation.TargetEstimationResult.ModelType;
 import gedi.grand3.estimation.models.Grand3Model;
 import gedi.grand3.experiment.MetabolicLabel.MetabolicLabelType;
 import gedi.util.SequenceUtils;
@@ -53,6 +54,7 @@ public class Resimulator  {
 			ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> t) {
 		
 		if (state.getTargets()==null) return null;
+		if (modelType.equals(ResimulatorModelType.None)) return t;
 		
 		char[] readSeq;
 		// obtain sequence
@@ -89,7 +91,7 @@ public class Resimulator  {
 			}
 			
 		}
-		
+		if (fac.getDistinctSequences()==0) return null;
 		
 		fac.makeDistinct();
 		ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> re = new ImmutableReferenceGenomicRegion<>(t.getReference(), t.getRegion(),fac.createSubread());

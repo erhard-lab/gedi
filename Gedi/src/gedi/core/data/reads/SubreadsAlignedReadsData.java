@@ -1,9 +1,11 @@
 package gedi.core.data.reads;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import cern.colt.bitvector.BitVector;
 import gedi.app.Gedi;
 import gedi.core.data.reads.AlignedReadsDataFactory.VarIndel;
 import gedi.core.data.reads.subreads.PairedEndToSubreadsConverter;
@@ -239,6 +241,28 @@ public class SubreadsAlignedReadsData extends DefaultAlignedReadsData implements
 					}
 				}
 			}
+		}
+		
+		BitVector keep = new BitVector(countre.length);
+		if (nonzerore==null) {
+			for (int i=0; i<countre.length; i++) 
+				keep.putQuick(i, ArrayUtils.sum(countre[i])>0);
+		} else {
+			for (int i=0; i<countre.length; i++) 
+				keep.putQuick(i, countre[i].length>0);
+			if (keep.cardinality()<keep.size())
+				nonzerore = ArrayUtils.restrict(nonzerore, keep);
+		}
+		
+		if (keep.cardinality()==0)
+			return null;
+		
+		if (keep.cardinality()<keep.size()) {
+			countre = ArrayUtils.restrict(countre, keep);
+			this.var = ArrayUtils.restrict(this.var, keep);
+			this.indels = ArrayUtils.restrict(this.indels, keep);
+			this.subreadGeom = ArrayUtils.restrict(this.subreadGeom, keep);
+			this.gaps = ArrayUtils.restrict(this.gaps, keep);
 		}
 		
 		return SubreadsAlignedReadsData.create(numNewConditions, countre, nonzerore, this.var, this.indels, this.subreadGeom, this.gaps);

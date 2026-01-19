@@ -145,7 +145,7 @@ public class Grand3Resimulate<A extends AlignedReadsData> extends GediProgram {
 		context.getLog().info("Writing resimulated (replace mismatches by: "+modelType+") subreads to CIT file "+getOutputFile(0));
 		ReadSource<A> source = new ReadSource<>(reads, clipping, strandness, debug);
 		
-		Resimulator resim = ntrs==null?null:new Resimulator(genomic,modelType,models,ntrs,mmMat,design.getTypes(), seed);
+		Resimulator resim = new Resimulator(genomic,modelType,models,ntrs,mmMat,design.getTypes(), seed);
 		
 		SubreadProcessor<A> algo = new SubreadProcessor<A>(genomic,source,masked,context.getLog());
 		algo.setNthreads(nthreads);

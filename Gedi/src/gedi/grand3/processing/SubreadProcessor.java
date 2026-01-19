@@ -68,12 +68,10 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 	public void writeSubreads(Supplier<Progress> progress, 
 			TargetCollection targets, File output, ExperimentalDesign design, String[] subreads, Resimulator resimulator, String[] newConditions, int[][] conditionMapping) throws IOException {
 		
-		
 		ExtendedIterator<ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>> srit = targets.iterateRegions()
+				//EI.wrap(targets.getRegion("MYC"))
 			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r.getData()))
 			.parallelizedState(nthreads, 5, resimulator==null?null:resimulator.createState(),(ei,resim)->ei.unfold(target->{
-				if (resimulator==null) 
-					return source.getSubReads(target, null);
 				
 				ImmutableReferenceGenomicRegion<String>  currentTargetExtended = new ImmutableReferenceGenomicRegion<>(
 						target.getReference(), 
@@ -91,7 +89,11 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 		
 
 		if (newConditions!=null) {
-			srit = srit.map(r->new ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>(r.getReference(),r.getRegion(),r.getData().selectMergeConditions(newConditions.length, conditionMapping )));		
+			srit = srit.map(r->{
+				SubreadsAlignedReadsData rd = r.getData().selectMergeConditions(newConditions.length, conditionMapping );
+				if (rd==null) return null;
+				return new ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>(r.getReference(),r.getRegion(),rd);
+			}).removeNulls();		
 		}
 		
 		CenteredDiskIntervalTreeStorage<SubreadsAlignedReadsData> scit = new CenteredDiskIntervalTreeStorage<>(output.getPath(),SubreadsAlignedReadsData.class);

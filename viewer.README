@@ -1,0 +1,3 @@
+To create a standalone jar:
+
+mvn -f ../Gedi package -Pviewer

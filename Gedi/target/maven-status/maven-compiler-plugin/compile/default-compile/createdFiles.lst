@@ -26,6 +26,7 @@ gedi/util/gui/JCheckList$1.class
 gedi/region/bam/BamAlignedReadDataFactory$1.class
 gedi/util/datastructure/collections/doublecollections/DoubleArrayList$1.class
 executables/Prism$1.class
+gedi/iTiSS/TiSSController$1.class
 gedi/grand10x/javapipeline/Grand10xClusterPositionInferenceProgram$1.class
 gedi/util/datastructure/collections/longcollections/LongArrayList$1.class
 gedi/grand3/targets/geneExonic/SpliceAcceptorTargetCollection$1.class
