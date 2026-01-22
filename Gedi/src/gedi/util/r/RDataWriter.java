@@ -232,11 +232,17 @@ public class RDataWriter {
 		conn.writeBytes(name);
 	}
 	
+	public RDataWriter writeRaw(byte[] buffer) throws IOException {
+		conn.write(buffer);
+		return this;
+	}
+	
 	public void finish() throws IOException {
 		writeTerm();
 		if (finishCallback!=null)
 			finishCallback.run();
 		conn.flush();
+		conn.close();
 	}
 	
 	private void writeTerm() throws IOException {
@@ -260,6 +266,12 @@ public class RDataWriter {
 	private HashMap<Class<?>,Method> allMethods;
 	private Method[] noarrayMethods;
 	
+	
+	
+	public RDataWriter writeNull() throws IOException {
+		writeTerm();
+		return this;
+	}
 	
 	public RDataWriter write(String name, Object val) throws IOException {
 		if (val==null) {
@@ -600,6 +612,17 @@ public class RDataWriter {
 		return this;
 	}
 
+	public RDataWriter startList(String name, int len) throws IOException {
+		writeEnvAndName(name);
+		conn.writeInt(VECTOR | HAS_ATTRIBUTES);
+		conn.writeInt(len);
+		return this;
+	}
+	public RDataWriter endList(String... names) throws IOException {
+		write("names", names);
+		writeTerm();
+		return this;
+	}
 
 	private RDataWriter writeCharExp(String string) throws IOException {
 		conn.writeInt( CHAR | UTF8_MASK );

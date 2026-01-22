@@ -10,6 +10,7 @@ import gedi.grand3.javapipeline.Grand3ParameterSet;
 import gedi.grand3.javapipeline.Grand3ProcessTargets;
 import gedi.grand3.javapipeline.Grand3Resimulate;
 import gedi.grand3.javapipeline.Grand3SetupTargetsAcceptor;
+import gedi.grand3.javapipeline.Grand3SetupTargetsExonIntron;
 import gedi.grand3.javapipeline.Grand3SetupTargetsGenes;
 import gedi.grand3.javapipeline.Grand3SetupTargetsTest;
 import gedi.grand3.javapipeline.Grand3SnpsAndClip;
@@ -33,6 +34,7 @@ public class Grand3 {
 				new Grand3WriteExperimentalDesign(params),
 				new Grand3SetupTargetsAcceptor(params),
 				new Grand3SetupTargetsGenes(params),
+				new Grand3SetupTargetsExonIntron(params),
 				new Grand3SetupTargetsTest(params),
 				new Grand3SnpsAndClip(params),
 				new Grand3CollectSufficientStatistics(params),
@@ -71,7 +73,9 @@ public class Grand3 {
 				"3.0.7c:\n"
 				+ " fixed bug (not in feasible region) when there are no data to estimate error model\n\n"+
 				"3.0.7d:\n"
-				+ " fixed bug (for resim with single cell data and pseudobulking)\n\n"
+				+ " fixed bug (for resim with single cell data and pseudobulking)\n\n"+
+				"3.0.8:\n"
+				+ " Added support for outputting per exon and intron\n\n"
 				;
 	}
 		

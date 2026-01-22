@@ -253,7 +253,9 @@ public class PriceOrf implements BinarySerializable {
 	}
 
 
-
+	public String getTableId() {
+		return String.format("%s_%s_%d", transcriptId,type.toString(),orfid);
+	}
 
 	@Override
 	public void serialize(BinaryWriter out) throws IOException {

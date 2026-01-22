@@ -147,6 +147,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 			num = targets.getNumRegions();
 		}
 		
+//		it = EI.singleton(Arrays.asList(genomic.getGeneMapping().apply("ENSG00000203326").toImmutable()));		
 		return it
 			.iff(progress!=null,ei->ei.progress(progress.get(), num, r->"Processing "+r.get(0).getData()))
 			.parallelizedState(nthreads, 5, state, (ei,b)->ei.map(targetset->{

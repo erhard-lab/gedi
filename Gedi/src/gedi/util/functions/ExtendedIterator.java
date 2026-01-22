@@ -1,5 +1,8 @@
 package gedi.util.functions;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -31,6 +34,7 @@ import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.GZIPOutputStream;
 
 import gedi.core.data.table.Table;
 import gedi.core.data.table.TableType;
@@ -70,6 +74,8 @@ import gedi.util.io.text.LineWriter;
 import gedi.util.math.stat.counting.Counter;
 import gedi.util.mutable.Mutable;
 import gedi.util.mutable.MutableInteger;
+import gedi.util.mutable.MutablePair;
+import gedi.util.r.RDataWriter;
 import gedi.util.userInteraction.progress.ConsoleProgress;
 import gedi.util.userInteraction.progress.Progress;
 
@@ -793,6 +799,38 @@ public interface ExtendedIterator<T> extends Iterator<T> {
 			re.add(next());
 		}
 		return re;
+	}
+	
+	default void writeRDS(String file, int size, Function<T,String> labeller, BiConsumer2<T,RDataWriter> writer) throws IOException {
+		writeRDS(file,size,0,0,labeller,writer);
+	}
+	
+	default void writeRDS(String file, int size, int nthreads, int batch, Function<T,String> labeller, BiConsumer2<T,RDataWriter> writer) throws IOException {
+		RDataWriter out = new RDataWriter(new GZIPOutputStream(new FileOutputStream(file)));
+		out.writeHeader(false);
+		out.startList(null, size);
+		
+		Function<ExtendedIterator<T>,ExtendedIterator<MutablePair<String,byte[]>>> mapper = ei->ei.map(i->{
+			try {
+				ByteArrayOutputStream stream = new ByteArrayOutputStream(1<<16);
+				RDataWriter hout = new RDataWriter(stream);
+				writer.accept2(i, hout);
+				stream.flush();
+				return new MutablePair<>(labeller.apply(i),stream.toByteArray());
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		});
+		
+		ExtendedIterator<MutablePair<String,byte[]>> pit = nthreads>1?parallelized(nthreads,batch,mapper):mapper.apply(this);
+		
+		ArrayList<String> names = new ArrayList<String>();
+		for (MutablePair<String,byte[]> mi : pit.loop()) {
+			names.add(mi.Item1);
+			out.writeRaw(mi.Item2);
+		}
+		out.endList(names.toArray(new String[0]));
+		out.finish();
 	}
 	
 	/**

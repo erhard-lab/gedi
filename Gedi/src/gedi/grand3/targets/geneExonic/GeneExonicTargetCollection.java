@@ -31,6 +31,9 @@ import gedi.util.functions.ExtendedIterator;
  */
 public class GeneExonicTargetCollection implements TargetCollection {
 	
+	protected static final String EXONIC = "Exonic";
+	protected static final String INTRONIC = "Intronic";
+	
 	protected Genomic genomic; // only for getting a target by name
 	protected LinkedHashMap<String,CompatibilityCategory> exonic = new LinkedHashMap<>();
 	protected LinkedHashMap<String,CompatibilityCategory> intronic = new LinkedHashMap<>();
@@ -77,8 +80,8 @@ public class GeneExonicTargetCollection implements TargetCollection {
 		ArrayList<String> genomeNames = genes.ei().map(r->genome.apply(r.getReference())).unique(false).list();
 		int ind=0;
 		for (String g : genomeNames) {
-			exonic.put(g, new CompatibilityCategory("Exonic ("+g+")", ind, true, useExonForGlobal&&useForGlobal.test(g), outputExon, false));
-			intronic.put(g, new CompatibilityCategory("Intronic ("+g+")", ind+genomeNames.size(), true, useIntronForGlobal&&useForGlobal.test(g), outputIntron, false));
+			exonic.put(g, new CompatibilityCategory(EXONIC+" ("+g+")", ind, true, useExonForGlobal&&useForGlobal.test(g), outputExon, false));
+			intronic.put(g, new CompatibilityCategory(INTRONIC+" ("+g+")", ind+genomeNames.size(), true, useIntronForGlobal&&useForGlobal.test(g), outputIntron, false));
 			ind++;
 		}
 		
@@ -130,7 +133,7 @@ public class GeneExonicTargetCollection implements TargetCollection {
 			return inIntron<=clipForCompatibility && read.getRegion().intersects(t.getRegion());
 		}
 		
-		return inIntron<=clipForCompatibility && t.getRegion().getStart()<=read.getRegion().getStart() && t.getRegion().getEnd()>=read.getRegion().getEnd();
+		return inIntron<=clipForCompatibility && inIntron<read.getRegion().getTotalLength() && t.getRegion().getStart()<=read.getRegion().getStart() && t.getRegion().getEnd()>=read.getRegion().getEnd();
 	}
 	
 	protected boolean isIntronic(ImmutableReferenceGenomicRegion<? extends AlignedReadsData> read, ImmutableReferenceGenomicRegion<Transcript> t) {

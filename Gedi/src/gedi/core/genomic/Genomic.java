@@ -345,7 +345,7 @@ public class Genomic implements SequenceProvider, ReferenceSequencesProvider {
 	 * @param value
 	 * @return
 	 */
-	public Function<String,ReferenceGenomicRegion<Transcript>> getUnionTranscriptMapping() {
+	public Function<String,ReferenceGenomicRegion<String>> getUnionTranscriptMapping() {
 		return this.getMapping(AnnotationType.UnionTranscripts.name());
 	}
 	/**

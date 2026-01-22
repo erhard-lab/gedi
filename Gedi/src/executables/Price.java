@@ -50,8 +50,14 @@ public class Price {
 				new PriceSignalToNoise(params),
 				new PriceOptimisticCodonMapping(params)
 				);
+		pipeline.setChangelog(getChangelog());
 		GediProgram.run(pipeline, params.paramFile, params.runtimeFile, new CommandLineHandler("PRICE","PRICE is an analysis method for Ribo-seq data.",args));
 		
 	}
 	
+	private static String getChangelog() {
+		return "1.0.5:\n"
+				+ " added support for RDS output\n\n"
+				;
+	}
 }

@@ -82,6 +82,8 @@ public class PriceParameterSet extends GediParameterSet {
 	public GediParameter<File> optcodons = new GediParameter<File>(this,"${prefix}.opt.codons.cit", "Optimistic codon mapping.", false, new FileParameterType());
 	public GediParameter<Boolean> opt = new GediParameter<Boolean>(this,"opt", "Run optimistic codon mapping.", false, new BooleanParameterType());
 	
+	public GediParameter<Boolean> genProfile = new GediParameter<Boolean>(this,"rds", "Generate codon profiles for R.", false, new BooleanParameterType());
+	public GediParameter<File> profileFile = new GediParameter<File>(this,"${prefix}.profiles.rds", "Codon profiles for R.", false, new FileParameterType());
 	
 	public GediParameter<File> majorIsoformCit = new GediParameter<File>(this,"${prefix}.majorisoform.cit", "Major isoform data.", false, new FileParameterType());
 	

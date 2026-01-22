@@ -54,7 +54,7 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<Integer> minOverlap = new GediParameter<Integer>(this,"minOverlap", "minimal overlap for Splice sites", false, new IntParameterType(), 5);
 	
 	public GediParameter<TargetCollection> targetCollection = new GediParameter<TargetCollection>(this,"target-description","Internal use only",false,new InternalParameterType<>(TargetCollection.class));
-	public GediParameter<String> targets = new GediParameter<String>(this,"targets","Define which targets to estimate parameters for",false,new StringParameterType(),"genes");
+	public GediParameter<String> targets = new GediParameter<String>(this,"targets","Define which targets to estimate parameters for (genes, acceptor, exin)",false,new StringParameterType(),"genes");
 	public GediParameter<ExonIntronMode> genemode = new GediParameter<ExonIntronMode>(this, "genemode", "Specify whether exons/intron should be used for (i) estimating global parameters and (ii) estimating NTRs", false, new EnumParameterType<>(ExonIntronMode.class));
 
 	public GediParameter<Boolean> debug = new GediParameter<Boolean>(this,"debug", "Debug mode (don't use it!)",false, new BooleanParameterType()).setShortcut("-nthreads","0");
