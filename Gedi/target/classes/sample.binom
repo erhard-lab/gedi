@@ -1,3 +1,0 @@
-var model = new Grand3TruncatedBetaBinomialMixtureModel().fit(Grand3Model.dataFromStatFile("grand3/bulk.mismatch.stat.tsv.gz","mock.A",2,MetabolicLabel._4sU))
-model.sample(Grand3Model.nVectorFromStatFile("grand3/bulk.mismatch.stat.tsv.gz","mock.A",1,MetabolicLabel._4sU),new MersenneTwister())
-

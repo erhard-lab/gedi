@@ -1,7 +1,0 @@
-{
-	"clusters": "serial",
-	"partition": "serial_mpp2",
-	"mem": "8400mb",
-	"nthreads": "1"
-}
-

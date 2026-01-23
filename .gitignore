@@ -26,4 +26,5 @@ replay_pid*
 
 classpath_maven.txt
 .metadata
-
+Gedi/target/**
+Gedi/dependency-reduced-pom.xml
