@@ -389,11 +389,11 @@ public abstract class GediProgram {
 							if (s.outputSpec.list.get(i).get()==null || s.wantToRunByUser()) {
 								Place p = places.computeIfAbsent(s.outputSpec.list.get(i), x->pn.createPlace(Boolean.class));
 								Transition dt = pn.createTransition(new DummyJob());
-								if (s.outputSpec.list.get(i)==context.getGoal())
-									goal = dt;
 								pn.connect(dp, dt,0);
 								pn.connect(dt, p);
 							} else dc++;
+							if (s.outputSpec.list.get(i)==context.getGoal())
+								goal = t;
 						}
 						if (dc==s.outputSpec.list.size())
 							j.disable();
@@ -450,7 +450,7 @@ public abstract class GediProgram {
 
 				if (goal!=null) { 
 					econtext.useGoal(goal);
-					pfinish = goal.getOutput();
+						pfinish = goal.getOutput();
 				}
 				econtext.disableUnneccessary(goal);
 				

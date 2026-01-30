@@ -3,6 +3,8 @@ package executables;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import gedi.app.Gedi;
 import gedi.core.data.reads.AlignedReadsData;
@@ -42,11 +44,11 @@ public class TestProgram {
 		TestParameterSet params = new TestParameterSet();
 		
 		GediProgram pipeline = GediProgram.create("Test",
-				new TestFileReaderWriterProgram("init",params.init,params.prefix),
-				new TestFileReaderWriterProgram("bA",params.brancha,params.prefix,params.init),
-				new TestFileReaderWriterProgram("bB1",params.branchb1,params.prefix,params.init),
-				new TestFileReaderWriterProgram("bB2",params.branchb2,params.prefix,params.branchb1),
-				new TestFileReaderWriterProgram("result",params.result,params.prefix,params.brancha,params.branchb2)
+				new TestFileReaderWriterProgram("init",params.prefix,Arrays.asList(),Arrays.asList(params.init)),
+				new TestFileReaderWriterProgram("bA",params.prefix,Arrays.asList(params.init),Arrays.asList(params.brancha,params.res2)),
+				new TestFileReaderWriterProgram("bB1",params.prefix,Arrays.asList(params.init),Arrays.asList(params.branchb1)),
+				new TestFileReaderWriterProgram("bB2",params.prefix,Arrays.asList(params.branchb1),Arrays.asList(params.branchb2)),
+				new TestFileReaderWriterProgram("result",params.prefix,Arrays.asList(params.brancha,params.branchb2),Arrays.asList(params.result))
 				);
 		
 		GediProgram.run(pipeline, params.paramFile, params.runtimeFile, new CommandLineHandler("Test","Just a test for the program step system.",args));
@@ -63,6 +65,7 @@ public class TestProgram {
 		public GediParameter<File> brancha = new GediParameter<File>(this,"${prefix}.branchA", "", false, new FileParameterType());
 		public GediParameter<File> branchb1 = new GediParameter<File>(this,"${prefix}.branchB1", "", false, new FileParameterType());
 		public GediParameter<File> branchb2 = new GediParameter<File>(this,"${prefix}.branchB2", "", false, new FileParameterType());
+		public GediParameter<File> res2 = new GediParameter<File>(this,"${prefix}.res2", "", false, new FileParameterType());
 		public GediParameter<File> result = new GediParameter<File>(this,"${prefix}.result", "", false, new FileParameterType());
 
 	}
@@ -72,13 +75,15 @@ public class TestProgram {
 
 		private String add;
 
-		public TestFileReaderWriterProgram(String add, GediParameter<File> output, GediParameter<String> prefix, GediParameter<File>...inputs) {
+		public TestFileReaderWriterProgram(String add, GediParameter<String> prefix, List<GediParameter<File>> inputs, List<GediParameter<File>> outputs) {
 			super(add);
 			this.add=add;
 			this.addInput(prefix);
 			for (GediParameter<File> i : inputs)
 				addInput(i);
-			addOutput(output);
+			
+			for (GediParameter<File> o : outputs)
+				addOutput(o);
 		}
 		
 		
@@ -89,7 +94,8 @@ public class TestProgram {
 				sb.append(FileUtils.readAllText(getParameter(i)));
 			sb.append(add);
 			
-			FileUtils.writeAllText(sb.toString(), getOutputFile(0));
+			for (int i=0; i<getOutputSpec().size(); i++)
+				FileUtils.writeAllText(sb.toString(), getOutputFile(i));
 			
 			return null;
 		}
