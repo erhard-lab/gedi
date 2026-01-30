@@ -8,10 +8,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.logging.Level;
 
+import clojure.main;
 import gedi.core.genomic.Genomic;
 import gedi.grand3.Grand3Utils;
 import gedi.grand3.estimation.ModelStructure;
@@ -297,5 +299,29 @@ public class Grand3EstimateModel extends GediProgram {
 	}
 
 
+	
+	public static void main(String[] args) throws IOException {
+		if (args[0].endsWith(".experimentalDesign.tsv"))
+			args[0] = args[0].substring(0,args[0].length()-".experimentalDesign.tsv".length());
+		
+		File mmFile = new File(args[0]+".conversion.perr.tsv.gz"); 
+		File subreadFile = new File(args[0]+".subread.tsv"); 
+		File designFile = new File(args[0]+".experimentalDesign.tsv"); 
+		
+		
+		ExperimentalDesign design = ExperimentalDesign.fromTable(designFile);
+		String[] subreads = Grand3Utils.readSemantic(subreadFile);
+		
+		
+		PerrEstimator est = new PerrEstimator(mmFile, design, subreads);
+		for (int t=0; t<design.getTypes().length; t++) {
+			for (int s=0; s<subreads.length; s++) 
+				for (int i=0; i<design.getNumSamples(); i++)
+					if (s==2 && design.getLabelForSample(i,design.getTypes()[t])!=null) {
+						double[] pr = est.estimate(i, s, design.getTypes()[t]);
+						System.out.printf(Locale.US,"%s %s %d %.10f %.10f\n",args[0],subreads[s],i,pr[0],pr[1]);
+					}
+		}
+	}
 	
 }
