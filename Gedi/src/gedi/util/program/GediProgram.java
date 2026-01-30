@@ -144,6 +144,10 @@ public abstract class GediProgram {
 		return (GediParameter)inputSpec.get(name);
 	}
 	
+	protected <T> GediParameter<T> getOutput(String name) {
+		return (GediParameter)outputSpec.get(name);
+	}
+	
 	protected void setOutput(int index, int value) {
 		GediParameter p = outputSpec.get(index);
 		p.set(value);
@@ -231,11 +235,46 @@ public abstract class GediProgram {
 			ProgressManager man = new ProgressManager();
 			program.getParameter("progress");
 			
+			GediParameter<?> goal = null;
+			if (program.getParameter(CommandLineHandler.goal)!=null) {
+				GediParameterSet set = program.getInput(CommandLineHandler.goal).getParameterSet();
+				
+				StringBuilder sb = new StringBuilder();
+				String val = program.getParameter(CommandLineHandler.goal);
+				for (String pname : program.getOutputSpec().getNames()) {
+					if (val.equals(pname)) 
+						goal = program.getOutput(pname);
+					else {
+						String pnamerep = StringUtils.replaceVariables(pname, s->{
+							GediParameter<Object> param = set.get(s);
+							if (param==null)
+								throw new RuntimeException("Parameter "+s+" unknown!");
+							if (param.get()==null) return "${"+s+"}";
+							return StringUtils.toString(param.get());
+						});
+						if (program.getOutput(pname).getType().getType()==(Class)File.class) {
+							if (sb.length()>0)
+								sb.append(",");
+							sb.append(pnamerep);
+						}
+						if (val.equals(pnamerep))
+							goal = program.getOutput(pname);
+					}
+				}
+				if (goal==null) {
+					Gedi.getLog().severe("For goal specify one of: "+sb.toString());
+					System.exit(0);
+				}
+				goal.optional=false;
+				Gedi.getLog().info("Using goal: "+goal.getName());
+			}
+			
 			GediProgramContext context = new GediProgramContext(
 					Gedi.getLog(),
 					program.getBooleanParameter(CommandLineHandler.progress)?()->new ConsoleProgress(System.err,man):()->new NoProgress(),
 					runtimeFile!=null?runtimeFile.getFile():null,
 					program.getBooleanParameter(CommandLineHandler.dry),
+					goal,
 					program.parameterSet);
 			
 			context.writeIntoRunFile("Started %s",program.getName());
@@ -292,6 +331,7 @@ public abstract class GediProgram {
 		EI.wrap(inputs).filter(p->outputs.contains(p)).forEachRemaining(p->p.optional=true);
 		EI.wrap(outputs).filter(p->inputs.contains(p)).forEachRemaining(p->p.optional=true);
 		
+		
 		for (GediProgram s : subs) {
 			for (GediParameter in : s.inputSpec.list)
 				if (inputs.contains(in))
@@ -315,6 +355,8 @@ public abstract class GediProgram {
 			@Override
 			public String execute(GediProgramContext context) throws Exception {
 				
+				Transition goal = null;
+				
 				PetriNet pn = new PetriNet();
 				HashMap<GediParameter,Place> places = new HashMap<>();
 				
@@ -332,10 +374,12 @@ public abstract class GediProgram {
 					}
 					if (s.outputSpec.list.size()==1) {
 						Place p = places.computeIfAbsent(s.outputSpec.list.get(0), x->pn.createPlace(Boolean.class));
-						if (s.outputSpec.list.get(0).get()==null || s.wantToRunByUser()) {
+						if (s.outputSpec.list.get(0).get()==null || s.wantToRunByUser() ) {
 							pn.connect(t,p);
 						}else
 							j.disable();
+						if (s.outputSpec.list.get(0)==context.getGoal())
+							goal = t;
 					} else if (s.outputSpec.list.size()>1) {
 						int dc = 0;
 						Place dp = pn.createPlace(Boolean.class);
@@ -345,6 +389,8 @@ public abstract class GediProgram {
 							if (s.outputSpec.list.get(i).get()==null || s.wantToRunByUser()) {
 								Place p = places.computeIfAbsent(s.outputSpec.list.get(i), x->pn.createPlace(Boolean.class));
 								Transition dt = pn.createTransition(new DummyJob());
+								if (s.outputSpec.list.get(i)==context.getGoal())
+									goal = dt;
 								pn.connect(dp, dt,0);
 								pn.connect(dt, p);
 							} else dc++;
@@ -401,7 +447,12 @@ public abstract class GediProgram {
 					if (t.getJob().isDisabled(econtext))
 						econtext.setDisabled(t, true);
 				}
-				econtext.disableUnneccessary();
+
+				if (goal!=null) { 
+					econtext.useGoal(goal);
+					pfinish = goal.getOutput();
+				}
+				econtext.disableUnneccessary(goal);
 				
 				HashMap<Place,GediParameter> iplaces = new HashMap<>();
 				for (GediParameter<?> param : places.keySet()) 

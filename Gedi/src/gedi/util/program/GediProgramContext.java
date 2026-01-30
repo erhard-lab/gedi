@@ -20,21 +20,27 @@ public class GediProgramContext {
 	private boolean dry;
 	private GediParameterSet params;
 	private File runFile;
+	private GediParameter<?> goal;
 	
 	private Date start;
 	private HashMap<String,Date> starts = new HashMap<String, Date>();   
 			
 	
-	public GediProgramContext(Logger log, Supplier<Progress> progress, File runFile, boolean dry, GediParameterSet params) {
+	public GediProgramContext(Logger log, Supplier<Progress> progress, File runFile, boolean dry, GediParameter<?> goal, GediParameterSet params) {
 		this.log = log;
 		this.progress = progress;
 		this.dry = dry;
+		this.goal = goal;
 		this.runFile = runFile;
 		this.params = params;
 	}
 
 	public <T extends GediParameterSet> T getParams() {
 		return (T) params;
+	}
+	
+	public GediParameter<?> getGoal() {
+		return goal;
 	}
 	
 	public Logger getLog() {

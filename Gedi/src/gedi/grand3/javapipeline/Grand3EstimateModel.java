@@ -13,7 +13,6 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.logging.Level;
 
-import clojure.main;
 import gedi.core.genomic.Genomic;
 import gedi.grand3.Grand3Utils;
 import gedi.grand3.estimation.ModelStructure;

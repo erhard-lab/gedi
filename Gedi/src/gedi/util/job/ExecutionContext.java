@@ -74,7 +74,7 @@ public class ExecutionContext {
 	 * Disables all transitions that need not to fire in order to reach all reachable sinks (a sink is not reachable, if a manually disabled 
 	 * transition is necesssary).
 	 */
-	public void disableUnneccessary() {
+	public void disableUnneccessary(Transition goal) {
 		
 		Stack<Transition> dfs = new Stack<Transition>();
 		dfs.addAll(disabled);
@@ -90,7 +90,7 @@ public class ExecutionContext {
 			// disable predecessors, if they do not have any enabled successor
 			for (int i=0; i<t.getInDegree(); i++) {
 				Place p = t.getInput(i);
-				if (p.getProducer()!=null && disabled.containsAll(p.getConsumers())) {
+				if (p.getProducer()!=null && disabled.containsAll(p.getConsumers()) && p.getProducer()!=goal ) {
 					if (disabled.add(p.getProducer()))
 						dfs.push(p.getProducer());
 				}
@@ -98,6 +98,33 @@ public class ExecutionContext {
 		}
 		
 	}
+	
+
+	/**
+	 * Disables all transitions that need not to fire in order to reach the goal
+	 */
+	public void useGoal(Transition goal) {
+		HashSet<Transition> keep = new HashSet<Transition>();
+		Stack<Transition> dfs = new Stack<Transition>();
+		dfs.add(goal);
+		while (!dfs.isEmpty()) {
+			Transition t = dfs.pop();
+			keep.add(t);
+			
+			for (int p=0; p<t.getInDegree(); p++)
+				if (t.getInput(p).getProducer()!=null)
+					dfs.add(t.getInput(p).getProducer());
+		}
+		
+		for (Transition t : pn.getTransitions())
+			if (!keep.contains(t))
+				setDisabled(t, true);
+	}
+
+	
+
+	
+	
 	
 	public Set<Transition> getDisabledTransitions() {
 		return disabled;
@@ -231,8 +258,4 @@ public class ExecutionContext {
 		return this;
 	}
 
-	
-
-	
-	
 }

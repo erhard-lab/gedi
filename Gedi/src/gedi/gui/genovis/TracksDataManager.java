@@ -147,7 +147,7 @@ public class TracksDataManager {
 								context.setDisabled(t, true);
 							
 						}
-						context.disableUnneccessary();
+						context.disableUnneccessary(null);
 						
 						log.fine("Disabled Transition: "+context.getDisabledTransitions().size()+"/"+ context.getPetrNet().getTransitions().size()+" (Thread="+Thread.currentThread().getName()+")");
 						

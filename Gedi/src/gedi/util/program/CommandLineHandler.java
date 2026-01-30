@@ -4,6 +4,7 @@ import java.util.logging.Logger;
 
 import gedi.util.StringUtils;
 import gedi.util.program.parametertypes.BooleanParameterType;
+import gedi.util.program.parametertypes.StringParameterType;
 
 public class CommandLineHandler {
 
@@ -27,7 +28,7 @@ public class CommandLineHandler {
 	public String parse(GediParameterSpec spec, GediParameterSet set) {
 		Logger log = Logger.getLogger( CommandLineHandler.class.getName() );
 		log.fine("Received command line parameters: #"+StringUtils.concat("#,#", args)+"#");
-		spec.add("Commandline", getProgress(set),getD(set),getH(set),getHh(set),getHhh(set),getDry(set),getKeep(set),getChangelog(set));
+		spec.add("Commandline", getProgress(set),getD(set),getH(set),getHh(set),getHhh(set),getDry(set),getKeep(set),getChangelog(set),getGoal(set));
 		
 		return parse(args,log,set);
 	}
@@ -157,6 +158,7 @@ public class CommandLineHandler {
 	public static final String D = "D";
 	public static final String dry = "dry";
 	public static final String keep = "keep";
+	public static final String goal = "goal";
 	
 	public static GediParameter<Boolean> getD(GediParameterSet set) {return new GediParameter<>(set,D, "Verbose output of errors",false, new BooleanParameterType());}
 	public static GediParameter<Boolean> getDry(GediParameterSet set) {return new GediParameter<>(set,dry, "Dry run", false,new BooleanParameterType());}
@@ -166,6 +168,7 @@ public class CommandLineHandler {
 	public static GediParameter<Boolean> getHhh(GediParameterSet set) {return new GediParameter<>(set,hhh, "Show extra verbose usage", false,new BooleanParameterType());}
 	public static GediParameter<Boolean> getKeep(GediParameterSet set) {return new GediParameter<>(set,keep, "Do not remove temp files", false,new BooleanParameterType());}
 	public static GediParameter<Boolean> getChangelog(GediParameterSet set) {return new GediParameter<>(set,changelog, "Show version changelog", false,new BooleanParameterType());}
+	public static GediParameter<String> getGoal(GediParameterSet set) {return new GediParameter<>(set,goal, "Define an other endpoint than the default", false,new StringParameterType(),true);}
 	
 	
 }
