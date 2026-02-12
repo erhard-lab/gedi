@@ -329,17 +329,18 @@ public class Stats {
 		}
 		int utest = test;
 		
-		int size = 0;
+//		int size = 0;
 		ExtendedIterator<ImmutableReferenceGenomicRegion<?>> regIt;
 		if (loc!=null) {
-			size = -1;
+//			size = -1;
 			regIt = (ExtendedIterator)storage.ei(loc);
 		}
 		else {
-			Genomic ug = g;
-			TreeSet<ReferenceSequence> refs = new TreeSet<>(EI.wrap(storage.getReferenceSequences()).filter(r->ug.getSequenceNames().contains(r.getName())).set());
-			size = EI.wrap(refs).mapToInt(r->(int)storage.size(r)).sum();
-			regIt = (ExtendedIterator)EI.wrap(refs).unfold(r->storage.ei(r));
+			regIt = (ExtendedIterator)storage.ei();
+//			Genomic ug = g;
+//			TreeSet<ReferenceSequence> refs = new TreeSet<>(EI.wrap(storage.getReferenceSequences()).filter(r->ug.getSequenceNames().contains(r.getName())).set());
+////			size = EI.wrap(refs).mapToInt(r->(int)storage.size(r)).sum();
+//			regIt = (ExtendedIterator)EI.wrap(refs).unfold(r->storage.ei(r));
 		}
 		
 		Trie<Integer> condIndex = EI.wrap(storage.getMetaDataConditions()).indexPosition(new Trie<Integer>(),t->t);

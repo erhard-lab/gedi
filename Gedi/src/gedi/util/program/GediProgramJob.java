@@ -34,7 +34,7 @@ public class GediProgramJob extends DummyJob {
 		if (dry) {
 			Logger log = ((GediProgramContext)context.getContext("context")).getLog();
 			synchronized (log) {
-				log.info("Running "+s.getName()+"  In: "+s.getInputSpec().getNames()+" Out: "+s.getOutputSpec().getNames());	
+				log.info("Running "+s.getName()+"  In: "+s.getInputSpec().getNamesReplaceFilePlaceholders()+" Out: "+s.getOutputSpec().getNamesReplaceFilePlaceholders());	
 			}
 			return true;
 		}

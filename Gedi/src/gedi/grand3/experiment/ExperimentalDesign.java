@@ -299,19 +299,36 @@ public class ExperimentalDesign {
 		
 		ExtendedIterator<String[]> it = EI.lines(f).split('\t');
 		String[] header = it.next();
-		MetabolicLabelType[] types = EI.wrap(header).skip(3).map(s->MetabolicLabelType.fromString(s)).toArray(MetabolicLabelType.class);
-		
-		for (String[] a : it.loop()) {
-			libraries.add(a[0]);
-			samples.add(a[1]);
-			barcodes.add(a[2]);
-			MetabolicLabelType[] label = new MetabolicLabelType[types.length];
-			for (int i=0; i<types.length; i++)
-				if (a[i+3].equals("1"))
-					label[i] = types[i];
-			labels.add(label);
+		if (header[header.length-1].endsWith("chase")) { // old format!
+			MetabolicLabelType[] types = EI.wrap(header).skip(3).filter(s->s.endsWith("concentration")).map(s->MetabolicLabelType.fromString(s.substring(0,s.indexOf(' ')))).toArray(MetabolicLabelType.class);
+			
+			for (String[] a : it.loop()) {
+				libraries.add(a[0]);
+				samples.add(a[1]);
+				barcodes.add(a[2]);
+				MetabolicLabelType[] label = new MetabolicLabelType[types.length];
+				for (int i=0; i<types.length; i+=3)
+					if (a[i+3].equals("1"))
+						label[i] = types[i];
+				labels.add(label);
+			}
+			return new ExperimentalDesign(libraries.toArray(new String[0]),samples.toArray(new String[0]),barcodes.toArray(new String[0]),labels.toArray(new MetabolicLabelType[0][0]));
+			
+		} else {
+			MetabolicLabelType[] types = EI.wrap(header).skip(3).map(s->MetabolicLabelType.fromString(s)).toArray(MetabolicLabelType.class);
+			
+			for (String[] a : it.loop()) {
+				libraries.add(a[0]);
+				samples.add(a[1]);
+				barcodes.add(a[2]);
+				MetabolicLabelType[] label = new MetabolicLabelType[types.length];
+				for (int i=0; i<types.length; i++)
+					if (a[i+3].equals("1"))
+						label[i] = types[i];
+				labels.add(label);
+			}
+			return new ExperimentalDesign(libraries.toArray(new String[0]),samples.toArray(new String[0]),barcodes.toArray(new String[0]),labels.toArray(new MetabolicLabelType[0][0]));
 		}
-		return new ExperimentalDesign(libraries.toArray(new String[0]),samples.toArray(new String[0]),barcodes.toArray(new String[0]),labels.toArray(new MetabolicLabelType[0][0]));
 	}
 	
 	

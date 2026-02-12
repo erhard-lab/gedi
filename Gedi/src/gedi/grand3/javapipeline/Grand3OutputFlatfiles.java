@@ -128,7 +128,6 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		genomic.getTranscripts().ei().forEachRemaining(tr->g2l.computeIfAbsent(tr.getData().getGeneId(), x->new MutableInteger()).max(tr.getRegion().getTotalLength())); 
 
 		
-		Function<String, String> sym = genomic.getGeneTable("geneId", "symbol");
 		context.getLog().info("Writing sparse matrices...");
 
 		PageFile pf = new PageFile(targetFile.getPath());
@@ -175,7 +174,21 @@ public class Grand3OutputFlatfiles extends GediProgram {
 			int len = 0;
 			if (g2l.get(res.getTarget())!=null)
 				len = g2l.get(res.getTarget()).N;
-			features.writef("%s\t%s\tGene Expression\t%s\t%d\n",res.getTarget(),sym.apply(res.getTarget()),res.getGenome(),len);
+			
+			String sym = genomic.getGeneTable("symbol").apply(res.getTarget());
+			if (sym==null) {
+				if (res.getTarget().contains("_")) {
+					sym = genomic.getGeneTable("symbol").apply(res.getTarget().substring(0,res.getTarget().indexOf(("_"))));
+					if (sym!=null)
+						sym = sym+res.getTarget().substring(res.getTarget().indexOf(("_")));	
+				}
+				
+				if (sym==null)
+					sym = res.getTarget();
+					
+			}
+			
+			features.writef("%s\t%s\tGene Expression\t%s\t%d\n",res.getTarget(),sym,res.getGenome(),len);
 			
 			IntIterator it = res.iterateCounts();
 			while (it.hasNext()) {

@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 
 import gedi.util.ArrayUtils;
 import gedi.util.StringUtils;
+import gedi.util.functions.EI;
 import gedi.util.io.text.LineOrientedFile;
 import gedi.util.io.text.LineWriter;
 
@@ -66,6 +67,9 @@ public class GediParameterSpec {
 		return index.keySet();
 	}
 
+	public Collection<String> getNamesReplaceFilePlaceholders() {
+		return EI.wrap(index.keySet()).map(s->index.get(s).isFile()?index.get(s).getFile().getPath():s).list();
+	}
 
 	public GediParameter<?> get(String name) {
 		return index.get(name);
