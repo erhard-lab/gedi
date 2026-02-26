@@ -65,6 +65,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		addInput(params.outputMixBeta);
 		
 		addInput(params.prefix);
+		addInput(params.targetsName);
 		addInput(params.debug);
 		
 		if (hasTargetMixmat) {

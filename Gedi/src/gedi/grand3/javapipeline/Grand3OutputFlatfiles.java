@@ -53,7 +53,9 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		addInput(params.pseudobulkMinimalPurity);
 		addInput(params.targetMergeTable);
 		addInput(params.outputMixBeta);
-
+		
+		addInput(params.targetsName);
+		
 		
 		if (hasMappedTarget)
 			addOutput(params.pseudobulkFolder);
