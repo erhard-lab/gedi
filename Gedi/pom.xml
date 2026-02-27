@@ -12,6 +12,10 @@
       <id>clojars</id>
       <url>https://clojars.org/repo/</url>
     </repository>
+    <repository>
+        <id>scijava.public</id>
+        <url>https://maven.scijava.org/content/groups/public</url>
+    </repository>
   </repositories>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -231,7 +235,11 @@
     <version>15.4</version>
 </dependency>
 
-
+<dependency>
+    <groupId>cisd</groupId>
+    <artifactId>jhdf5</artifactId>
+    <version>19.04.1</version> 
+</dependency>
 
 
   </dependencies>

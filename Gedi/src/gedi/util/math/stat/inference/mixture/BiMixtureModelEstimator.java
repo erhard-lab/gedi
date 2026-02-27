@@ -49,17 +49,16 @@ public class BiMixtureModelEstimator {
 //	private double priorBeta = 1;
 	
 	private RandomNumbers rng = RandomNumbers.getGlobal();
-	private boolean fitMix = true;
+//	private boolean fitMix = true;
 	
 
 	public BiMixtureModelEstimator(BiMixtureModelData[] data) {
 		this.data = data;
 	}
 	
-	
-	public void setFitMix(boolean fitMix) {
-		this.fitMix = fitMix;
-	}
+//	public void setFitMix(boolean fitMix) {
+//		this.fitMix = fitMix;
+//	}
 	
 	public void setRandom(RandomNumbers rng) {
 		this.rng = rng;
@@ -75,9 +74,10 @@ public class BiMixtureModelEstimator {
 	 * if ll0>>ll1 in the data, the map will be close to 1 
 	 * @param ci
 	 * @param betaApprox
+	 * @param discreteThreshold write the log likelihood for the number of element in component 0 if total count is below this threshold
 	 * @return
 	 */
-	public BiMixtureModelResult estimate(double ci, boolean betaApprox) {
+	public BiMixtureModelResult estimate(double ci, boolean betaApprox, double discreteThreshold) {
 		
 		double lower = (1-ci)/2;
 		double upper = 1-lower;
@@ -157,6 +157,8 @@ public class BiMixtureModelEstimator {
 		for (int i=0; i<fs.length; i++)
 			fs2[i] = FastMath.exp(fs2[i]);
 		
+		double[] discrete0 = computeDiscrete0(discreteThreshold);
+		
 		if (betaApprox) {
 			// fit beta distribution
 			MultivariateFunction fun = a->{
@@ -207,10 +209,10 @@ public class BiMixtureModelEstimator {
 				
 				inte = inte+FastMath.log(x[1]-x[0]);
 				
-				double[] mix = null;
-				if (fitMix) mix = fitBetaMixture();
+//				double[] mix = null;
+//				if (fitMix) mix = fitBetaMixture();
 				
-				return new BiMixtureModelResult(lowerCI, map, upperCI, alpha, beta,inte,mix);
+				return new BiMixtureModelResult(lowerCI, map, upperCI, alpha, beta,inte,discrete0);
 				
 		}
 
@@ -224,9 +226,24 @@ public class BiMixtureModelEstimator {
 		double map = max;
 		double upperCI = x[u];
 		
-		return new BiMixtureModelResult(lowerCI, map, upperCI, Double.NaN, Double.NaN, Double.NaN,null);
+		return new BiMixtureModelResult(lowerCI, map, upperCI, Double.NaN, Double.NaN, Double.NaN, discrete0);
 	}
 	
+	private double[] computeDiscrete0(double discreteThreshold) {
+		double total = 0;
+		for (BiMixtureModelData d : data) 
+			total+=d.count;
+		total = Math.floor(total);
+		
+		if (total>discreteThreshold) return null;
+		
+		double[] re = new double[(int) (total+1)];
+		for (int i=0; i<re.length; i++)
+			re[i] = loglik(i*1/total);
+		return re;
+	}
+
+
 	/**
 	 * 
 	 * @return ntr, w, a1, b1, a2, b2, SSE, integral
@@ -568,7 +585,7 @@ public class BiMixtureModelEstimator {
 		for (BiMixtureModelData d : data)
 			System.out.println(d);
 		
-		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));
+		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true,9999));
 		
 //		BinomialDistribution e = new BinomialDistribution(21, 0.0001);
 //		BinomialDistribution m = new BinomialDistribution(21, 0.04);
@@ -588,7 +605,7 @@ public class BiMixtureModelEstimator {
 				new BiMixtureModelData(-0.6527752086396943,-0.008136953695929221, 1),
 				new BiMixtureModelData(-0.6962935558823405,-0.008679417275657835, 1)
 		};
-		System.out.println(new BiMixtureModelEstimator(data2).estimate(0.95, true));
+		System.out.println(new BiMixtureModelEstimator(data2).estimate(0.95, true,9999));
 //
 //		long s = System.nanoTime();
 //		System.out.println(new BiMixtureModelEstimator(data).estimate(0.95, true));

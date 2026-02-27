@@ -75,7 +75,9 @@ public class Grand3 {
 				"3.0.7d:\n"
 				+ " fixed bug (for resim with single cell data and pseudobulking)\n\n"+
 				"3.0.8:\n"
-				+ " Added support for outputting per exon and intron\n\n"
+				+ " Added support for outputting per exon and intron\n\n"+
+				"3.0.9:\n"
+				+ " Added support for computing discrete ll profiles\n\n"
 				;
 	}
 		

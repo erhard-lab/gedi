@@ -60,7 +60,9 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<Boolean> debug = new GediParameter<Boolean>(this,"debug", "Debug mode (don't use it!)",false, new BooleanParameterType()).setShortcut("-nthreads","0");
 	public GediParameter<Boolean> subreadCit = new GediParameter<Boolean>(this,"subread", "Write subread cit file",false, new BooleanParameterType());
 	public GediParameter<Boolean> burstMCMC = new GediParameter<Boolean>(this,"burstMCMC", "Write burstMCMC input file",false, new BooleanParameterType());
-	public GediParameter<Boolean> outputMixBeta = new GediParameter<Boolean>(this,"outputBetaMix", "Write beta mixture approximation",false, new BooleanParameterType());
+	//public GediParameter<Boolean> outputMixBeta = new GediParameter<Boolean>(this,"outputBetaMix", "Write beta mixture approximation",false, new BooleanParameterType());
+	public GediParameter<Boolean> outputDiscrete = new GediParameter<Boolean>(this,"outputDiscreteLoglik", "Write discrete log likelihoods for new counts",false, new BooleanParameterType());
+	public GediParameter<Double> outputDiscreteClip = new GediParameter<Double>(this,"outputDiscreteClip", "Where to clip the max subtracted log liks",false, new DoubleParameterType(),60.0);
 	
 	public GediParameter<Boolean> forceDense = new GediParameter<Boolean>(this,"output-table", "Force output as a (dense) table (default if # conditions <=30)",false, new BooleanParameterType());
 	public GediParameter<Boolean> forceSparse = new GediParameter<Boolean>(this,"output-sparse", "Force output as a sparse matrix (default if # conditions >30)",false, new BooleanParameterType());

@@ -50,13 +50,15 @@ public class TargetEstimator {
 	private double[] shapes;
 	private int[][] conditionMapping;
 	
-	private boolean fitMix;
+//	private boolean fitMix;
+	private boolean fitDiscrete;
 	
-	public TargetEstimator(ExperimentalDesign design, ModelStructure[][][] models, int[][] conditionMapping, int[] conditionToSampleId, double shapeStep, boolean fitMix) {
+	public TargetEstimator(ExperimentalDesign design, ModelStructure[][][] models, int[][] conditionMapping, int[] conditionToSampleId, double shapeStep, boolean fitDiscrete) {
 		this.models = models;
 		this.conditionMapping = conditionMapping;
 		this.conditionToSampleId = conditionToSampleId;
-		this.fitMix = fitMix;
+//		this.fitMix = fitMix;
+		this.fitDiscrete = fitDiscrete;
 		for (ModelStructure[][] l2 : models)
 			for (ModelStructure[] l1 : l2)
 				for (ModelStructure m : l1) 
@@ -254,22 +256,23 @@ public class TargetEstimator {
 			}
 		}
 		
+		double discreteThreshold = this.fitDiscrete?Double.POSITIVE_INFINITY:-1;
 		// estimate mixtures 
 		if (!binomMixData.isEmpty()) {
 			BiMixtureModelEstimator model = new BiMixtureModelEstimator(binomMixData.toArray(new BiMixtureModelData[binomMixData.size()]));
-			model.setFitMix(fitMix);
-			BiMixtureModelResult result = model.estimate(ci, betaApprox);
+//			model.setFitMix(fitMix);
+			BiMixtureModelResult result = model.estimate(ci, betaApprox, discreteThreshold);
 			rec.setTargetEstimateBinom(t,i,result);
 			
 			model = new BiMixtureModelEstimator(tbbinomMixData.toArray(new BiMixtureModelData[tbbinomMixData.size()]));
-			model.setFitMix(fitMix);
-			result = model.estimate(ci, betaApprox);
+//			model.setFitMix(fitMix);
+			result = model.estimate(ci, betaApprox, discreteThreshold);
 			rec.setTargetEstimateTbBinom(t,i, result);
 			
 			if (!Double.isNaN(shape)) {
 				model = new BiMixtureModelEstimator(tbbinomShapeMixData.toArray(new BiMixtureModelData[tbbinomShapeMixData.size()]));
-				model.setFitMix(fitMix);
-				result = model.estimate(ci, betaApprox);
+//				model.setFitMix(fitMix);
+				result = model.estimate(ci, betaApprox, discreteThreshold);
 				rec.setTargetEstimateTbBinomShape(t,i, result);
 			}
 		}

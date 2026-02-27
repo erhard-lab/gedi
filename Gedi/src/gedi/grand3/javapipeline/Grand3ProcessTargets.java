@@ -62,7 +62,8 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		addInput(params.pseudobulkMinimalPurity);
 		addInput(params.targetMixmat);
 		addInput(params.targetMergeTable);
-		addInput(params.outputMixBeta);
+//		addInput(params.outputMixBeta);
+		addInput(params.outputDiscrete);
 		
 		addInput(params.prefix);
 		addInput(params.targetsName);
@@ -103,9 +104,11 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		double pseudobulkMinimalPurity = getDoubleParameter(pind++);
 		String targetMixmat = getParameter(pind++);
 		String targetMergeTab = getParameter(pind++);
-		boolean writeMix = getBooleanParameter(pind++);
+//		boolean writeMix = getBooleanParameter(pind++);
+		boolean outputDiscrete = getBooleanParameter(pind++);
 		
 		String prefix = getParameter(pind++);
+		String targetsName = getParameter(pind++);
 		boolean debug = getBooleanParameter(pind++);
 		
 		context.getLog().info("Processing targets");
@@ -182,7 +185,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		}
 		
 
-		TargetEstimator targetEstimatorObject = new TargetEstimator(design, models, targetMapping, targetToSample, 0.01,writeMix);
+		TargetEstimator targetEstimatorObject = new TargetEstimator(design, models, targetMapping, targetToSample, 0.01,outputDiscrete);
 		
 		if (targetMixmat!=null) {
 			context.getLog().info("Will only compute parameters and mix matrix for "+targetMixmat+"...");
@@ -225,6 +228,10 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 			
 			return null;
 		}
+		
+		if (outputDiscrete)
+			context.getLog().info("Will compute discrete new RNA likelihood profile...");
+		
 		
 		context.getLog().info("Filling likelihood cache...");
 		targetEstimatorObject.fillLikelihoodCache(context::getProgress,nthreads);

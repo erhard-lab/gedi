@@ -1,7 +1,9 @@
 package gedi.grand3.javapipeline;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.zip.GZIPOutputStream;
+
+import ch.systemsx.cisd.hdf5.HDF5Factory;
+import ch.systemsx.cisd.hdf5.HDF5IntStorageFeatures;
+import ch.systemsx.cisd.hdf5.IHDF5Writer;
 
 import gedi.app.Gedi;
 import gedi.core.genomic.Genomic;
@@ -21,15 +28,19 @@ import gedi.grand3.experiment.ExperimentalDesign;
 import gedi.grand3.experiment.MetabolicLabel.MetabolicLabelType;
 import gedi.grand3.experiment.PseudobulkDefinition;
 import gedi.grand3.targets.TargetCollection;
+import gedi.util.ArrayUtils;
 import gedi.util.datastructure.collections.intcollections.IntIterator;
 import gedi.util.functions.EI;
+import gedi.util.functions.ExtendedIterator;
 import gedi.util.io.randomaccess.PageFile;
 import gedi.util.io.text.HeaderLine;
 import gedi.util.io.text.LineOrientedFile;
 import gedi.util.io.text.LineWriter;
 import gedi.util.mutable.MutableInteger;
+import gedi.util.mutable.MutablePair;
 import gedi.util.program.GediProgram;
 import gedi.util.program.GediProgramContext;
+import gedi.util.r.RDataWriter;
 
 public class Grand3OutputFlatfiles extends GediProgram {
 
@@ -52,7 +63,9 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		addInput(params.pseudobulkName);
 		addInput(params.pseudobulkMinimalPurity);
 		addInput(params.targetMergeTable);
-		addInput(params.outputMixBeta);
+//		addInput(params.outputMixBeta);
+		addInput(params.outputDiscrete);
+		addInput(params.outputDiscreteClip);
 		
 		addInput(params.targetsName);
 		
@@ -82,8 +95,8 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		String pseudobulkName = getParameter(pind++);
 		double pseudobulkMinimalPurity = getDoubleParameter(pind++);
 		String targetMergeTab = getParameter(pind++);
-		boolean writeMix = getBooleanParameter(pind++);
-		
+		boolean writeDisrete = getBooleanParameter(pind++);
+		double disreteClip = getDoubleParameter(pind++);
 		
 		Strandness strandness = Grand3Utils.getStrandness(strandnessFile);
 		ExperimentalDesign design = ExperimentalDesign.fromTable(designFile);
@@ -117,14 +130,14 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		}
 		
 		if (sparse) 
-			outputSparse(context,genomic,design,columnNames,columnToSample,targetFile,folder,writeMix);
+			outputSparse(context,genomic,design,columnNames,columnToSample,targetFile,folder,writeDisrete,disreteClip);
 		else
-			outputDense(context,genomic,design,columnNames,columnToSample,targetFile,folder,map,writeMix);
+			outputDense(context,genomic,design,columnNames,columnToSample,targetFile,folder,map,writeDisrete,disreteClip);
 
 		return null;
 	} 
 	
-	private void outputSparse(GediProgramContext context, Genomic genomic, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File dir, boolean writeMix) throws IOException {
+	private void outputSparse(GediProgramContext context, Genomic genomic, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File dir, boolean writeDisrete, double clipDiscrete) throws IOException {
 		
 		HashMap<String,MutableInteger> g2l = new HashMap<>();
 		genomic.getTranscripts().ei().forEachRemaining(tr->g2l.computeIfAbsent(tr.getData().getGeneId(), x->new MutableInteger()).max(tr.getRegion().getTotalLength())); 
@@ -154,18 +167,13 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		LineWriter[] shape = mkWriter2(dir,"shape","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shapeLLR = mkWriter2(dir,"llr","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
 		LineWriter[] shapeLL = mkWriter2(dir,"ll","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr);
-		LineWriter[][][] mix = writeMix?new LineWriter[][][]{
-			mkWriter(dir,"mix","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
-			mkWriter(dir,"alpha1","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
-			mkWriter(dir,"beta1","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
-			mkWriter(dir,"alpha2","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
-			mkWriter(dir,"beta2","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr),
-			mkWriter(dir,"bmintegral","real",design.getTypes(),storedNumFeatures,columnNames.length,storedNumNtr)
-		}:null;
+		IHDF5Writer[][] discrete = writeDisrete?mkH5Writer(dir,"discrete",design.getTypes()):null;
 		
 		int numFeatures = 0;
 		long numCounts = 0;
 		long[] numNtr = new long[design.getTypes().length];
+		
+		int[] posBuffer = new int[columnNames.length];
 		
 		for (TargetEstimationResult res : pf.ei(()->new TargetEstimationResult())
 				.progress(context.getProgress(),storedNumFeatures,t->t.getTarget().toString())
@@ -190,21 +198,44 @@ public class Grand3OutputFlatfiles extends GediProgram {
 					
 			}
 			
+			
 			features.writef("%s\t%s\tGene Expression\t%s\t%d\n",res.getTarget(),sym,res.getGenome(),len);
 			
 			IntIterator it = res.iterateCounts();
 			while (it.hasNext()) {
 				int i = it.nextInt();
 				int barcode = i+1;
-				counts.writef("%d %d %.0f\n", numFeatures,barcode,res.getCountOrZero(i));
+				int c = (int) Math.round(res.getCountOrZero(i));
+				counts.writef("%d %d %d\n", numFeatures,barcode,c);
 				numCounts++;
 			}
 			
+			
 			for (int t=0; t<design.getTypes().length; t++) {
+				
+				short[][] discreteBuffer = null;
+				Arrays.fill(posBuffer,0);
+				
+				if (writeDisrete) {
+					it = res.iterate(t);
+					
+					while (it.hasNext()) {
+						int i = it.nextInt();
+						int c = (int) Math.round(res.getCountOrZero(i));
+						if (c>0)
+							posBuffer[i] = c+1;
+					}
+					discreteBuffer = new short[ModelType.values().length][ArrayUtils.sum(posBuffer)];
+					ArrayUtils.cumSumInPlace(posBuffer, +1);
+				}
+				
+				
 				it = res.iterate(t);
+				
 				while (it.hasNext()) {
 					int i = it.nextInt();
 					int barcode = i+1;
+					
 					SingleEstimationResult val = res.get(t,i);
 					
 					for(ModelType type : ModelType.values()) {
@@ -214,13 +245,18 @@ public class Grand3OutputFlatfiles extends GediProgram {
 						ntrAlpha[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getAlpha());
 						ntrBeta[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBeta());
 						ntrInte[t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getIntegral());
-						if (writeMix) {
-							mix[0][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixMix());
-							mix[1][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixAlpha1());
-							mix[2][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixBeta1());
-							mix[3][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixAlpha2());
-							mix[4][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixBeta2());
-							mix[5][t][type.ordinal()].writef("%d %d %.4f\n", numFeatures,barcode,val.getModel(type).getBetaMixIntegral());
+						if (writeDisrete) {
+							int offset = posBuffer[i]-val.getModel(type).getDiscrete0().length;
+							discretizeAndAppend(val.getModel(type).getDiscrete0(), discreteBuffer[type.ordinal()], offset,clipDiscrete);
+							
+//							if (type==ModelType.Binom) {
+//								double[] ll = val.getModel(type).getDiscrete0().clone();
+//								double max = ArrayUtils.max(ll);
+//								for (int ii=0; ii<ll.length; ii++)
+//									ll[ii] = max-ll[ii];
+//								System.out.println(i+" "+res.getTarget()+" "+columnNames[i]+" "+c+": "+Arrays.toString(val.getModel(type).getDiscrete0())+" "+Arrays.toString(ll));
+//							}
+							
 						}
 					}
 					shape[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getShape());
@@ -228,7 +264,20 @@ public class Grand3OutputFlatfiles extends GediProgram {
 					shapeLL[t].writef("%d %d %.4f\n", numFeatures,barcode,val.getShape().getLogLikShape());
 					numNtr[t]++;
 				}
+				
+				if (writeDisrete) {
+					String path = "/genes/"+res.getTarget();
+					for(ModelType type : ModelType.values()) {
+						discrete[t][type.ordinal()].uint16().writeArray(path,discreteBuffer[type.ordinal()],HDF5IntStorageFeatures.INT_DEFLATE);
+//						if (type==ModelType.Binom) {
+//							System.out.println(Arrays.toString(discreteBuffer[type.ordinal()]));
+//						}
+					}
+				}
+				
 			}
+			
+			
 		}
 		pf.close();
 		
@@ -243,26 +292,45 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		finishWriters(shape);
 		finishWriters(shapeLLR);
 		finishWriters(shapeLL);
-		if (writeMix) 
-			for (int x=0; x<mix.length; x++)
-				finishWriters(mix[x]);
+		if (writeDisrete) 
+			finishWriters(discrete);
 		
 		if (storedNumCounts!=numCounts) throw new RuntimeException("Targets file corrupted: NumCounts does not match!");
 		for (int i=0; i<storedNumNtr.length; i++)
 			if (storedNumNtr[i]!=numNtr[i]) throw new RuntimeException("Targets file corrupted: NumNTR does not match!");
 	}
 
+	
+	private void discretizeAndAppend(double[] profile, short[] dest, int offset, double clip) {
+		if (profile.length==0) 
+			return;
+	    double max = ArrayUtils.max(profile);
+	    final double SCALE = 65535.0 / clip; 
+	    
+	    for (int i = 0; i < profile.length; i++) {
+	        double diff = max - profile[i];
+	        if (diff > clip) diff = clip;
+	        if (diff < 0.0) diff = 0.0;
+	        
+	        dest[offset + i] = (short) (int) Math.round(diff * SCALE);
+	    }
+	}
+	
 	private void finishWriters(LineWriter[] wr) throws IOException {
 		for (int t=0; t<wr.length; t++) finishWriter(wr[t]);
 	}
 	private void finishWriters(LineWriter[][] wr) throws IOException {
 		for (int t=0; t<wr.length; t++) for (LineWriter w : wr[t]) finishWriter(w);
 	}
+	private void finishWriters(IHDF5Writer[][] wr) throws IOException {
+		for (int t=0; t<wr.length; t++) for (IHDF5Writer w : wr[t]) {
+			w.close();
+		}
+	}
 	private void finishWriter(LineWriter wr) throws IOException {
 		wr.close();
 	}
-
-
+	
 	private LineWriter[][] mkWriter(File folder, String name, String format, MetabolicLabelType[] types, int nx, int ny, long[] nz) throws IOException {
 		LineWriter[][] re = new LineWriter[types.length][ModelType.values().length];
 		for (int t=0; t<types.length; t++)
@@ -271,6 +339,15 @@ public class Grand3OutputFlatfiles extends GediProgram {
 				re[t][m].writeLine("%%MatrixMarket matrix coordinate "+format+" general");
 				re[t][m].writeLine("%metadata_json: {\"format_version\": 2, \"software_version\": \"grand3_"+Gedi.version("GRAND3")+"\"}");
 				re[t][m].writef("%d %d %d\n",nx,ny,nz[t]);
+			}
+		return re;
+	}
+
+	private IHDF5Writer[][] mkH5Writer(File folder, String name, MetabolicLabelType[] types) throws IOException {
+		IHDF5Writer[][] re = new IHDF5Writer[types.length][ModelType.values().length];
+		for (int t=0; t<types.length; t++)
+			for (int m=0; m<ModelType.values().length; m++) {
+				re[t][m] = HDF5Factory.open(new File(folder, types[t].toString()+"."+ModelType.values()[m].name()+"."+name+".h5"));
 			}
 		return re;
 	}
@@ -288,7 +365,10 @@ public class Grand3OutputFlatfiles extends GediProgram {
 
 
 
-	private void outputDense(GediProgramContext context, Genomic g, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File folder, HashMap<String, ArrayList<String>> map, boolean writeMix) throws IOException {
+	private void outputDense(GediProgramContext context, Genomic g, ExperimentalDesign design, String[] columnNames, int[] columnToSample, File targetFile, File folder, HashMap<String, ArrayList<String>> map, boolean writeDisrete, double discreteClip) throws IOException {
+		
+		if (writeDisrete) throw new RuntimeException("Discrete not implemented for dense output!");
+		
 		context.getLog().info("Writing flat files (dense)...");
 		
 		HashMap<String,MutableInteger> e2l = new HashMap<>();
@@ -315,8 +395,8 @@ public class Grand3OutputFlatfiles extends GediProgram {
 		
 		LineWriter exonic = exonicFile.write(); 
 		LineWriter intronic = intronicFile.write(); 
-		writeDenseHeader(exonic,design,columnNames,columnToSample,writeMix);
-		writeDenseHeader(intronic,design,columnNames,columnToSample,writeMix);
+		writeDenseHeader(exonic,design,columnNames,columnToSample);
+		writeDenseHeader(intronic,design,columnNames,columnToSample);
 		boolean hadExonic = false;
 		boolean hadIntronic = false;
 		
@@ -365,20 +445,20 @@ public class Grand3OutputFlatfiles extends GediProgram {
 							}
 							else
 								out.writef("\tNA\tNA\tNA\tNA\tNA\tNA");
-							if (writeMix) {
-								if (res.get(t,i)!=null) {
-									out.writef("\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
-											res.get(t,i).getModel(type).getBetaMixMix(),
-											res.get(t,i).getModel(type).getBetaMixAlpha1(),
-											res.get(t,i).getModel(type).getBetaMixBeta1(),
-											res.get(t,i).getModel(type).getBetaMixAlpha2(),
-											res.get(t,i).getModel(type).getBetaMixBeta2(),
-											res.get(t,i).getModel(type).getBetaMixIntegral()
-											);
-								}
-								else
-									out.writef("\tNA\tNA\tNA\tNA\tNA");
-							}
+//							if (writeMix) {
+//								if (res.get(t,i)!=null) {
+//									out.writef("\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
+//											res.get(t,i).getModel(type).getBetaMixMix(),
+//											res.get(t,i).getModel(type).getBetaMixAlpha1(),
+//											res.get(t,i).getModel(type).getBetaMixBeta1(),
+//											res.get(t,i).getModel(type).getBetaMixAlpha2(),
+//											res.get(t,i).getModel(type).getBetaMixBeta2(),
+//											res.get(t,i).getModel(type).getBetaMixIntegral()
+//											);
+//								}
+//								else
+//									out.writef("\tNA\tNA\tNA\tNA\tNA");
+//							}
 						}
 			for (int t=0; t<design.getTypes().length; t++)
 				for (int i=0; i<columnNames.length; i++)
@@ -407,7 +487,7 @@ public class Grand3OutputFlatfiles extends GediProgram {
 
 
 
-	private void writeDenseHeader(LineWriter out, ExperimentalDesign design, String[] columnNames, int[] columnToSample, boolean writeMix) throws IOException {
+	private void writeDenseHeader(LineWriter out, ExperimentalDesign design, String[] columnNames, int[] columnToSample) throws IOException {
 		out.writef("Gene\tSymbol\tCategory\tLength");
 		for (int i=0; i<columnNames.length; i++)
 			out.writef("\t%s Read count",columnNames[i]);
@@ -422,14 +502,14 @@ public class Grand3OutputFlatfiles extends GediProgram {
 								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString(),
 								columnNames[i],t.toString(),type.toString());
-						if (writeMix)
-							out.writef("%s %s %s mix\t%s %s %s alpha1\t%s %s %s beta1\t%s %s %s alpha2\t%s %s %s beta2\t%s %s %s bmintegral",
-									columnNames[i],t.toString(),type.toString(),
-									columnNames[i],t.toString(),type.toString(),
-									columnNames[i],t.toString(),type.toString(),
-									columnNames[i],t.toString(),type.toString(),
-									columnNames[i],t.toString(),type.toString(),
-									columnNames[i],t.toString(),type.toString());
+//						if (writeMix)
+//							out.writef("%s %s %s mix\t%s %s %s alpha1\t%s %s %s beta1\t%s %s %s alpha2\t%s %s %s beta2\t%s %s %s bmintegral",
+//									columnNames[i],t.toString(),type.toString(),
+//									columnNames[i],t.toString(),type.toString(),
+//									columnNames[i],t.toString(),type.toString(),
+//									columnNames[i],t.toString(),type.toString(),
+//									columnNames[i],t.toString(),type.toString(),
+//									columnNames[i],t.toString(),type.toString());
 					}
 		for (MetabolicLabelType t: design.getTypes())
 			for (int i=0; i<columnNames.length; i++)
