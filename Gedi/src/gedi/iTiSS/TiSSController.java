@@ -46,6 +46,7 @@ public class TiSSController extends GediProgram {
         addInput(params.readType);
         addInput(params.useUpAndDownstream);
         addInput(params.minReadNum);
+        addInput(params.addSoftclips);
 
         addInput(params.prefix);
 
@@ -77,8 +78,9 @@ public class TiSSController extends GediProgram {
         ReadType readType = getParameter(16);
         boolean useUpAndDownstream = getParameter(17);
         int minReadNum = getParameter(18);
+        boolean addSoftclip = getParameter(19);
 
-        String prefix = getParameter(19);
+        String prefix = getParameter(20);
 
         final boolean useMultiCourse = timecourses != null && !timecourses.isEmpty();
 
@@ -102,7 +104,7 @@ public class TiSSController extends GediProgram {
             testChrs = null;
         }
 
-        DataWrapper dataWrapper = new DataWrapper(reads, strandness, readType, testChrs);
+        DataWrapper dataWrapper = new DataWrapper(reads, strandness, readType, testChrs, addSoftclip);
         List<Data> data = new ArrayList<>();
         List<Data> singleLanes = new ArrayList<>(reps.length);
         List<Data> multiLanes = new ArrayList<>(reps.length);

@@ -30,6 +30,7 @@ public class TiSSParameterSet extends GediParameterSet {
     public GediParameter<Integer> cleanupThresh = new GediParameter<Integer>(this,"cleanupThresh", "Threshold at which multi-occurrences of a value will be filtered out", false, new IntParameterType(), 100, true);
     public GediParameter<String> testChromosomes = new GediParameter<String>(this,"testChr", "The chromosomes to use (for testing purposes, individual chromosomes separated by comma, i.e. 1+,1-,...)", false, new StringParameterType(), true);
     public GediParameter<Integer> minReadNum = new GediParameter<Integer>(this,"minReadNum", "Minimum amount of reads to call a TiSS", false, new IntParameterType(), 0, true);
+    public GediParameter<Boolean> addSoftclips = new GediParameter<Boolean>(this,"addsoft", "Add softclipped bases for recognizing 5' ends", false, new BooleanParameterType());
 
     // GenomicCreate
     public GediParameter<String> chromSizes = new GediParameter<String>(this,"chromSizes", "tsv file containing the sizes of each chromosome", true, new StringParameterType(), true);

@@ -97,6 +97,7 @@ public class ViewCIT {
 		String tExpr = null;
 		CitOutputMode mode = null;
 		boolean debug = false;
+		boolean switchStrands = false;
 		boolean list = false;
 		int[] conditions = null;
 		
@@ -132,6 +133,9 @@ public class ViewCIT {
 			}
 			else if (args[i].equals("-score")) {
 				scoreExpr=checkParam(args, ++i);
+			}
+			else if (args[i].equals("-switchstrands")) {
+				switchStrands=true;
 			}
 			else if (args[i].equals("-t")) {
 				tExpr=checkParam(args, ++i);
@@ -220,6 +224,9 @@ public class ViewCIT {
 			it = (ExtendedIterator)it.map(r->new ImmutableReferenceGenomicRegion<ConditionMappedAlignedReadsData>(r.getReference(), r.getRegion(), new ConditionMappedAlignedReadsData((AlignedReadsData)r.getData(), mapping))).filter(r->r.getData().getTotalCountOverall(ReadCountMode.All)>0);
 		}
 		
+		if (switchStrands) 
+			it = it.map(r->new ImmutableReferenceGenomicRegion(r.getReference().toOppositeStrand(),r.getRegion(),r.getData()));
+			
 		Consumer<ImmutableReferenceGenomicRegion<T>> sink = null;
 		
 		if (storage.getType()==LongArrayList.class && new File(StringUtils.removeFooter(args[0], ".cit")).exists() && (mode==null || mode==CitOutputMode.Indexed)) {

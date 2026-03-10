@@ -141,7 +141,9 @@ public class Prism {
 				+ "1.1.6:\n"
 				+ "Fixed prioritization of genomic categories (prior to that if the same location was e.g. CDS for one and 5UTR for another transcript, CDS always won (no matter what priorities were defined).\n\n"
 				+ "1.1.7:\n"
-				+ "If there are non-decoys in a lower priority category, they are now preferred over decoys in higher categories.\n\n";
+				+ "If there are non-decoys in a lower priority category, they are now preferred over decoys in higher categories.\n\n"
+				+ "1.1.7a:\n"
+				+ "Fixed bug from 1.1.6 with wrongly annotating overlapping genes.\n\n";
 	}
 
 
@@ -586,7 +588,7 @@ public class Prism {
 			for (Category c : a.categories) {
 				
 				if (c.matches(g, hit, extraCds, trs, buf)) {
-					buf.Item.clear();
+//					buf.Item.clear();
 					return new MutablePair<Category, List<ImmutableReferenceGenomicRegion<Transcript>>>(c, buf.Item);
 				}
 				

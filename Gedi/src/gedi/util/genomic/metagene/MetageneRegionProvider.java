@@ -82,8 +82,15 @@ public interface MetageneRegionProvider {
 		return range(GenomicRegionPosition.FivePrime,0,GenomicRegionPosition.FivePrime,len-1,"bp","0",""+len,true);
 	}
 	
+	public static MetageneRegionProvider prefixOrDownstream(int len) {
+		return range(GenomicRegionPosition.FivePrime,0,GenomicRegionPosition.FivePrime,len-1,"bp","0",""+len,false);
+	}
+	
 	public static MetageneRegionProvider suffix(int len) {
 		return range(GenomicRegionPosition.ThreePrime,-len+1,GenomicRegionPosition.ThreePrime,0,"bp","-"+len,"0",true);
+	}
+	public static MetageneRegionProvider suffixOrUpstream(int len) {
+		return range(GenomicRegionPosition.ThreePrime,-len+1,GenomicRegionPosition.ThreePrime,0,"bp","-"+len,"0",false);
 	}
 	
 	public static MetageneRegionProvider downstream(int len) {

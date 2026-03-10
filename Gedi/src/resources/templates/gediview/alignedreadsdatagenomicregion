@@ -4,6 +4,9 @@ varin("paths","File paths",true);
 varin("totals","Array of total counts",true);
 varin("background","Background color of track",false);
 varin("readmode","How to count multimappers (default: weight",false);
+varin("mode5p","show 5p instead of coverage",false);
+varin("mode3p","show 3p instead of coverage",false);
+varin("modecov","show coverage",false);
 varin("mbppp","Maximal bp per pixel (Default: Infinity)",false);
 varin("nolog","Use logscale",false);
 varin("nonorm","Use logscale",false);
@@ -21,6 +24,11 @@ var bigreads;
 var bigreadsset=bigreads;
 if (!bigreads) bigreads=1;
 if (bigreads===true) bigreads = 5;
+
+var mode5p;
+var mode3p;
+var modecov;
+if (!mode5p && !mode3p && !modecov) modecov = true;
 
 var ribohide = typeof ribopos == 'undefined' && typeof ribooffset == 'undefined'
 var ribopos = ribopos?ribopos:"FivePrime";
@@ -167,11 +175,11 @@ if (typeof merge === 'undefined') {
 	</HeatmapTrack>
 	
 	<StackedBoxesTrack id="+.<?JS id ?>.Normalized.5p" class="<?JS id ?>" input="+.<?JS id ?>.5p">
-		<Hidden h="true" />
+		<Hidden h="<?JS print(mode5p!=true || nonorm==true) ?>" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	<StackedBoxesTrack id="+.<?JS id ?>.Normalized.3p" class="<?JS id ?>" input="+.<?JS id ?>.3p">
-		<Hidden h="true" />
+		<Hidden h="<?JS print(mode3p!=true || nonorm==true) ?>" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	
@@ -187,7 +195,7 @@ if (typeof merge === 'undefined') {
 			<Points p="false" />
 			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 		</LinesTrack>
-		<? if (nonorm) { ?><Hidden h="true" /><? } ?>
+		<Hidden h="<?JS print(modecov!=true || nonorm==true) ?>" />
 	</NumericTrackGroup>
 	
 	<StackedBoxesTrack id="+.<?JS id ?>.Unnormalized.5p" class="<?JS id ?>" input="+.<?JS id ?>.5pnn">
@@ -264,11 +272,11 @@ if (typeof merge === 'undefined') {
 	
 
 	<StackedBoxesTrack id="-.<?JS id ?>.Normalized.5p" class="<?JS id ?>" input="-.<?JS id ?>.5p">
-		<Hidden h="true" />
+		<Hidden h="<?JS print(mode5p!=true || nonorm==true) ?>" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	<StackedBoxesTrack id="-.<?JS id ?>.Normalized.3p" class="<?JS id ?>" input="-.<?JS id ?>.3p">
-		<Hidden h="true" />
+		<Hidden h="<?JS print(mode3p!=true || nonorm==true) ?>" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	
@@ -284,7 +292,8 @@ if (typeof merge === 'undefined') {
 			<Points p="false" />
 			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 		</LinesTrack>
-		<? if (nonorm) { ?><Hidden h="true" /><? } ?>
+		<Hidden h="<?JS print(modecov!=true || nonorm==true) ?>" />
+		
 	</NumericTrackGroup>
 	
 	<StackedBoxesTrack id="-.<?JS id ?>.Unnormalized.5p" class="<?JS id ?>" input="-.<?JS id ?>.5pnn">

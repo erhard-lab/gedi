@@ -169,8 +169,6 @@ public class Bam2CIT {
 		args = EI.wrap(args).unfold(s->s.endsWith(".bamlist")?EI.lines2(s,"#"):EI.singleton(s).str()).toArray(String.class); 
 		
 		BamGenomicRegionStorage storage = new BamGenomicRegionStorage(args);
-		int numCond = storage.getRandomRecord().getNumConditions();
-
 		
 		if (anti)
 			storage.setStrandness(Strandness.Antisense);
@@ -180,6 +178,7 @@ public class Bam2CIT {
 		LineWriter incons = null;  
 		if (check!=null)
 			storage.check(check,incons = new LineOrientedFile(out+".inconsistent").write());
+		
 		storage.setIgnoreVariations(!var);
 		storage.setOnlyPrimary(nosec);
 		if (join) 
@@ -187,6 +186,8 @@ public class Bam2CIT {
 		
 		storage.setKeepReadNames(keepIds);
 		Class<?> dataClass = DefaultAlignedReadsData.class;
+		
+
 
 		if (isUmiONT) {
 			storage.setUmiOnt();
@@ -276,6 +277,8 @@ public class Bam2CIT {
 		if (minmaq>=0)
 			storage.setMinimalAlignmentQuality(minmaq);
 		
+		int numCond = storage.getRandomRecord().getNumConditions();
+
 		@SuppressWarnings("rawtypes")
 		GenomicRegionStorage outStorage = GenomicRegionStorageExtensionPoint.getInstance().get(new ExtensionContext().add(Boolean.class, compress).add(String.class, out).add(Class.class, dataClass), GenomicRegionStorageCapabilities.Disk, GenomicRegionStorageCapabilities.Fill);
 		NumericArray mitocount = NumericArray.createMemory(numCond, NumericArrayType.Double);

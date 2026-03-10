@@ -36,6 +36,7 @@ public class DataWrapper {
     private List<GenomicRegionStorage<AlignedReadsData>> rawData;
     private Strandness strandness;
     private ReadType readType;
+    private boolean addSoftclip;
     private Set<ReferenceSequence> testChr;
 
     private Map<Set<Integer>, Map<ReferenceSequence, MemoryReadCount>> memoryMap;
@@ -47,15 +48,16 @@ public class DataWrapper {
 
     private Set<ReferenceSequence> loadedChromosomes;
 
-    public DataWrapper(List<GenomicRegionStorage<AlignedReadsData>> rawData, Strandness strandness, ReadType readType, Set<ReferenceSequence> testChr) {
+    public DataWrapper(List<GenomicRegionStorage<AlignedReadsData>> rawData, Strandness strandness, ReadType readType, Set<ReferenceSequence> testChr, boolean addSoftclip) {
         this.rawData = rawData;
         this.strandness = strandness;
         this.readType = readType;
         this.testChr = testChr;
+        this.addSoftclip = addSoftclip;
     }
 
-    public DataWrapper(List<GenomicRegionStorage<AlignedReadsData>> rawData, Strandness strandness) {
-        this(rawData, strandness, ReadType.FIVE_PRIME, null);
+    public DataWrapper(List<GenomicRegionStorage<AlignedReadsData>> rawData, Strandness strandness, boolean addSoftclip) {
+        this(rawData, strandness, ReadType.FIVE_PRIME, null, addSoftclip);
     }
 
     public void initData(Genomic genomic, List<Data> lanes) {
@@ -188,7 +190,7 @@ public class DataWrapper {
                 if (memoryReadCount.isMulti()) {
                     memoryReadCount.setReadCount(loadMultiReadCountToMemory(data.getLane(), ref, refLength));
                 } else {
-                    memoryReadCount.setReadCount(new NumericArray[]{TiSSUtils.extractCounts(rawData, data.getLane(), ref, refLength, strandness, readType)});
+                    memoryReadCount.setReadCount(new NumericArray[]{TiSSUtils.extractCounts(rawData, data.getLane(), ref, refLength, strandness, readType,addSoftclip)});
                 }
             }
             memoryReadCountAccessionOrder.add(memoryReadCount);

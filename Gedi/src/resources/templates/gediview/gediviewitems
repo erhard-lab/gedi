@@ -5,6 +5,9 @@ varin("numConditions","Array of number of conditions per input",true);
 varin("totals","Array of total counts for merged conditions",true);
 varin("background","Background color of track",false);
 varin("readmode","How to count multimappers (default: weight",false);
+varin("mode5p","show 5p instead of coverage",false);
+varin("mode3p","show 3p instead of coverage",false);
+varin("modecov","show coverage",false);
 varin("mbppp","Maximal bp per pixel (Default: Infinity)",false);
 varin("nolog","Use logscale",false);
 varin("slamsense","Show SLAM sense data",false);
@@ -27,6 +30,11 @@ if (bigreads===true) bigreads = 5;
 var slamsense;
 var slamantisense;
 
+
+var mode5p;
+var mode3p;
+var modecov;
+if (!mode5p && !mode3p && !modecov) modecov = true;
 
 var ribohide = typeof ribopos == 'undefined' && typeof ribooffset == 'undefined'
 var ribopos = ribopos?ribopos:"FivePrime";
@@ -275,11 +283,11 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 	
 	
 	<StackedBoxesTrack id="+.<?JS id ?>.Standard.Normalized.5p" class="<?JS id ?>" input="+.<?JS id ?>.5p">
-		<Hidden h="true" />
+		<Hidden h="<?JS print(mode5p!=true || nonorm==true) ?>" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	<StackedBoxesTrack id="+.<?JS id ?>.Standard.Normalized.3p" class="<?JS id ?>" input="+.<?JS id ?>.3p">
-		<Hidden h="true" />
+		<Hidden h="<?JS print(mode3p!=true || nonorm==true) ?>" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	
@@ -295,7 +303,7 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 			<Points p="false" />
 			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 		</LinesTrack>
-		<? if (nonorm) { ?><Hidden h="true" /><? } ?>
+		<Hidden h="<?JS print(modecov!=true || nonorm==true) ?>" />
 	</NumericTrackGroup>
 	
 	<StackedBoxesTrack id="+.<?JS id ?>.Standard.Unnormalized.5p" class="<?JS id ?>" input="+.<?JS id ?>.5pnn">
@@ -506,11 +514,11 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 
 	
 	<StackedBoxesTrack id="-.<?JS id ?>.Standard.Normalized.5p" class="<?JS id ?>" input="-.<?JS id ?>.5p">
-		<Hidden h="true" />
+		<Hidden h="<?JS print(mode5p!=true || nonorm==true) ?>" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	<StackedBoxesTrack id="-.<?JS id ?>.Standard.Normalized.3p" class="<?JS id ?>" input="-.<?JS id ?>.3p">
-		<Hidden h="true" />
+		<Hidden h="<?JS print(mode3p!=true || nonorm==true) ?>" />
 		<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 	</StackedBoxesTrack>
 	
@@ -526,7 +534,7 @@ var ribooffset = typeof ribooffset !== 'undefined'?ribooffset:"12";
 			<Points p="false" />
 			<MaxBasePairsPerPixel v="<?JS print(mbppp) ?>"/>
 		</LinesTrack>
-		<? if (nonorm) { ?><Hidden h="true" /><? } ?>
+		<Hidden h="<?JS print(modecov!=true || nonorm==true) ?>" />
 	</NumericTrackGroup>
 	
 	<StackedBoxesTrack id="-.<?JS id ?>.Standard.Unnormalized.5p" class="<?JS id ?>" input="-.<?JS id ?>.5pnn">

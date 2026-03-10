@@ -639,7 +639,7 @@ public class TiSSUtils {
     }
 
     public static NumericArray extractFivePrimeCounts(List<GenomicRegionStorage<AlignedReadsData>> reads,
-                                                      int[] condIndex, ReferenceSequence ref, int refLength, Strandness strandness) {
+                                                      int[] condIndex, ReferenceSequence ref, int refLength, Strandness strandness, boolean addSoftclip) {
 
         NumericArray readCounts = NumericArray.createMemory(refLength, NumericArray.NumericArrayType.Float);
         for (int cond : condIndex) {
@@ -648,13 +648,13 @@ public class TiSSUtils {
                 cond -= reads.get(lstIndex).getMetaDataConditions().length;
                 lstIndex++;
             }
-            extractCountsFromSingleFile(readCounts, reads.get(lstIndex), cond, ref, strandness, new ArrayGenomicRegion(0, refLength), ReadType.FIVE_PRIME);
+            extractCountsFromSingleFile(readCounts, reads.get(lstIndex), cond, ref, strandness, new ArrayGenomicRegion(0, refLength), ReadType.FIVE_PRIME,addSoftclip);
         }
         return readCounts;
     }
 
     public static NumericArray extractCounts(List<GenomicRegionStorage<AlignedReadsData>> reads,
-                                                      int[] condIndex, ReferenceSequence ref, int refLength, Strandness strandness, ReadType readType) {
+                                                      int[] condIndex, ReferenceSequence ref, int refLength, Strandness strandness, ReadType readType, boolean addSoftclip) {
 
         NumericArray readCounts = NumericArray.createMemory(refLength, NumericArray.NumericArrayType.Float);
         for (int cond : condIndex) {
@@ -663,13 +663,13 @@ public class TiSSUtils {
                 cond -= reads.get(lstIndex).getMetaDataConditions().length;
                 lstIndex++;
             }
-            extractCountsFromSingleFile(readCounts, reads.get(lstIndex), cond, ref, strandness, new ArrayGenomicRegion(0, refLength), readType);
+            extractCountsFromSingleFile(readCounts, reads.get(lstIndex), cond, ref, strandness, new ArrayGenomicRegion(0, refLength), readType,addSoftclip);
         }
         return readCounts;
     }
 
     public static NumericArray extractFivePrimeCounts(List<GenomicRegionStorage<AlignedReadsData>> reads,
-                                                      int[] condIndex, ReferenceSequence ref, GenomicRegion region, Strandness strandness) {
+                                                      int[] condIndex, ReferenceSequence ref, GenomicRegion region, Strandness strandness, boolean addSoftclip) {
 
         NumericArray readCounts = NumericArray.createMemory(region.getTotalLength(), NumericArray.NumericArrayType.Float);
         for (int cond : condIndex) {
@@ -678,7 +678,7 @@ public class TiSSUtils {
                 cond -= reads.get(lstIndex).getMetaDataConditions().length;
                 lstIndex++;
             }
-            extractCountsFromSingleFile(readCounts, reads.get(lstIndex), cond, ref, strandness, region, ReadType.FIVE_PRIME);
+            extractCountsFromSingleFile(readCounts, reads.get(lstIndex), cond, ref, strandness, region, ReadType.FIVE_PRIME,addSoftclip);
         }
         return readCounts;
     }
@@ -764,7 +764,7 @@ public class TiSSUtils {
      */
     public static NumericArray extractFivePrimeCountsNormalized(List<GenomicRegionStorage<AlignedReadsData>> reads,
                                                                 int[] condIndex, ReferenceSequence ref, GenomicRegion region, Strandness strandness,
-                                                                float[] totals) {
+                                                                float[] totals, boolean addSoftclip) {
 
         NumericArray readCounts = NumericArray.createMemory(region.getTotalLength(), NumericArray.NumericArrayType.Float);
         for (int cond : condIndex) {
@@ -774,7 +774,7 @@ public class TiSSUtils {
                 lstIndex++;
             }
             NumericArray readCountsTmp = NumericArray.createMemory(region.getTotalLength(), NumericArray.NumericArrayType.Float);
-            extractCountsFromSingleFile(readCountsTmp, reads.get(lstIndex), cond, ref, strandness, region, ReadType.FIVE_PRIME);
+            extractCountsFromSingleFile(readCountsTmp, reads.get(lstIndex), cond, ref, strandness, region, ReadType.FIVE_PRIME, addSoftclip);
             for (int i = 0; i < readCountsTmp.length(); i++) {
                 readCounts.setFloat(i, readCounts.getFloat(i) + ((readCountsTmp.getFloat(i)/totals[cond]) * 1.0E6f));
             }
@@ -782,11 +782,11 @@ public class TiSSUtils {
         return readCounts;
     }
 
-    public static void extractFivePrimeCountsFromSingleFile(NumericArray ary, GenomicRegionStorage<AlignedReadsData> reads, int cond, ReferenceSequence ref, Strandness strandness) {
-        extractCountsFromSingleFile(ary, reads, cond, ref, strandness, new ArrayGenomicRegion(0, ary.length()), ReadType.FIVE_PRIME);
+    public static void extractFivePrimeCountsFromSingleFile(NumericArray ary, GenomicRegionStorage<AlignedReadsData> reads, int cond, ReferenceSequence ref, Strandness strandness, boolean addSoftclip) {
+        extractCountsFromSingleFile(ary, reads, cond, ref, strandness, new ArrayGenomicRegion(0, ary.length()), ReadType.FIVE_PRIME,addSoftclip);
     }
 
-    public static void extractCountsFromSingleFile(NumericArray ary, GenomicRegionStorage<AlignedReadsData> reads, int cond, ReferenceSequence ref, Strandness strandness, GenomicRegion region, ReadType readType) {
+    public static void extractCountsFromSingleFile(NumericArray ary, GenomicRegionStorage<AlignedReadsData> reads, int cond, ReferenceSequence ref, Strandness strandness, GenomicRegion region, ReadType readType, boolean addSoftclip) {
         ReferenceSequence refTmp = strandness.equals(Strandness.Antisense) ? ref.toOppositeStrand() : ref;
         final boolean switchFiveAndThreePrimeEnd = strandness == Strandness.Antisense && readType == ReadType.FIVE_PRIME || strandness == Strandness.Sense && readType == ReadType.THREE_PRIME;
         reads.ei(refTmp, region).forEachRemaining(r -> {
@@ -795,7 +795,7 @@ public class TiSSUtils {
             NumericArray c0 = NumericArray.createMemory(r.getData().getNumConditions(), NumericArray.NumericArrayType.Double);
             NumericArray c1 = NumericArray.createMemory(r.getData().getNumConditions(), NumericArray.NumericArrayType.Double);
             for (int k = 0; k < r.getData().getDistinctSequences(); k++) {
-                if (hasEndMismatch(r.getData(), k, r.getRegion().getTotalLength(), strandness)) {
+                if (hasEndMismatch(r.getData(), k, r.getRegion().getTotalLength(), strandness) && addSoftclip) {
                     c1 = r.getData().addCountsForDistinct(k, c1, ReadCountMode.Weight);
                 } else {
                     c0 = r.getData().addCountsForDistinct(k, c0, ReadCountMode.Weight);
@@ -1132,9 +1132,9 @@ public class TiSSUtils {
         return readCount.get();
     }
 
-    public static double getMaxReadCountFivePrime(GenomicRegionStorage<AlignedReadsData> reads, int cond, ReferenceSequence ref, Strandness strandness, GenomicRegion region) {
+    public static double getMaxReadCountFivePrime(GenomicRegionStorage<AlignedReadsData> reads, int cond, ReferenceSequence ref, Strandness strandness, GenomicRegion region, boolean addSoftclip) {
         NumericArray ary = NumericArray.createMemory(region.getTotalLength(), NumericArray.NumericArrayType.Float);
-        extractCountsFromSingleFile(ary, reads, cond, ref, strandness, region, ReadType.FIVE_PRIME);
+        extractCountsFromSingleFile(ary, reads, cond, ref, strandness, region, ReadType.FIVE_PRIME,addSoftclip);
         return ArrayUtils.max(ary.toDoubleArray());
     }
 
