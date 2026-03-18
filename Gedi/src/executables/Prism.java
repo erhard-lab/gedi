@@ -45,6 +45,7 @@ import gedi.core.region.intervalTree.MemoryIntervalTreeStorage;
 import gedi.util.ArrayUtils;
 import gedi.util.FileUtils;
 import gedi.util.FunctorUtils.FilteredIterator;
+import gedi.util.GeneralUtils;
 import gedi.util.LogUtils.LogMode;
 import gedi.util.ReflectionUtils;
 import gedi.util.RunUtils;
@@ -71,6 +72,7 @@ import gedi.util.io.text.tsv.formats.Bed;
 import gedi.util.io.text.tsv.formats.BedEntry;
 import gedi.util.math.stat.RandomNumbers;
 import gedi.util.math.stat.counting.Counter;
+import gedi.util.mutable.MutableIntDoublePair;
 import gedi.util.mutable.MutableMonad;
 import gedi.util.mutable.MutablePair;
 import gedi.util.mutable.MutableTriple;
@@ -143,7 +145,9 @@ public class Prism {
 				+ "1.1.7:\n"
 				+ "If there are non-decoys in a lower priority category, they are now preferred over decoys in higher categories.\n\n"
 				+ "1.1.7a:\n"
-				+ "Fixed bug from 1.1.6 with wrongly annotating overlapping genes.\n\n";
+				+ "Fixed bug from 1.1.6 with wrongly annotating overlapping genes.\n\n"
+				+ "1.1.8:\n"
+				+ "ECDF fitting for real valued scores.\n\n";
 	}
 
 
@@ -473,12 +477,13 @@ public class Prism {
 		int lu = -1;
 		int ld = -1;
 		
+		ArrayGenomicRegion chr = new ArrayGenomicRegion(0,g.getLength(upep.getReference().getName()));
 		do  {
-			int uex = ex;
-			if (pep.getRegion().extendFront(uex).extendBack(uex).subtract(new ArrayGenomicRegion(0,g.getLength(upep.getReference().getName()))).getTotalLength()>0)
+			GenomicRegion reg = pep.getRegion().extendFront(ex).extendBack(ex);
+			if (reg.subtract(chr).getTotalLength()>0)
 				return re;
 			
-			String seq = SequenceUtils.translate(g.getSequence(pep.toMutable().transformRegion(r->r.extendFront(uex).extendBack(uex))));
+			String seq = SequenceUtils.translate(g.getSequence(pep.getReference(),reg));
 			
 			int up = seq.substring(0, ex/3).lastIndexOf('*');
 			ld = seq.indexOf('*', ex/3)*3+3-ex-pep.getRegion().getTotalLength();
@@ -492,6 +497,7 @@ public class Prism {
 			
 			re.add(new ImmutableReferenceGenomicRegion<>(orf.getReference(), orf.getRegion(), new PeptideOrf(seq,new ArrayGenomicRegion(lu,orf.getRegion().getTotalLength()-ld),findStart(seq,lu,starts, shortest))));
 		}
+		
 		
 		for (ImmutableReferenceGenomicRegion<Transcript> t : g.getTranscripts().ei(pep).filter(t->t.getRegion().containsUnspliced(upep.getRegion())).loop()) {
 			int pepPosAA = t.induce(pep.getRegion()).getStart()/3;
@@ -517,6 +523,7 @@ public class Prism {
 				re.add(new ImmutableReferenceGenomicRegion<>(t.getReference(), t.toMutable().extendRegion(-offset, 0).map(xorf), new PeptideOrf(seq,new ArrayGenomicRegion(lu,xorf.getTotalLength()-ld),findStart(seq,lu,starts, shortest))));
 			}
 		}
+		
 		
 		return re;
 	}
@@ -729,12 +736,42 @@ public class Prism {
 			.map(cds->getFlanking(g,cds, p, ref, alt, cds.getReference().isPlus(),flank)).first();
 	}
 	
-	private static final int getScore(HeaderLine h, String[] f) {
+	private static final boolean hasScore(HeaderLine h) {
+		int alc = h.get("ALC (%)",-1);
+		if (alc!=-1) return true;
+		
+		int lgp = h.get("-10lgP",-1);
+		if (lgp!=-1) return true;
+		
+		int sc = h.get("Score",-1);
+		if (sc!=-1) return true;
+		
+		
+		return false;
+	}
+	private static final boolean isScorePercentage(HeaderLine h) {
+		int alc = h.get("ALC (%)",-1);
+		if (alc!=-1) return false;
+		
+		int lgp = h.get("-10lgP",-1);
+		if (lgp!=-1) return false;
+		
+		int sc = h.get("Score",-1);
+		if (sc!=-1) return true;
+		
+		
+		return false;
+	}
+	private static final double getScore(HeaderLine h, String[] f) {
 		int alc = h.get("ALC (%)",-1);
 		if (alc!=-1) return Integer.parseInt(f[alc]);
 		
 		int lgp = h.get("-10lgP",-1);
 		if (lgp!=-1) return (int)(100*Double.parseDouble(f[lgp]));
+		
+		int sc = h.get("Score",-1);
+		if (sc!=-1) return Double.parseDouble(f[sc]);
+		
 		
 		return 0;
 	}
@@ -1194,7 +1231,6 @@ public class Prism {
 		header.Item = new HeaderLine(h,',');
 		
 		int peptide = header.Item.get("Peptide");
-		int alc = header.Item.get("ALC (%)",-1);
 		if (!header.Item.hasField("Fraction")) {
 			lit = lit.mapString(s->s+","+StringUtils.splitField(s, ',', peptide));
 			h=h+",Fraction";
@@ -1241,6 +1277,8 @@ public class Prism {
 		HashMap<String,String[]> multiCache = new HashMap<>();
 		MutablePair<String,String[]> featureCache = new MutablePair<>();
 		
+		HeaderLine hheader = header.Item;
+		
 		ExtendedIterator<String[][]> re = lit.map(a->splitExtra(a, ',',reId))
 				.iff(filterHit!=null, ei->ei.filter(filterHit))
 				.iff(reId, ei->ei.sideEffect(a->{
@@ -1283,8 +1321,8 @@ public class Prism {
 						System.arraycopy(m, 0, rm, 1, m.length);
 						m = rm;
 					}
-					if (alc>=0)
-						Arrays.sort(m,(a,b)->Integer.compare(Integer.parseInt(b[alc]), Integer.parseInt(a[alc])));
+					if (hasScore(hheader))
+						Arrays.sort(m,(a,b)->Double.compare(getScore(hheader,b),getScore(hheader,a)));
 					
 					// remove double sequences
 					if (bv.size()<m.length)
@@ -1894,6 +1932,7 @@ public class Prism {
 							List<ImmutableReferenceGenomicRegion<PeptideOrf>> orfs = locs[i].equals("")?new ArrayList<>():getOrfs(ImmutableReferenceGenomicRegion.parse(locs[i]), genomic, starts,true);
 							orfs.sort((x,y)->x.getData().compareTo(y.getData()));
 							
+							
 							if (orfs.size()>0 && !locs[i].startsWith("REV") && !skip.get(i)) {
 								int cmp = -1;
 								if (bestOrfs.isEmpty() || (cmp=orfs.get(0).getData().compareTo(bestOrfs.get(0).get(0).getData()))<=0) {
@@ -2393,13 +2432,10 @@ public class Prism {
 			AnnotationEnum aenum = AnnotationEnum.fromParam(all, ccat, noloc);
 			MutableMonad<HeaderLine> header = new MutableMonad<>(); 
 			
-			
 			String input = csv.getPath();
+			header.Item = new HeaderLine(EI.lines(input).first(),',');
 			
-			if (!EI.lines(input).first().contains(",ALC (%)")) {
-				context.getLog().info("No ALC score, skipping FDR!");
-				
-				
+			if (!hasScore(header.Item) || isScorePercentage(header.Item)) {
 				context.getLog().info("Writing peptide FDR list");
 				MutablePair<Integer,Integer> key = new MutablePair<>();
 				LineWriter out = getOutputWriter(0);
@@ -2456,16 +2492,30 @@ public class Prism {
 
 				
 				LineWriter fout = getOutputWriter(1);
-				fout.writeLine("Peptide length,Annotation,ALC,targets,decoys,ambiguous,Q");
+				fout.writeLine("Peptide length,Annotation,Score,targets,decoys,ambiguous,Q");
 				fout.close();
+				
+				if (!hasScore(header.Item))
+					context.getLog().info("No score, skipping FDR!");
+				else {
+					context.getLog().info("Computing FDR cutoffs (score mode)");
+					
+					context.getLog().info("Running R script...");
+					RRunner r = new RRunner(in+prefix+".fdr.R");
+					r.set("file",getOutputFile(0).getPath());
+					r.set("prefix",in+prefix);
+					r.addSource(getClass().getResourceAsStream("/resources/ecdf_fdr.R"));
+					r.run(true);
+				}
 				return null;
 			}
 			
 			
 			HashSet<String> allowed = aenum.getCategories();
 			
-			context.getLog().info("Computing FDR cutoffs");
 			
+			
+			context.getLog().info("Computing FDR cutoffs (% mode)");
 			int[] decoyCounter = {0,0}; // decoy only, both
 			int[] decoyCatCounter = new int[aenum.values().length];
 			
@@ -2475,9 +2525,8 @@ public class Prism {
 
 			for (String[][] f : iteratePeaksBlocks(input, header,null, l->!l[header.Item.get("Category")].equals("Unknown"),aenum).loop()) {
 				
-				
 				int len = EI.seq(0, f.length).mapToInt(i->removeMod(f[i][header.Item.get("Peptide")]).length()).unique(false).getUniqueResult(true, true);
-				int alc = EI.seq(0, f.length).mapToInt(i->Integer.parseInt(f[i][header.Item.get("ALC (%)")])).unique(false).getUniqueResult(true, true);
+				int alc = EI.seq(0, f.length).mapToInt(i->(int)getScore(header.Item, f[i])).unique(false).getUniqueResult(true, true);
 				int cat = aenum.valueOf(f[0][header.Item.get("Annotation")]).ordinal();
 		
 				HashSet<String> decoy = EI.seq(0, f.length).map(i->f[i][header.Item.get("Decoy")]).set();
@@ -2525,7 +2574,7 @@ public class Prism {
 			
 			context.getLog().info("Non parametric fit of mixture score distributions...");
 			
-			RRunner r = new RRunner(prefix+".fdr.R");
+			RRunner r = new RRunner(in+prefix+".fdr.R");
 			r.set("prefix",in+prefix);
 			r.set("nthreads",nthreads+"");
 			r.addSource(getClass().getResourceAsStream("/resources/nonparametric_fit.R"));
@@ -2633,14 +2682,13 @@ public class Prism {
 
 			try {
 				context.getLog().info("Running R script for plotting");
-				r = new RRunner(prefix+".fdr.R");
+				r = new RRunner(in+prefix+".fdr.R");
 				r.set("file",getOutputFile(0).getPath());
 				r.addSource(getClass().getResourceAsStream("/resources/fdr_types.R"));
 				r.run(true);
 			} catch (Throwable e) {
 				context.getLog().log(Level.SEVERE, "Could not plot!", e);
 			}
-		
 			return null;
 		}
 
@@ -2691,15 +2739,15 @@ public class Prism {
 			
 			context.getLog().info("Determining best PSM");
 			MutableMonad<HeaderLine> header = new MutableMonad<>(); 
-			HashMap<String,int[]> best = new HashMap<>();
+			HashMap<String,MutableIntDoublePair> best = new HashMap<>();
 			
 			for (String[][] f : iteratePeaksBlocks(input, header,null, l->allowed.contains(l[header.Item.get("Category")]),aenum).loop()) {
 				for (int i=0; i<f.length; i++) {
 					String pep = f[i][header.Item.get("ModSequence")];
-					int alc = getScore(header.Item,f[i]);//alcc==-1?-1:Integer.parseInt(f[i][alcc]);
-					int[] pp = best.computeIfAbsent(pep, x->new int[2]);
-					pp[0] = Math.max(pp[0],alc);
-					pp[1]++;
+					double score = getScore(header.Item,f[i]);//alcc==-1?-1:Integer.parseInt(f[i][alcc]);
+					MutableIntDoublePair pp = best.computeIfAbsent(pep, x->new MutableIntDoublePair());
+					pp.incrementInt();
+					pp.setDouble(Math.max(pp.getDouble(),score));
 				}
 			}
 			
@@ -2718,6 +2766,7 @@ public class Prism {
 													l->allowed.contains(l[header.Item.get("Category")]),
 													aenum
 													).loop()) {
+				
 				// identify block with same alc
 				int e;
 				for (e=1; e<f.length && getScore(header.Item,f[e-1])==getScore(header.Item,f[e]); e++);
@@ -2730,12 +2779,12 @@ public class Prism {
 				// this is not reasonable: if there is only the I/L difference between two sequences (i.e. both occurs in the target set of sequences), then why not keep both?
 				boolean allSequencesSame = true;
 				boolean anySequenceHasBetterSpectrum = false;
-				int[] bestHit = null;
+				MutableIntDoublePair bestHit = null;
 				for (int i=0; i<e; i++) {
 					if (i>0 && !areEqualUptoIsobar(f[i-1][header.Item.get("ModSequence")],f[i][header.Item.get("ModSequence")]))
 						allSequencesSame = false;
 					bestHit = best.get(f[i][header.Item.get("ModSequence")]);
-					if (bestHit==null || bestHit[0]!=getScore(header.Item,f[i])) 
+					if (bestHit==null || GeneralUtils.isEqual(bestHit.getDouble(),getScore(header.Item,f[i]))) 
 						anySequenceHasBetterSpectrum = true;
 				}
 				
@@ -2743,16 +2792,16 @@ public class Prism {
 				if (allSequencesSame && !anySequenceHasBetterSpectrum) 
 					best.remove(f[0][header.Item.get("ModSequence")]);
 				
-				int deltaNext = e==f.length?100:(getScore(header.Item,f[0]))-getScore(header.Item,f[e]);
+				double deltaNext = e==f.length?100:(getScore(header.Item,f[0]))-getScore(header.Item,f[e]);
 				if (!allSequencesSame) deltaNext=0;
-				int deltaFirst = Integer.parseInt(f[0][header.Item.get("Delta first")]);
+				double deltaFirst = Double.parseDouble(f[0][header.Item.get("Delta first")]);
 				
 				if (deltaNext>=minDeltaNext && deltaFirst<=maxDeltaFirst && !anySequenceHasBetterSpectrum) {
 					
 					Annotation anno = aenum.getAnnotation(EI.seq(0,e).map(i->f[i][header.Item.get("Category")]).set());
 					for (int i=0; i<e; i++) {
 						out.write(StringUtils.concat(",", f[i]));
-						out.writef(",%d,%d,%s,%d,%d\n",deltaNext,bestHit[1],anno.name(),e,enodecoy);
+						out.writef(",%s,%d,%s,%d,%d\n",deltaNext,bestHit.getInt(),anno.name(),e,enodecoy);
 					}
 				} 
 				if (out2!=null) {
@@ -2947,16 +2996,16 @@ public class Prism {
 			},null,null).loop()) {
 				// true adds a new id to each line!
 				
-				int topalc = -1;
+				double topscore = -1;
 				for (int i=0; i<f.length; i++) {
 					
-					int alc = getScore(header.Item,f[i]);
+					double score = getScore(header.Item,f[i]);
 					int len = ModifiedAminoAcid.parse(f[i][header.Item.get("Peptide")],buff);
 					
 					int nloc = 0;
 					
 					if (len>=minlen && len<=maxlen) {
-						if (topalc==-1) topalc = alc;
+						if (topscore==-1) topscore = score;
 						
 						// count the number of locations
 						for (int p=0; p<len; p++)
@@ -3005,9 +3054,9 @@ public class Prism {
 								Category anno = annotateLocation(genomic, aenum, l, extraCDS).Item1;
 								if (aenum.contains(anno) ) {
 									out.write(StringUtils.concat(",", f[i]));
-									out.writef(",%d,%d,%d,%s,%s,%s,%s,%s,%s",i+1,
+									out.writef(",%d,%d,%s,%s,%s,%s,%s,%s,%s",i+1,
 											nloc,
-											topalc-alc,isDecoy(l)?"D":"T",
+											topscore-score,isDecoy(l)?"D":"T",
 											getOrigin(genomic, l.toLocationString()),
 											l.toLocationString(),
 											anno.toString(),
@@ -4395,7 +4444,7 @@ public class Prism {
 			int s = res.getStart();
 			if (decoy) s = seq.length()-s-res.getLength()*3;
 			
-			res.getValue().add(new ImmutableReferenceGenomicRegion<>(Chromosome.obtain(decoy?"REV_"+name:name,true), new ArrayGenomicRegion(s,s+res.getLength()*3), res.getKey().toString()+","+info));
+			res.getValue().add(new ImmutableReferenceGenomicRegion<>(Chromosome.obtain(decoy?"REV_"+name:name,true), new ArrayGenomicRegion(s,s+res.getLength()), res.getKey().toString()+","+info));
 		}
 		return null;
 	}
