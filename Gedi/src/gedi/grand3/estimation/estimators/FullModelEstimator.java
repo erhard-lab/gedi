@@ -19,6 +19,7 @@ import gedi.grand3.knmatrix.KNMatrix.KNMatrixElement;
 import gedi.util.io.text.LineOrientedFile;
 import gedi.util.io.text.LineWriter;
 import gedi.util.io.text.StringLineWriter;
+import gedi.util.math.stat.inference.ml.MaximumLikelihoodModel;
 import gedi.util.math.stat.inference.ml.MaximumLikelihoodModelPriorDecorator;
 import gedi.util.math.stat.inference.ml.MaximumLikelihoodParametrization;
 import gedi.util.math.stat.inference.ml.NelderMeadMaximumLikelihoodEstimator;
@@ -43,6 +44,7 @@ public class FullModelEstimator extends ModelEstimator {
 	public void setMinShapeStep(double minShapeStep) {
 		this.minShapeStep = minShapeStep;
 	}
+	
 	
 	public MaximumLikelihoodParametrization[] estimateJoint(ModelStructure[] block, boolean profile) {
 		KNMatrixElement[][] data = new KNMatrixElement[block.length][];
@@ -77,14 +79,18 @@ public class FullModelEstimator extends ModelEstimator {
 		ToDoubleFunction<double[]> perr_prior = a->getPrior(t).logdens(a[perr],m,r);
 		
 
-		MaximumLikelihoodModelPriorDecorator<KNMatrixElement[]> deco = new MaximumLikelihoodModelPriorDecorator<>(binomModel,perr_prior);
+		MaximumLikelihoodModel<KNMatrixElement[]> model;
+		if (usePrior)
+			model = new MaximumLikelihoodModelPriorDecorator<>(binomModel,perr_prior);
+		else 
+			model = binomModel;
 
 		MaximumLikelihoodParametrization par = binomModel.createPar()
 				.setParameter("p.err", m);
 
 		binomModel.setNtrByFirstMoment(par,data);
 		try {
-			MaximumLikelihoodParametrization re = estimator.fit(deco,par, data);
+			MaximumLikelihoodParametrization re = estimator.fit(model,par, data);
 			return re;
 		} catch (RuntimeException ex) {
 //			try {
@@ -113,19 +119,25 @@ public class FullModelEstimator extends ModelEstimator {
 		
 		Grand3BinomialMixtureModel binomModel = new Grand3BinomialMixtureModel();
 		
-		MaximumLikelihoodModelPriorDecorator<KNMatrixElement[]>[] deco = new MaximumLikelihoodModelPriorDecorator[para.length];
-		for (int i=0; i<para.length; i++) {
-			double m = (pre_perr[i][0]+pre_perr[i][1])/2;
-			double r = (pre_perr[i][1]-pre_perr[i][0])/2;
-			
-			int perr = para[i].getParameterIndex("p.err");
-			int ii=i;
-			ToDoubleFunction<double[]> perr_prior = a->getPrior(t[ii]).logdens(a[perr],m,r);
-			
-			deco[i] = new MaximumLikelihoodModelPriorDecorator<>(binomModel,perr_prior);
+		MaximumLikelihoodModel<KNMatrixElement[]>[] models = new MaximumLikelihoodModelPriorDecorator[para.length];
+		if (usePrior)
+			for (int i=0; i<para.length; i++) {
+				double m = (pre_perr[i][0]+pre_perr[i][1])/2;
+				double r = (pre_perr[i][1]-pre_perr[i][0])/2;
+				
+				int perr = para[i].getParameterIndex("p.err");
+				int ii=i;
+				ToDoubleFunction<double[]> perr_prior = a->getPrior(t[ii]).logdens(a[perr],m,r);
+				
+				models[i] = new MaximumLikelihoodModelPriorDecorator<>(binomModel,perr_prior);
+			}
+		else {
+			for (int i=0; i<para.length; i++) {
+				models[i] = binomModel;
+			}
 		}
 		
-		Grand3SubreadsJointBinomialMixtureModel model = new Grand3SubreadsJointBinomialMixtureModel(deco);
+		Grand3SubreadsJointBinomialMixtureModel model = new Grand3SubreadsJointBinomialMixtureModel(models);
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
 		estimator.setMaxIter(maxIter);
 		
@@ -150,14 +162,19 @@ public class FullModelEstimator extends ModelEstimator {
 		int perr = 1;
 		ToDoubleFunction<double[]> perr_prior = a->getPrior(t).logdens(a[perr],m,r);
 		
-		MaximumLikelihoodModelPriorDecorator<KNMatrixElement[]> deco = new MaximumLikelihoodModelPriorDecorator<>(tbbinomModel,perr_prior);
+		MaximumLikelihoodModel<KNMatrixElement[]> model;
+		if (usePrior)
+			model = new MaximumLikelihoodModelPriorDecorator<>(tbbinomModel,perr_prior);
+		else 
+			model = tbbinomModel;
+		
 
 		DoubleFunction<MaximumLikelihoodParametrization> fit1 = s->{
 			MaximumLikelihoodParametrization par = tbbinomModel.createPar()
 					.setParameter("shape", s)
 					.setParameter("p.err", m);
 			tbbinomModel.setNtrByFirstMoment(par,data);
-			MaximumLikelihoodParametrization re = estimator.fit(deco,par,data);
+			MaximumLikelihoodParametrization re = estimator.fit(model,par,data);
 			return re;
 		};
 		
@@ -195,19 +212,26 @@ public class FullModelEstimator extends ModelEstimator {
 		
 		Grand3TruncatedBetaBinomialMixtureModel tbbinomModel = new Grand3TruncatedBetaBinomialMixtureModel();
 		
-		MaximumLikelihoodModelPriorDecorator<KNMatrixElement[]>[] deco = new MaximumLikelihoodModelPriorDecorator[para.length];
-		for (int i=0; i<para.length; i++) {
-			double m = (pre_perr[i][0]+pre_perr[i][1])/2;
-			double r = (pre_perr[i][1]-pre_perr[i][0])/2;
-			
-			int perr = para[i].getParameterIndex("p.err");
-			int ii=i;
-			ToDoubleFunction<double[]> perr_prior = a->getPrior(t[ii]).logdens(a[perr],m,r);
-						
-			deco[i] = new MaximumLikelihoodModelPriorDecorator<>(tbbinomModel,perr_prior);
+		MaximumLikelihoodModel<KNMatrixElement[]>[] models = new MaximumLikelihoodModelPriorDecorator[para.length];
+		if (usePrior)
+			for (int i=0; i<para.length; i++) {
+				double m = (pre_perr[i][0]+pre_perr[i][1])/2;
+				double r = (pre_perr[i][1]-pre_perr[i][0])/2;
+				
+				int perr = para[i].getParameterIndex("p.err");
+				int ii=i;
+				ToDoubleFunction<double[]> perr_prior = a->getPrior(t[ii]).logdens(a[perr],m,r);
+							
+				models[i] = new MaximumLikelihoodModelPriorDecorator<>(tbbinomModel,perr_prior);
+			}
+		else {
+			for (int i=0; i<para.length; i++) {
+				models[i] = tbbinomModel;
+			}
 		}
 		
-		Grand3SubreadsJointTruncatedBetaBinomialMixtureModel model = new Grand3SubreadsJointTruncatedBetaBinomialMixtureModel(deco);
+		
+		Grand3SubreadsJointTruncatedBetaBinomialMixtureModel model = new Grand3SubreadsJointTruncatedBetaBinomialMixtureModel(models);
 		NelderMeadMaximumLikelihoodEstimator estimator = new NelderMeadMaximumLikelihoodEstimator();
 		estimator.setMaxIter(maxIter);
 		
@@ -238,18 +262,25 @@ public class FullModelEstimator extends ModelEstimator {
 		int t = model.getType();
 		ToDoubleFunction<double[]> perr_prior = a->getPrior(t).logdens(a[perr],m,r);
 			
-		MaximumLikelihoodModelPriorDecorator<KNMatrixElement[]> bdeco = new MaximumLikelihoodModelPriorDecorator<>(binomModel,perr_prior);
-		MaximumLikelihoodModelPriorDecorator<KNMatrixElement[]> tbbdeco = new MaximumLikelihoodModelPriorDecorator<>(tbbinomModel,perr_prior);
-
+		MaximumLikelihoodModel<KNMatrixElement[]> bmodel;
+		MaximumLikelihoodModel<KNMatrixElement[]> tbomdel;
+		if (usePrior) {
+			bmodel = new MaximumLikelihoodModelPriorDecorator<>(binomModel,perr_prior);
+			tbomdel= new MaximumLikelihoodModelPriorDecorator<>(tbbinomModel,perr_prior);
+		} else { 
+			bmodel = binomModel;
+			tbomdel= tbbinomModel;
+		}
+		
 		KNMatrixElement[] data = stiToData.apply(new int[]{model.getSubread(),model.getType(),model.getSample()});
 		
-		estimator.computeProfileLikelihoodPointwiseConfidenceIntervals(bdeco,model.getBinom(),data);
-		estimator.computeProfileLikelihoodPointwiseConfidenceIntervals(tbbdeco,model.getTBBinom(),data);
+		estimator.computeProfileLikelihoodPointwiseConfidenceIntervals(bmodel,model.getBinom(),data);
+		estimator.computeProfileLikelihoodPointwiseConfidenceIntervals(tbomdel,model.getTBBinom(),data);
 		if (profOut!=null) {
 			try {
 				String pref = String.format("Separate\t%s\t%s\t%s\t",design.getSampleNameForSampleIndex(model.getSample()),subreads[model.getSubread()],design.getTypes()[model.getType()].toString());
 				StringLineWriter sout = new StringLineWriter();
-				estimator.writeProfileLikelihoods(tbbdeco,model.getTBBinom(), data, sout, pref);
+				estimator.writeProfileLikelihoods(tbomdel,model.getTBBinom(), data, sout, pref);
 				if (!model.getTBBinom().isConverged())
 					logger.severe(pref+model.getTBBinom().getConvergence());
 				profLock.lock();

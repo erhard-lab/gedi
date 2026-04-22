@@ -169,7 +169,10 @@ public class Grand3EstimateModel extends GediProgram {
 				estimator=new FullModelEstimator(design,stiToData,pre_perr, subreads);
 			else if (method.equals(ModelEstimationMethod.MaskErrorComponent))
 				estimator=new MaskErrorComponentModelEstimator(design,stiToData,pre_perr, subreads);
-			else
+			else if (method.equals(ModelEstimationMethod.FullNoPrior)) {
+				estimator=new FullModelEstimator(design, stiToData, pre_perr, subreads);
+				estimator.setUsePrior(false);
+			} else
 				throw new RuntimeException("Unknown estimation method: "+method);
 			
 			context.getLog().info("Estimating models using "+method+" method...");

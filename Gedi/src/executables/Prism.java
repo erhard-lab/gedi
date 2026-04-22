@@ -746,6 +746,9 @@ public class Prism {
 		int sc = h.get("Score",-1);
 		if (sc!=-1) return true;
 		
+		sc = h.get("SCORE (%)",-1);
+		if (sc!=-1) return true;
+		
 		
 		return false;
 	}
@@ -757,6 +760,9 @@ public class Prism {
 		if (lgp!=-1) return false;
 		
 		int sc = h.get("Score",-1);
+		if (sc!=-1) return true;
+		
+		sc = h.get("SCORE (%)",-1);
 		if (sc!=-1) return true;
 		
 		
@@ -771,7 +777,11 @@ public class Prism {
 		
 		int sc = h.get("Score",-1);
 		if (sc!=-1) return Double.parseDouble(f[sc]);
+
 		
+		sc = h.get("SCORE (%)",-1);
+		if (sc!=-1) return Double.parseDouble(f[sc]);
+
 		
 		return 0;
 	}
