@@ -119,7 +119,7 @@ public class FullModelEstimator extends ModelEstimator {
 		
 		Grand3BinomialMixtureModel binomModel = new Grand3BinomialMixtureModel();
 		
-		MaximumLikelihoodModel<KNMatrixElement[]>[] models = new MaximumLikelihoodModelPriorDecorator[para.length];
+		MaximumLikelihoodModel<KNMatrixElement[]>[] models = new MaximumLikelihoodModel[para.length];
 		if (usePrior)
 			for (int i=0; i<para.length; i++) {
 				double m = (pre_perr[i][0]+pre_perr[i][1])/2;
@@ -212,7 +212,7 @@ public class FullModelEstimator extends ModelEstimator {
 		
 		Grand3TruncatedBetaBinomialMixtureModel tbbinomModel = new Grand3TruncatedBetaBinomialMixtureModel();
 		
-		MaximumLikelihoodModel<KNMatrixElement[]>[] models = new MaximumLikelihoodModelPriorDecorator[para.length];
+		MaximumLikelihoodModel<KNMatrixElement[]>[] models = new MaximumLikelihoodModel[para.length];
 		if (usePrior)
 			for (int i=0; i<para.length; i++) {
 				double m = (pre_perr[i][0]+pre_perr[i][1])/2;
