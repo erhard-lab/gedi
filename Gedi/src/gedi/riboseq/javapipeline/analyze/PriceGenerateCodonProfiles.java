@@ -107,7 +107,8 @@ public class PriceGenerateCodonProfiles extends GediProgram {
 		
 		String gene = trans.getData().getGeneId();
 		String transcript = trans.getData().getTranscriptId();
-		String symbol = genomic.getGeneTable("geneId", "symbol").apply(trans.getData().getGeneId());
+		String symbol = genomic.getGeneTable("geneId", "symbol").apply(gene);
+		if (symbol==null) symbol = gene;
 		
 		writer.startList(null, 4);
 		writer.write(null, new String[] {gene,symbol,transcript,trans.toLocationString()});
@@ -195,11 +196,17 @@ public class PriceGenerateCodonProfiles extends GediProgram {
 		CenteredDiskIntervalTreeStorage<SparseMemoryFloatArray> codons = new CenteredDiskIntervalTreeStorage<SparseMemoryFloatArray>("price/stressors.codons.cit");
 		CenteredDiskIntervalTreeStorage<MajorIsoform> cit = new CenteredDiskIntervalTreeStorage<>("price/stressors.majorisoform.cit");
 		Genomic g = Genomic.get("h.ens90");
-		int n = 150;
-		cit.ei().head(n).progress(new ConsoleProgress(), (int)n, r->r.toLocationString())
-		.writeRDS("test.rds", (int)n,5,5, mi->mi.getData().getTranscript().getData().getGeneId(), (mi,out)->{
+		int n = (int) cit.size();
+		cit.ei().progress(new ConsoleProgress(), (int)n, r->r.toLocationString())
+		.writeRDS("all.rds", (int)n,5,5, mi->mi.getData().getTranscript().getData().getGeneId(), (mi,out)->{
 			write(mi, out, codons, orfs, g);
 		});
+		
+//		int n = 150;
+//		cit.ei().head(n).progress(new ConsoleProgress(), (int)n, r->r.toLocationString())
+//		.writeRDS("test.rds", (int)n,5,5, mi->mi.getData().getTranscript().getData().getGeneId(), (mi,out)->{
+//			write(mi, out, codons, orfs, g);
+//		});
 	
 	}
 

@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 
 import gedi.app.Gedi;
 import gedi.app.extension.ExtensionContext;
+import gedi.centeredDiskIntervalTree.CenteredDiskIntervalTreeStorage;
 import gedi.core.data.annotation.NameAttributeMapAnnotation;
 import gedi.core.data.annotation.Transcript;
 import gedi.core.genomic.Genomic;
@@ -535,7 +536,7 @@ public class IndexGenome {
 					aaano = (GenomicRegionStorage<Transcript>) WorkspaceItemLoaderExtensionPoint.getInstance().get(Paths.get(annopath+".cit")).load(Paths.get(annopath+".cit"));
 				} catch (Throwable e) {}
 				if (aaano==null) {
-					GenomicRegionStorage<Transcript> cl = GenomicRegionStorageExtensionPoint.getInstance().get(new ExtensionContext().add(String.class, annopath).add(Class.class, Transcript.class), GenomicRegionStorageCapabilities.Disk, GenomicRegionStorageCapabilities.Fill);
+					CenteredDiskIntervalTreeStorage<Transcript> cl = new CenteredDiskIntervalTreeStorage(annopath,Transcript.class);
 					FastaIndexSequenceProvider sss = new FastaIndexSequenceProvider(new FastaIndexFile(seqpath).open());
 					
 					progress.init().setDescription("Indexing annotation file in "+annopath);
@@ -555,7 +556,7 @@ public class IndexGenome {
 						}
 						return d;
 					},Transcript.class):gtf.readIntoMemoryThrowOnNonUnique();
-					cl.fill(mem.ei().filter(rgr->sss.getSequenceNames().contains(rgr.getReference().getName())));
+					cl.fill(mem,rgr->sss.getSequenceNames().contains(rgr.getReference().getName())?rgr:null,progress);
 					progress.finish();
 					
 					System.err.println("Indexed annotation file in "+annopath);
