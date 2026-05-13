@@ -111,6 +111,7 @@ public class Grand3ProcessTargets<A extends AlignedReadsData> extends GediProgra
 		String targetsName = getParameter(pind++);
 		boolean debug = getBooleanParameter(pind++);
 		
+		context.getLog().info("Reading from "+reads.getClass().getSimpleName());
 		context.getLog().info("Processing targets");
 		
 		SnpData masked = new SnpData(snpFile);

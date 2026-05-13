@@ -88,6 +88,7 @@ public class Grand3SnpsAndClip<A extends AlignedReadsData> extends GediProgram {
 		
 		ExperimentalDesign design = ExperimentalDesign.fromTable(expDesign);
 		
+		context.getLog().info("Reading from "+reads.getClass().getSimpleName());
 		context.getLog().info("Finding SNPs and collecting position statistics...");
 		
 		
