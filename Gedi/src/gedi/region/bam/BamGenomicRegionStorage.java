@@ -359,6 +359,53 @@ public class BamGenomicRegionStorage implements GenomicRegionStorage<AlignedRead
 //		setIgnoreVariations(true);
 	}
 	
+	private static String cellLabelToBarcode(String cellLabel) {
+	    if (cellLabel == null) {
+	        return "AAAAAAAAAAAAA"; // Default fallback
+	    }
+
+	    long num = Long.parseLong(cellLabel);
+
+	    char[] dna = new char[13];
+	    char[] alphabet = {'A', 'C', 'G', 'T'};
+
+	    for (int i = 12; i >= 0; i--) {
+	        dna[i] = alphabet[(int) (num & 3)]; // num % 4
+	        num >>= 2;                          // num / 4
+	    }
+
+	    return new String(dna);
+	}
+	
+	public void setRhapsody(HashMap<String,String> filterBarcodes) {
+		if (filterBarcodes!=null)
+			cbFilter = r->{
+				String bc = r.getStringAttribute("CB");
+				return filterBarcodes.containsKey(bc) && !r.getStringAttribute("MA").equals("-");
+			};
+		else {
+			cbFilter = r->{
+				String bc = r.getStringAttribute("CB");
+				return bc.length()>0 && !r.getStringAttribute("MA").equals("-");
+			};
+		}
+		this.barcode = (r1, r2)->{
+			StringBuilder sb = new StringBuilder();
+			sb.append(cellLabelToBarcode(r1.getStringAttribute("CB")));
+			sb.append(r1.getStringAttribute("MA"));
+			if (r2!=null){
+				throw new RuntimeException("Not implemented");
+			}
+			return new DnaSequence(sb.toString());
+		};
+		
+		this.barcodeChecker = (read)->{
+			if (read!=null && (read.getStringAttribute("CB")==null || read.getStringAttribute("MA")==null))
+				return false;
+			return true;
+		};
+	}
+	
 	public void check(Genomic g, LineWriter inconsistent) {
 		this.bamChecker = new BamChecker(g, inconsistent);
 	}

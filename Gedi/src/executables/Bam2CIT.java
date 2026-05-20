@@ -68,7 +68,7 @@ public class Bam2CIT {
 		
 		Gedi.startup(false);
 		
-		
+		boolean isRhapsody = false;
 		boolean is10x = false;
 		boolean isDropseq = false;
 		boolean isUmi = false;
@@ -135,6 +135,9 @@ public class Bam2CIT {
 			else if (args[i].equals("-10x")) {
 				is10x = true;
 			} 
+			else if(args[i].equals("-rhapsody")) {
+				isRhapsody = true;
+			}
 			else if (args[i].equals("-dropseq")) {
 				isDropseq = true;
 			} 
@@ -204,7 +207,7 @@ public class Bam2CIT {
 			dataClass = BarcodedAlignedReadsData.class;
 		}
 		
-		if (is10x) {
+		if (is10x || isRhapsody) {
 			dataClass = BarcodedAlignedReadsData.class;
 			
 			File[] bcs = EI.wrap(args)
@@ -252,7 +255,10 @@ public class Bam2CIT {
 			else {
 				Gedi.getLog().warning("Will not create barcodes file, not all filtered_feature_bc_matrix found!");
 			}
-			storage.set10x(barcodeList);
+			if (isRhapsody)
+				storage.setRhapsody(barcodeList);
+			else
+				storage.set10x(barcodeList);
 			keepMito = true;
 		}
 		if (isDropseq) {
@@ -405,7 +411,7 @@ public class Bam2CIT {
 		return re;
 	}
 	private static void usage() {
-		System.out.println("Bam2CIT [-p] [-id] [-compress] [-minmaq <MAQ>] [-keepMito] [-novar] [-nosec] [-10x] [-umi [-umiAllowMulti] [-umiPattern <regex-all-groups-are-used>]] [-barcodelist <multiseq-table>] [-removePrefix <prefix>] <output> <file1> <file2> ... \n\n -p shows progress\n -id add ids to CIT\n -removePrefix filters reads for that and removes the prefix (e.g. for 10x runs with human/mouse combined)\n -barcodelist <multiseq-table>  needs to be a tsv file with columns Barcode and Sample!");
+		System.out.println("Bam2CIT [-p] [-id] [-compress] [-minmaq <MAQ>] [-keepMito] [-novar] [-nosec] [-10x] [-rhapsody] [-umi [-umiAllowMulti] [-umiPattern <regex-all-groups-are-used>]] [-barcodelist <multiseq-table>] [-removePrefix <prefix>] <output> <file1> <file2> ... \n\n -p shows progress\n -id add ids to CIT\n -removePrefix filters reads for that and removes the prefix (e.g. for 10x runs with human/mouse combined)\n -barcodelist <multiseq-table>  needs to be a tsv file with columns Barcode and Sample!");
 	}
 	
 }
