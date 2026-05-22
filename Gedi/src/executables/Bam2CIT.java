@@ -207,7 +207,7 @@ public class Bam2CIT {
 			dataClass = BarcodedAlignedReadsData.class;
 		}
 		
-		if (is10x || isRhapsody) {
+		if (is10x) {
 			dataClass = BarcodedAlignedReadsData.class;
 			
 			File[] bcs = EI.wrap(args)
@@ -255,12 +255,56 @@ public class Bam2CIT {
 			else {
 				Gedi.getLog().warning("Will not create barcodes file, not all filtered_feature_bc_matrix found!");
 			}
-			if (isRhapsody)
-				storage.setRhapsody(barcodeList);
-			else
-				storage.set10x(barcodeList);
+			storage.set10x(barcodeList);
 			keepMito = true;
 		}
+		if (isRhapsody) {
+			dataClass = BarcodedAlignedReadsData.class;
+			
+			File[] bcs = EI.wrap(args)
+				.map(bam->{
+					File dir = new File(bam).getAbsoluteFile().getParentFile();
+					File f = EI.wrap(dir.listFiles((d,n)->n.endsWith("_Sample_Tag_Calls.csv") && bam.contains(n.substring(0,n.length()-"_Sample_Tag_Calls.csv".length())))).getUniqueResult(null, "Multiple sample tag calls files found!");
+					if (f.exists())
+						Gedi.getLog().info("Found sample tag calls file for "+bam+" in "+f);
+					else
+						Gedi.getLog().warning("Did not find sample tag calls for "+bam+"!");
+					return f;
+				}).toArray(File.class);
+			
+			if (new File(FileUtils.getExtensionSibling(out, ".barcodes.tsv")).exists()) {
+				Gedi.getLog().warning("Will not create barcodes file, file already present!");
+			}
+			else if (EI.wrap(bcs).filter(f->f.exists()).count()==bcs.length) {
+				
+				Gedi.getLog().info("Creating barcodes file!");
+				HashMap<String,String> nBarcodeList = new HashMap<String, String>();
+				String[] conds = storage.getMetaDataConditions();
+				if (conds.length>1) throw new RuntimeException("Do not call with multiple bams, use MergeCIT instead!");
+				if (name!=null) conds[0] = name;
+				
+				HeaderLine header = new HeaderLine();
+				barcodeList = EI.lines(bcs[0]).skip(l->l.startsWith("#")).str().header(header,',').split(',').toMap(new HashMap<String, String>(), a->a[0], a->a[2]);
+				
+				try (LineWriter wr = new LineOrientedFile(FileUtils.getExtensionSibling(out, ".barcodes.tsv")).write()) {
+					wr.writeLine("Library\tBarcode\tSample");
+					for (int c=0; c<conds.length; c++) {
+						for (String bc : barcodeList.keySet())
+							wr.writef("%s\t%s\t%s\n",conds[c],BamGenomicRegionStorage.rhapsodyCellLabelToBarcode(bc),barcodeList.get(bc));
+						
+					}
+				}
+				if (barcodeList==null) barcodeList = nBarcodeList;
+				
+			}
+			else {
+				Gedi.getLog().warning("Will not create barcodes file, not all filtered_feature_bc_matrix found!");
+			}
+			storage.setRhapsody(barcodeList);
+			keepMito = true;
+		}
+		
+		
 		if (isDropseq) {
 			dataClass = BarcodedAlignedReadsData.class;
 			

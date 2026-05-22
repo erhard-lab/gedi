@@ -359,7 +359,7 @@ public class BamGenomicRegionStorage implements GenomicRegionStorage<AlignedRead
 //		setIgnoreVariations(true);
 	}
 	
-	private static String cellLabelToBarcode(String cellLabel) {
+	public static String rhapsodyCellLabelToBarcode(String cellLabel) {
 	    if (cellLabel == null) {
 	        return "AAAAAAAAAAAAA"; // Default fallback
 	    }
@@ -391,7 +391,7 @@ public class BamGenomicRegionStorage implements GenomicRegionStorage<AlignedRead
 		}
 		this.barcode = (r1, r2)->{
 			StringBuilder sb = new StringBuilder();
-			sb.append(cellLabelToBarcode(r1.getStringAttribute("CB")));
+			sb.append(rhapsodyCellLabelToBarcode(r1.getStringAttribute("CB")));
 			sb.append(r1.getStringAttribute("MA"));
 			if (r2!=null){
 				throw new RuntimeException("Not implemented");
