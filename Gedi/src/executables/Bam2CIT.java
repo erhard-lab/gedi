@@ -5,20 +5,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.function.Function;
 
 import gedi.app.Gedi;
 import gedi.app.extension.ExtensionContext;
+import gedi.centeredDiskIntervalTree.CenteredDiskIntervalTreeStorage;
 import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.BarcodedAlignedReadsData;
 import gedi.core.data.reads.DefaultAlignedReadsData;
 import gedi.core.data.reads.ReadCountMode;
 import gedi.core.genomic.Genomic;
+import gedi.core.reference.Chromosome;
 import gedi.core.reference.Strandness;
 import gedi.core.region.ArrayGenomicRegion;
 import gedi.core.region.GenomicRegionStorage;
 import gedi.core.region.GenomicRegionStorageCapabilities;
 import gedi.core.region.GenomicRegionStorageExtensionPoint;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
+import gedi.core.region.MutableReferenceGenomicRegion;
 import gedi.region.bam.BamGenomicRegionStorage;
 import gedi.region.bam.BamGenomicRegionStorage.PairedEndHandling;
 import gedi.util.ArrayUtils;
@@ -330,19 +334,12 @@ public class Bam2CIT {
 		int numCond = storage.getRandomRecord().getNumConditions();
 
 		@SuppressWarnings("rawtypes")
-		GenomicRegionStorage outStorage = GenomicRegionStorageExtensionPoint.getInstance().get(new ExtensionContext().add(Boolean.class, compress).add(String.class, out).add(Class.class, dataClass), GenomicRegionStorageCapabilities.Disk, GenomicRegionStorageCapabilities.Fill);
+		CenteredDiskIntervalTreeStorage outStorage = new CenteredDiskIntervalTreeStorage(out, dataClass);
 		NumericArray mitocount = NumericArray.createMemory(numCond, NumericArrayType.Double);
 		
-		if (head>0 || !keepMito || sechip>0 || unspec || removePref!=null) {
+		if (head>0 || !keepMito || sechip>0 || unspec) {
 			ExtendedIterator<ImmutableReferenceGenomicRegion<AlignedReadsData>> it = null;
-			
-			String uRemovePref = removePref;
-			if (removePref==null) it = storage.ei();
-			else it = EI.wrap(storage.getReferenceSequences()).
-					filter(r->r.getName().startsWith(uRemovePref)).unfold(r->storage.ei(r)).
-					map(r->new ImmutableReferenceGenomicRegion<>(gedi.core.reference.Chromosome.obtain(r.getReference().getName().substring(uRemovePref.length()),r.getReference().getStrand()), r.getRegion(), r.getData()));
-
-			
+		
 			if (head>0) it = it.head(head);
 			if (!keepMito) it = it.filter(r->{
 				boolean mito = r.getReference().isMitochondrial();
@@ -360,6 +357,15 @@ public class Bam2CIT {
 			
 			if (progress) it = it.progress(new ConsoleProgress(System.err),-1,r->r.toLocationString());
 			outStorage.fill(it);
+		} else if (removePref!=null) {
+			String uRemovePref = removePref;
+			Function<MutableReferenceGenomicRegion,MutableReferenceGenomicRegion> transf = r->{
+				if (!r.getReference().getName().startsWith(uRemovePref)) return null;
+				r.setReference(Chromosome.obtain(r.getReference().getName().substring(uRemovePref.length()),r.getReference().getStrand()));
+				return r;
+			};
+			outStorage.fill(storage,transf,progress?new ConsoleProgress(System.err):null);
+
 		} else {
 			outStorage.fill(storage,progress?new ConsoleProgress(System.err):null);
 		}
