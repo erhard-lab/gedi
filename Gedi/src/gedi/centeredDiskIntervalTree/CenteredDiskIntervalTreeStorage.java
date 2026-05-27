@@ -473,6 +473,7 @@ public class CenteredDiskIntervalTreeStorage<D>  implements GenomicRegionStorage
 				progress.finish();
 			offset[refs.length] = out.position();
 			
+			
 			out.position(MAGIC.length()+Integer.BYTES);
 			for (int i=0; i<refs.length; i++) {
 				Chromosome.write(Chromosome.obtain(mappedRefs[i].getName(),mappedRefs[i].getStrand()),out);

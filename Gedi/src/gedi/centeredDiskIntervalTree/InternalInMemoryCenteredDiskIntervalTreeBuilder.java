@@ -16,7 +16,7 @@ public class InternalInMemoryCenteredDiskIntervalTreeBuilder<D> extends Centered
 
 	public static final String MAGIC = "CITI";
 	
-	private BinaryBlob data = new BinaryBlob();
+	private BinaryBlob data;
 	
 	private long offset = 0;
 	
@@ -27,6 +27,8 @@ public class InternalInMemoryCenteredDiskIntervalTreeBuilder<D> extends Centered
 	
 	public InternalInMemoryCenteredDiskIntervalTreeBuilder(String tmpFolder, String prefix, DynamicObject globalInfo) throws IOException {
 		super(true,MAGIC,prefix,tmpFolder);
+		data = new BinaryBlob();
+		data.getContext().setGlobalInfo(globalInfo);
 	}
 	
 	@Override
@@ -44,7 +46,6 @@ public class InternalInMemoryCenteredDiskIntervalTreeBuilder<D> extends Centered
 		this.data.putCInt(start);
 		for (int i=1; i<region.getNumBoundaries(); i++)
 			this.data.putCInt(region.getBoundary(i)-start);
-		
 		FileUtils.serialize(data,this.data);
 		
 //		data.serialize(this.data);
@@ -53,13 +54,14 @@ public class InternalInMemoryCenteredDiskIntervalTreeBuilder<D> extends Centered
 	
 	public InternalInMemoryCenteredDiskIntervalTreeBuilder<D> build(PageFileWriter out) throws IOException {
 		super.build(out);
-		
+
 		data.finish(false);
 		while (!data.eof()) {
-			out.put(data.get());
+			byte b = data.get();
+			out.put(b);
 		}
 		data.close();
-		
+
 		return this;
 	}
 	

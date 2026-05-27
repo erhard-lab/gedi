@@ -441,8 +441,10 @@ public class FileUtils {
 	public static void writeBitVector(BitVector bits,
 			BinaryWriter out, boolean size) throws IOException {
 		if (size) out.putInt(bits.size());
-		for (int b=0; b<bits.size(); b+=8)
-			out.putByte((int)bits.getLongFromTo(b, Math.min(b+7,bits.size()-1)));
+		for (int b=0; b<bits.size(); b+=8) {
+			int bb = (int)bits.getLongFromTo(b, Math.min(b+7,bits.size()-1));
+			out.putByte(bb);
+		}
 	}
 
 	public static void writeBitVector(BitVector bits,

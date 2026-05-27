@@ -268,8 +268,8 @@ public class Bam2CIT {
 			File[] bcs = EI.wrap(args)
 				.map(bam->{
 					File dir = new File(bam).getAbsoluteFile().getParentFile();
-					File f = EI.wrap(dir.listFiles((d,n)->n.endsWith("_Sample_Tag_Calls.csv") && bam.contains(n.substring(0,n.length()-"_Sample_Tag_Calls.csv".length())))).getUniqueResult(null, "Multiple sample tag calls files found!");
-					if (f.exists())
+					File f = EI.wrap(dir.listFiles((d,n)->n.endsWith("_Sample_Tag_Calls.csv") && bam.contains(n.substring(0,n.length()-"_Sample_Tag_Calls.csv".length())))).getUniqueResult("Multiple sample tag calls files found!",null);
+					if (f!=null && f.exists())
 						Gedi.getLog().info("Found sample tag calls file for "+bam+" in "+f);
 					else
 						Gedi.getLog().warning("Did not find sample tag calls for "+bam+"!");
@@ -302,7 +302,7 @@ public class Bam2CIT {
 				
 			}
 			else {
-				Gedi.getLog().warning("Will not create barcodes file, not all filtered_feature_bc_matrix found!");
+				Gedi.getLog().warning("Will not create barcodes file, Sample tag file not found!");
 			}
 			storage.setRhapsody(barcodeList);
 			keepMito = true;
@@ -330,6 +330,7 @@ public class Bam2CIT {
 
 		if (minmaq>=0)
 			storage.setMinimalAlignmentQuality(minmaq);
+		
 		
 		int numCond = storage.getRandomRecord().getNumConditions();
 

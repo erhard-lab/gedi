@@ -79,16 +79,18 @@ public class InternalCenteredDiskIntervalTreeBuilder<D> extends CenteredDiskInte
 		
 		super.build(out);
 		
+
 		for (String path : tmps) {
 			PageFile datain = new PageFile(path);
 			while (!datain.eof()) {
-				out.put(datain.get());
+				byte b = datain.get();
+				out.put(b);
 			}
 			datain.close();
 //		System.err.println("deleting "+data.getPath());
 			new File(path).delete();
 		}
-		
+
 		return this;
 	}
 	
