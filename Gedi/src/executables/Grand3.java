@@ -5,6 +5,7 @@ import gedi.app.Gedi;
 import gedi.grand3.javapipeline.Grand3BurstMcmcOutput;
 import gedi.grand3.javapipeline.Grand3CollectSufficientStatistics;
 import gedi.grand3.javapipeline.Grand3EstimateModel;
+import gedi.grand3.javapipeline.Grand3LoadReadToMem;
 import gedi.grand3.javapipeline.Grand3OutputFlatfiles;
 import gedi.grand3.javapipeline.Grand3ParameterSet;
 import gedi.grand3.javapipeline.Grand3ProcessTargets;
@@ -30,7 +31,9 @@ public class Grand3 {
 		boolean hasMappedTarget = ArrayUtils.find(args, "-"+params.pseudobulkFile.getName())>=0;
 		boolean hasTargetMixmat = ArrayUtils.find(args, "-"+params.targetMixmat.getName())>=0;
 		
+		
 		GediProgram pipeline = GediProgram.create("Grand3",
+				new Grand3LoadReadToMem(params),
 				new Grand3WriteExperimentalDesign(params),
 				new Grand3SetupTargetsAcceptor(params),
 				new Grand3SetupTargetsGenes(params),
@@ -47,6 +50,7 @@ public class Grand3 {
 				);
 		
 		pipeline.setChangelog(getChangelog());
+		
 		
 		GediProgram.run(pipeline, params.paramFile, params.runtimeFile, new CommandLineHandler("Grand3","Grand3 is an analysis method for (sc-) SLAM/TimeLapse/TUC-seq data.",args));
 	}

@@ -34,6 +34,7 @@ public class Grand3ParameterSet extends GediParameterSet {
 	
 	public GediParameter<Integer> nthreads = new GediParameter<Integer>(this,"nthreads", "The number of threads to use for computations", false, new IntParameterType(), Runtime.getRuntime().availableProcessors());
 	public GediParameter<GenomicRegionStorage<AlignedReadsData>> reads = new GediParameter<GenomicRegionStorage<AlignedReadsData>>(this,"reads", "The mapped reads from the SLAM-seq experiment.", false, new StorageParameterType<AlignedReadsData>());
+	public GediParameter<Boolean> tomem = new GediParameter<Boolean>(this,"mem", "Load all reads into memory.", false, new BooleanParameterType());
 	public GediParameter<Genomic> genomic = new GediParameter<Genomic>(this,"genomic", "The indexed GEDI genome.", true, new GenomicParameterType());
 	public GediParameter<Boolean> noplot = new GediParameter<Boolean>(this,"noplot", "Don't use R to produce various during runtime (they can be produced afterwars by running the generated R script)",false, new BooleanParameterType());
 	

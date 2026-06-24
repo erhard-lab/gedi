@@ -52,7 +52,7 @@ public class Grand3Utils {
 	
 	public static ModelStructure[][][] readModelsTsv(File modelFile, ExperimentalDesign design, String[] subreads, ModelEstimationMethod method) throws IOException {
 		
-		String methname = method.equals(ModelEstimationMethod.Full)?"Joint":"MaskedError";
+		String methname = method.equals(ModelEstimationMethod.MaskErrorComponent)?"MaskedError":"Joint";
 		
 		
 		HashMap<String,Integer> sampleIndex = new HashMap<String, Integer>();

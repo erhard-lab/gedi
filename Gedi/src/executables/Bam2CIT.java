@@ -5,20 +5,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.function.Function;
 
 import gedi.app.Gedi;
 import gedi.app.extension.ExtensionContext;
+import gedi.centeredDiskIntervalTree.CenteredDiskIntervalTreeStorage;
 import gedi.core.data.reads.AlignedReadsData;
 import gedi.core.data.reads.BarcodedAlignedReadsData;
 import gedi.core.data.reads.DefaultAlignedReadsData;
 import gedi.core.data.reads.ReadCountMode;
 import gedi.core.genomic.Genomic;
+import gedi.core.reference.Chromosome;
 import gedi.core.reference.Strandness;
 import gedi.core.region.ArrayGenomicRegion;
 import gedi.core.region.GenomicRegionStorage;
 import gedi.core.region.GenomicRegionStorageCapabilities;
 import gedi.core.region.GenomicRegionStorageExtensionPoint;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
+import gedi.core.region.MutableReferenceGenomicRegion;
 import gedi.region.bam.BamGenomicRegionStorage;
 import gedi.region.bam.BamGenomicRegionStorage.PairedEndHandling;
 import gedi.util.ArrayUtils;
@@ -68,7 +72,7 @@ public class Bam2CIT {
 		
 		Gedi.startup(false);
 		
-		
+		boolean isRhapsody = false;
 		boolean is10x = false;
 		boolean isDropseq = false;
 		boolean isUmi = false;
@@ -135,6 +139,9 @@ public class Bam2CIT {
 			else if (args[i].equals("-10x")) {
 				is10x = true;
 			} 
+			else if(args[i].equals("-rhapsody")) {
+				isRhapsody = true;
+			}
 			else if (args[i].equals("-dropseq")) {
 				isDropseq = true;
 			} 
@@ -255,6 +262,53 @@ public class Bam2CIT {
 			storage.set10x(barcodeList);
 			keepMito = true;
 		}
+		if (isRhapsody) {
+			dataClass = BarcodedAlignedReadsData.class;
+			
+			File[] bcs = EI.wrap(args)
+				.map(bam->{
+					File dir = new File(bam).getAbsoluteFile().getParentFile();
+					File f = EI.wrap(dir.listFiles((d,n)->n.endsWith("_Sample_Tag_Calls.csv") && bam.contains(n.substring(0,n.length()-"_Sample_Tag_Calls.csv".length())))).getUniqueResult("Multiple sample tag calls files found!",null);
+					if (f!=null && f.exists())
+						Gedi.getLog().info("Found sample tag calls file for "+bam+" in "+f);
+					else
+						Gedi.getLog().warning("Did not find sample tag calls for "+bam+"!");
+					return f;
+				}).toArray(File.class);
+			
+			if (new File(FileUtils.getExtensionSibling(out, ".barcodes.tsv")).exists()) {
+				Gedi.getLog().warning("Will not create barcodes file, file already present!");
+			}
+			else if (EI.wrap(bcs).filter(f->f.exists()).count()==bcs.length) {
+				
+				Gedi.getLog().info("Creating barcodes file!");
+				HashMap<String,String> nBarcodeList = new HashMap<String, String>();
+				String[] conds = storage.getMetaDataConditions();
+				if (conds.length>1) throw new RuntimeException("Do not call with multiple bams, use MergeCIT instead!");
+				if (name!=null) conds[0] = name;
+				
+				HeaderLine header = new HeaderLine();
+				barcodeList = EI.lines(bcs[0]).skip(l->l.startsWith("#")).str().header(header,',').split(',').toMap(new HashMap<String, String>(), a->a[0], a->a[2]);
+				
+				try (LineWriter wr = new LineOrientedFile(FileUtils.getExtensionSibling(out, ".barcodes.tsv")).write()) {
+					wr.writeLine("Library\tBarcode\tSample");
+					for (int c=0; c<conds.length; c++) {
+						for (String bc : barcodeList.keySet())
+							wr.writef("%s\t%s\t%s\n",conds[c],BamGenomicRegionStorage.rhapsodyCellLabelToBarcode(bc),barcodeList.get(bc));
+						
+					}
+				}
+				if (barcodeList==null) barcodeList = nBarcodeList;
+				
+			}
+			else {
+				Gedi.getLog().warning("Will not create barcodes file, Sample tag file not found!");
+			}
+			storage.setRhapsody(barcodeList);
+			keepMito = true;
+		}
+		
+		
 		if (isDropseq) {
 			dataClass = BarcodedAlignedReadsData.class;
 			
@@ -277,22 +331,16 @@ public class Bam2CIT {
 		if (minmaq>=0)
 			storage.setMinimalAlignmentQuality(minmaq);
 		
+		
 		int numCond = storage.getRandomRecord().getNumConditions();
 
 		@SuppressWarnings("rawtypes")
-		GenomicRegionStorage outStorage = GenomicRegionStorageExtensionPoint.getInstance().get(new ExtensionContext().add(Boolean.class, compress).add(String.class, out).add(Class.class, dataClass), GenomicRegionStorageCapabilities.Disk, GenomicRegionStorageCapabilities.Fill);
+		CenteredDiskIntervalTreeStorage outStorage = new CenteredDiskIntervalTreeStorage(out, dataClass);
 		NumericArray mitocount = NumericArray.createMemory(numCond, NumericArrayType.Double);
 		
-		if (head>0 || !keepMito || sechip>0 || unspec || removePref!=null) {
+		if (head>0 || !keepMito || sechip>0 || unspec) {
 			ExtendedIterator<ImmutableReferenceGenomicRegion<AlignedReadsData>> it = null;
-			
-			String uRemovePref = removePref;
-			if (removePref==null) it = storage.ei();
-			else it = EI.wrap(storage.getReferenceSequences()).
-					filter(r->r.getName().startsWith(uRemovePref)).unfold(r->storage.ei(r)).
-					map(r->new ImmutableReferenceGenomicRegion<>(gedi.core.reference.Chromosome.obtain(r.getReference().getName().substring(uRemovePref.length()),r.getReference().getStrand()), r.getRegion(), r.getData()));
-
-			
+		
 			if (head>0) it = it.head(head);
 			if (!keepMito) it = it.filter(r->{
 				boolean mito = r.getReference().isMitochondrial();
@@ -310,6 +358,15 @@ public class Bam2CIT {
 			
 			if (progress) it = it.progress(new ConsoleProgress(System.err),-1,r->r.toLocationString());
 			outStorage.fill(it);
+		} else if (removePref!=null) {
+			String uRemovePref = removePref;
+			Function<MutableReferenceGenomicRegion,MutableReferenceGenomicRegion> transf = r->{
+				if (!r.getReference().getName().startsWith(uRemovePref)) return null;
+				r.setReference(Chromosome.obtain(r.getReference().getName().substring(uRemovePref.length()),r.getReference().getStrand()));
+				return r;
+			};
+			outStorage.fill(storage,transf,progress?new ConsoleProgress(System.err):null);
+
 		} else {
 			outStorage.fill(storage,progress?new ConsoleProgress(System.err):null);
 		}
@@ -405,7 +462,7 @@ public class Bam2CIT {
 		return re;
 	}
 	private static void usage() {
-		System.out.println("Bam2CIT [-p] [-id] [-compress] [-minmaq <MAQ>] [-keepMito] [-novar] [-nosec] [-10x] [-umi [-umiAllowMulti] [-umiPattern <regex-all-groups-are-used>]] [-barcodelist <multiseq-table>] [-removePrefix <prefix>] <output> <file1> <file2> ... \n\n -p shows progress\n -id add ids to CIT\n -removePrefix filters reads for that and removes the prefix (e.g. for 10x runs with human/mouse combined)\n -barcodelist <multiseq-table>  needs to be a tsv file with columns Barcode and Sample!");
+		System.out.println("Bam2CIT [-p] [-id] [-compress] [-minmaq <MAQ>] [-keepMito] [-novar] [-nosec] [-10x] [-rhapsody] [-umi [-umiAllowMulti] [-umiPattern <regex-all-groups-are-used>]] [-barcodelist <multiseq-table>] [-removePrefix <prefix>] <output> <file1> <file2> ... \n\n -p shows progress\n -id add ids to CIT\n -removePrefix filters reads for that and removes the prefix (e.g. for 10x runs with human/mouse combined)\n -barcodelist <multiseq-table>  needs to be a tsv file with columns Barcode and Sample!");
 	}
 	
 }

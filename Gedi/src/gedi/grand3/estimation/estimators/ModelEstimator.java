@@ -33,6 +33,8 @@ public abstract class ModelEstimator {
 	protected ExperimentalDesign design;
 	protected boolean useGaussianWithoutno4sU;
 	protected int maxIter;
+	protected boolean usePrior = true;
+	
 	
 	public ModelEstimator(ExperimentalDesign design, Function<int[], KNMatrixElement[]> stiToData, double[][][][] pre_perr, String[] subreads, boolean useGaussianWithoutno4sU) {
 		this.design = design;
@@ -72,6 +74,15 @@ public abstract class ModelEstimator {
 			wr.putInt(data[i].n);
 			wr.putDouble(data[i].count);
 		}
+	}
+	
+	
+	public void setUsePrior(boolean usePrior) {
+		this.usePrior = usePrior;
+	}
+	
+	public boolean isUsePrior() {
+		return usePrior;
 	}
 	
 	public void setMaxIter(int maxIter) {

@@ -123,7 +123,6 @@ public class CenteredDiskIntervalTreeBuilder<D> {
 		fromDisk();
 		
 		long start = out.position();
-		
 //		System.out.println("@"+out.getStart()+"+"+start);
 //		System.out.println(magic);
 //		System.out.println(nodes.size());
@@ -173,7 +172,6 @@ public class CenteredDiskIntervalTreeBuilder<D> {
 //			System.out.println();
 		}
 		tmpLists.close();
-		
 		nodes.clear();
 		
 //		System.out.println("lists:"+out.position()+" logical:"+(out.position()-start));
@@ -184,6 +182,7 @@ public class CenteredDiskIntervalTreeBuilder<D> {
 			out.put(lists.get());
 		}
 		lists.close();
+
 //		System.err.println("deleting "+lists.getPath());
 		new File (lists.getPath()).delete();
 //		System.out.println("data:"+out.position()+" logical:"+(out.position()-start));

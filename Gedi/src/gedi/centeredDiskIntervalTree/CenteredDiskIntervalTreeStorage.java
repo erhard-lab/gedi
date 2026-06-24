@@ -425,10 +425,9 @@ public class CenteredDiskIntervalTreeStorage<D>  implements GenomicRegionStorage
 				if (progress!=null)
 					progress.setDescriptionf("Processing %s", mappedRefs[i]);
 				offset[i] = out.position();
-				InternalCenteredDiskIntervalTreeBuilder<D> builder = new InternalCenteredDiskIntervalTreeBuilder<D>(new File(path).getAbsoluteFile().getParent(),new File(path).getName(), globalInfo);
-//				ReferenceSequence ref = refs[i];
-//				storage.iterateGenomicRegions(refs[i]).forEachRemaining(region->{
-//				if (refs[i].getName().equals("chr1")){
+				
+				if (storage.size(refs[i])<100) {
+					InternalInMemoryCenteredDiskIntervalTreeBuilder<D> builder = new InternalInMemoryCenteredDiskIntervalTreeBuilder<D>(new File(path).getAbsoluteFile().getParent(),new File(path).getName(), globalInfo);
 					storage.iterateMutableReferenceGenomicRegions(refs[i]).forEachRemaining(region->{
 					try {
 						MutableReferenceGenomicRegion<D> r2 = mapper.apply(region);
@@ -442,15 +441,38 @@ public class CenteredDiskIntervalTreeStorage<D>  implements GenomicRegionStorage
 						throw new RuntimeException(e);
 					}
 					});
-//				}
+					builder.build(out);
+				}
+				else {
 				
-//				pr.out.printf("Writing CIT for %s\n", mappedRefs[i]);
-				builder.build(out);
-//				System.out.println("Finished "+refs[i]+" @"+re[0]);
+					InternalCenteredDiskIntervalTreeBuilder<D> builder = new InternalCenteredDiskIntervalTreeBuilder<D>(new File(path).getAbsoluteFile().getParent(),new File(path).getName(), globalInfo);
+	//				ReferenceSequence ref = refs[i];
+	//				storage.iterateGenomicRegions(refs[i]).forEachRemaining(region->{
+	//				if (refs[i].getName().equals("chr1")){
+						storage.iterateMutableReferenceGenomicRegions(refs[i]).forEachRemaining(region->{
+						try {
+							MutableReferenceGenomicRegion<D> r2 = mapper.apply(region);
+							if (r2!=null) {
+								builder.add(r2.getRegion(), r2.getData());
+								re[0]++;
+								if (progress!=null)
+									progress.incrementProgress();
+							}
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+						});
+	//				}
+					
+	//				pr.out.printf("Writing CIT for %s\n", mappedRefs[i]);
+					builder.build(out);
+	//				System.out.println("Finished "+refs[i]+" @"+re[0]);
+				}
 			}
 			if (progress!=null)
 				progress.finish();
 			offset[refs.length] = out.position();
+			
 			
 			out.position(MAGIC.length()+Integer.BYTES);
 			for (int i=0; i<refs.length; i++) {

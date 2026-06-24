@@ -78,6 +78,10 @@ public class Grand3CollectSufficientStatistics<A extends AlignedReadsData> exten
 		context.getLog().info("Clipping: "+clipping);
 		ExperimentalDesign design = ExperimentalDesign.fromTable(designFile);
 		
+		
+		context.getLog().info("Reading from "+reads.getClass().getSimpleName());
+		
+		
 //		if (strandness.equals(Strandness.Unspecific))
 //			throw new RuntimeException("Strand unspecific libraries are not yet supported!");
 
