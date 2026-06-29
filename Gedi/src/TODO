@@ -1,4 +1,25 @@
-Implement Resimulate
-Implement: Subreads in cit as input
-Test resimulate, and check inferred parameters
-Merge gene groups (>50% overlap, or end wihtin 100bp)
+for gene in genomes:
+    # 1. Compute gene-specific adaptive penalty
+    Y_g = compute_total_coverage(gene)
+    lambda_g = lambda_0 * math.sqrt(Y_g) # or your chosen scaling function
+    
+    while not converged:
+        # 2. Standard E-step / Gradient step
+        # Calculate responsibilities and update unpenalized theta_t,s
+        Theta_unpenalized = update_abundances_via_EM(gene)
+        
+        # 3. M-step Proximal Mapping (Block Soft-Thresholding)
+        for t in gene.transcripts:
+            group_norm = norm_l2(Theta_unpenalized[t, :])
+            
+            if group_norm <= lambda_g * math.sqrt(S):
+                # Prune the transcript across ALL samples entirely
+                Theta_g[t, :] = 0
+                Pi_g[t, :] = 0 # No need to estimate kinetics for zero abundance
+            else:
+                # Shrink the group vector smoothly
+                shrinkage = 1.0 - (lambda_g * math.sqrt(S) / group_norm)
+                Theta_g[t, :] = Theta_unpenalized[t, :] * shrinkage
+                
+        # 4. Optimize Pi for active transcripts only
+        Pi_g = optimize_kinetics(gene, Theta_g)

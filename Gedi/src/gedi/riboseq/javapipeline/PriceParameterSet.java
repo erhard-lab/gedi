@@ -70,6 +70,7 @@ public class PriceParameterSet extends GediParameterSet {
 	public GediParameter<File> noisemodel = new GediParameter<File>(this,"${prefix}.noise.model", "Noise model for the generalized binomial test.", false, new FileParameterType()).setRemoveFile(true);
 	
 	
+	
 	public GediParameter<File> orfstsv = new GediParameter<File>(this,"${prefix}.orfs.tsv", "Table containing all ORFs.", false, new FileParameterType());
 	public GediParameter<File> orfsbin = new GediParameter<File>(this,"${prefix}.orfs.bin", "Binary file containing ORF information.", false, new FileParameterType()).setRemoveFile(true);
 	public GediParameter<File> pvals = new GediParameter<File>(this,"${prefix}.orfs.pvals", "Pvalues from OrfInference.", false, new FileParameterType()).setRemoveFile(true);
@@ -83,6 +84,7 @@ public class PriceParameterSet extends GediParameterSet {
 	public GediParameter<Boolean> opt = new GediParameter<Boolean>(this,"opt", "Run optimistic codon mapping.", false, new BooleanParameterType());
 	
 	public GediParameter<Boolean> genProfile = new GediParameter<Boolean>(this,"rds", "Generate codon profiles for R.", false, new BooleanParameterType());
+	public GediParameter<String> rdsbed = new GediParameter<String>(this,"rds-bed", "Bed files to include into the rds file", true, new StringParameterType(),true);
 	public GediParameter<File> profileFile = new GediParameter<File>(this,"${prefix}.profiles.rds", "Codon profiles for R.", false, new FileParameterType());
 	
 	public GediParameter<File> majorIsoformCit = new GediParameter<File>(this,"${prefix}.majorisoform.cit", "Major isoform data.", false, new FileParameterType());

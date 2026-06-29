@@ -1240,7 +1240,6 @@ public class BamGenomicRegionStorage implements GenomicRegionStorage<AlignedRead
 		public Comparator<? super GenomicRegion> getComparator() {
 			return (GenomicRegion a, GenomicRegion b) -> a.compareTo(b);
 		}
-
 		private HashMap<String,SAMRecordList> mateBuffer = new HashMap<String, SAMRecordList>();
 		private boolean done = false;
 		@Override
@@ -1260,7 +1259,7 @@ public class BamGenomicRegionStorage implements GenomicRegionStorage<AlignedRead
 		
 						pos = rec.getAlignmentStart()-1;
 						if (rec.getAlignmentStart()-1>=end) return false;
-		
+
 						HashMap<FactoryGenomicRegion,FactoryGenomicRegion> map = new HashMap<FactoryGenomicRegion, FactoryGenomicRegion>();
 						do {
 							rec = iterator.next();

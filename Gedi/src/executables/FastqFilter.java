@@ -6,11 +6,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.regex.Pattern;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 
 import gedi.app.Gedi;
 import gedi.core.region.ArrayGenomicRegion;
 import gedi.core.region.GenomicRegion;
+import gedi.core.region.feature.GenomicRegionFeatureProgram;
 import gedi.core.region.feature.output.PlotReport;
 import gedi.util.ArrayUtils;
 import gedi.util.FileUtils;
@@ -28,6 +30,7 @@ import gedi.util.math.stat.binning.IntegerBinning;
 import gedi.util.math.stat.counting.Counter;
 import gedi.util.math.stat.factor.Factor;
 import gedi.util.plotting.Aes;
+import gedi.util.r.RRunner;
 
 public class FastqFilter {
 
@@ -363,17 +366,25 @@ public class FastqFilter {
 			FileUtils.writeAllText(histo.toString(),new File(ld));
 			String png = FileUtils.getExtensionSibling(ld,"png");
 			String title = FileUtils.getNameWithoutExtension(inp);
-			DataFrame df = histo.toDataFrame();
-			if (df.getIntegerColumn(1).apply(NumericArrayFunction.Max)<10*df.rows()){
-				int from = histo.first();
-				int to = histo.last();
-				IntegerBinning binning = new IntegerBinning(EI.seq(from,to+1,(to-from)/25).iff((to-from+1%25)!=0, ei->ei.chain(EI.wrap(to+1))).toIntArray());
-				Counter<Factor> binned = histo.bin(ll->binning.apply(ll.doubleValue()));
-				df = binned.toDataFrame();
-				df.ggplot(Aes.x(df.getColumn(0).name())).geom_ecdf().rotateLabelsX().png(png);
+			
+			LineOrientedFile script = new LineOrientedFile(FileUtils.getExtensionSibling(ld,"R"));
+			script.startWriting();
+			script.writef("#!/usr/bin/env Rscript\n\n");
+			script.writef("suppressMessages(library(ggplot2))\n");
+			script.writef("t<-read.delim('%s',check.names=F)\n",ld);
+			script.writef("g<-ggplot(t,aes(`Read length`,Count))+geom_bar(stat=\"identity\")\n");
+			script.writef("ggsave('%s',width=7,height=7)\n\n",png);
+			script.finishWriting();
+			
+			try {
+				RRunner r = new RRunner(script.getPath());
+				r.run(false);
+			} catch (Exception e) {
+				GenomicRegionFeatureProgram.log.log(Level.WARNING,"Could not plot results in "+ld+"!",e);
 			}
-			df.ggplot(Aes.x(df.getColumn(0).name()),Aes.y(df.getColumn(1).name())).geom_barxy().rotateLabelsX().png(png);
-			PlotReport pr = new PlotReport("Trimmed reads", StringUtils.toJavaIdentifier(inp+"_fastqfilter"), title, "Distribution of read lengths after adapter trimming", png, null, null, ld);
+			
+			
+			PlotReport pr = new PlotReport("Trimmed reads", StringUtils.toJavaIdentifier(inp+"_fastqfilter"), title, "Distribution of read lengths after adapter trimming", png, null, script.getPath(), ld);
 			FileUtils.writeAllText(DynamicObject.from("plots",new Object[] {pr}).toJson(), new File(FileUtils.getExtensionSibling(ld,"report.json")));
 		}
 		

@@ -22,6 +22,7 @@ import gedi.core.genomic.Genomic;
 import gedi.core.region.ArrayGenomicRegion;
 import gedi.core.region.GenomicRegion;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
+import gedi.core.region.intervalTree.MemoryIntervalTreeStorage;
 import gedi.riboseq.analysis.MajorIsoform;
 import gedi.riboseq.analysis.PriceAnalysis;
 import gedi.riboseq.analysis.PriceAnalysisExtensionPoint;
@@ -37,6 +38,7 @@ import gedi.util.functions.ExtendedIterator;
 import gedi.util.functions.ParallelizedIterator;
 import gedi.util.io.text.LineWriter;
 import gedi.util.io.text.StringLineWriter;
+import gedi.util.io.text.tsv.formats.Bed;
 import gedi.util.mutable.MutablePair;
 import gedi.util.program.GediParameter;
 import gedi.util.program.GediParameterSet;
@@ -56,6 +58,7 @@ public class PriceGenerateCodonProfiles extends GediProgram {
 		addInput(params.genomic);
 		addInput(params.orfs);
 		addInput(params.prefix);
+		addInput(params.rdsbed);
 		
 		setRunFlag(params.genProfile);
 		
@@ -71,18 +74,27 @@ public class PriceGenerateCodonProfiles extends GediProgram {
 		Genomic g = getParameter(p++);
 		File orffile = getParameter(p++);
 		String prefix = getParameter(p++);
+		ArrayList<String> beds = getParameters(p++);
 		
 		CenteredDiskIntervalTreeStorage<MajorIsoform> cit = new CenteredDiskIntervalTreeStorage<>(mifile.getAbsolutePath());
 		CenteredDiskIntervalTreeStorage<PriceOrf> orfs = new CenteredDiskIntervalTreeStorage<>(orffile.getAbsolutePath());
 		CenteredDiskIntervalTreeStorage<SparseMemoryFloatArray> codons = new CenteredDiskIntervalTreeStorage<SparseMemoryFloatArray>(codonsFile.getAbsolutePath());
 		
+		MemoryIntervalTreeStorage<String> add = new MemoryIntervalTreeStorage<String>(String.class);
+		for (String b : beds) {
+			add.fill(Bed.iterateScoreNameEntries(b).map(r->r.toImmutable(r.getData().getName())));
+			context.logf("Reading bed file %s", b);
+		}
+		if (add.size()!=0)
+			context.logf("Read %d entries from bed files", add.size());
+		
 		cit.ei().progress(context.getProgress(), (int)cit.size(), r->r.toLocationString())
-			.writeRDS(getOutputFile(0).getPath(), (int)cit.size(), nthreads,5,mi->mi.getData().getTranscript().getData().getGeneId(), (mi,out)->write(mi,out,codons,orfs,g));
+			.writeRDS(getOutputFile(0).getPath(), (int)cit.size(), nthreads,5,mi->mi.getData().getTranscript().getData().getGeneId(), (mi,out)->write(mi,out,codons,orfs,g,add.size()==0?null:add));
 		
 		return null;
 	}
 
-	private static void write(ImmutableReferenceGenomicRegion<MajorIsoform> mi, RDataWriter writer, CenteredDiskIntervalTreeStorage<SparseMemoryFloatArray> codons, CenteredDiskIntervalTreeStorage<PriceOrf> orfs, Genomic genomic) throws IOException {
+	private static void write(ImmutableReferenceGenomicRegion<MajorIsoform> mi, RDataWriter writer, CenteredDiskIntervalTreeStorage<SparseMemoryFloatArray> codons, CenteredDiskIntervalTreeStorage<PriceOrf> orfs, Genomic genomic, MemoryIntervalTreeStorage<String> add) throws IOException {
 		ImmutableReferenceGenomicRegion<Transcript> trans = mi.getData().getTranscript();
 		double[][] cmat = new double[trans.getRegion().getTotalLength()][];
 		int ncond = -1;
@@ -110,7 +122,7 @@ public class PriceGenerateCodonProfiles extends GediProgram {
 		String symbol = genomic.getGeneTable("geneId", "symbol").apply(gene);
 		if (symbol==null) symbol = gene;
 		
-		writer.startList(null, 4);
+		writer.startList(null, add==null?4:5);
 		writer.write(null, new String[] {gene,symbol,transcript,trans.toLocationString()});
 		writer.write(null, new String[] {seq});
 		writer.write(null, cmat);
@@ -126,8 +138,26 @@ public class PriceGenerateCodonProfiles extends GediProgram {
 			}
 			writer.endList(EI.wrap(horfs).map(o->o.Item2.getTableId()).toArray(String.class));	
 		}
+		if (add!=null) {
+			LinkedList<MutablePair<GenomicRegion,String>> hadd = add.ei(trans)
+					.filter(o->trans.getRegion().containsUnspliced(o.getRegion()))
+					.map(o->new MutablePair<GenomicRegion,String>(trans.induce(o.getRegion()),o.getData()))
+					.toList();
+			writer.startList(null, hadd.size());
+			for (MutablePair<GenomicRegion,String> o : hadd) {
+				
+				writer.startList(null, 2);
+				writer.write(null,new int[] {o.Item1.getStart()});
+				writer.write(null,new int[] {o.Item1.getEnd()});
+				writer.endList("start","end");
+			}
+			writer.endList(EI.wrap(hadd).map(o->o.Item2).toArray(String.class));
+			writer.endList("ids","sequence","codons","orfs","add");
+		}
+		else {
+			writer.endList("ids","sequence","codons","orfs");
+		}
 		
-		writer.endList("ids","sequence","codons","orfs");
 		
 	}
 	
@@ -199,7 +229,7 @@ public class PriceGenerateCodonProfiles extends GediProgram {
 		int n = (int) cit.size();
 		cit.ei().progress(new ConsoleProgress(), (int)n, r->r.toLocationString())
 		.writeRDS("all.rds", (int)n,5,5, mi->mi.getData().getTranscript().getData().getGeneId(), (mi,out)->{
-			write(mi, out, codons, orfs, g);
+			write(mi, out, codons, orfs, g, null);
 		});
 		
 //		int n = 150;

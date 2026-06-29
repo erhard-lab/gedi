@@ -339,7 +339,7 @@ public class Bam2CIT {
 		NumericArray mitocount = NumericArray.createMemory(numCond, NumericArrayType.Double);
 		
 		if (head>0 || !keepMito || sechip>0 || unspec) {
-			ExtendedIterator<ImmutableReferenceGenomicRegion<AlignedReadsData>> it = null;
+			ExtendedIterator<ImmutableReferenceGenomicRegion<AlignedReadsData>> it = storage.ei();
 		
 			if (head>0) it = it.head(head);
 			if (!keepMito) it = it.filter(r->{
