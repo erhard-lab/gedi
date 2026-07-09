@@ -114,7 +114,7 @@ public class SlamTest extends GediProgram {
 		
 		
 		
-		SlamCollector collector = new SlamCollector(genomic, g->true, reads, masked, locations,strandness,trim5p,trim3p, ReadCountMode.Unique, ReadCountMode.Unique,no4sU,false,false,false,false);
+		SlamCollector collector = new SlamCollector(genomic, g->true, reads, masked, locations,strandness,trim5p,trim3p, ReadCountMode.Unique, ReadCountMode.Unique,no4sU,false,false,false,false,false);
 //		collector.countNumis((g,r)->{
 //			for (int i=0; i<reads.getMetaDataConditions().length; i++){
 //				System.out.println(i+" "+reads.getMetaDataConditions()[i]+": "+r[i]);

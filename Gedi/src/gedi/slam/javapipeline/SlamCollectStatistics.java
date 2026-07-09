@@ -59,6 +59,7 @@ public class SlamCollectStatistics extends GediProgram {
 		addInput(params.no4sUpattern);
 		addInput(params.introns);
 		addInput(params.lenientOverlap);
+		addInput(params.fivePrime);
 		addInput(params.modelall);
 		addInput(params.highmem);
 		
@@ -93,13 +94,14 @@ public class SlamCollectStatistics extends GediProgram {
 		String pat = getParameter(13);
 		boolean introns = getBooleanParameter(14);
 		boolean lenientOverlap = getBooleanParameter(15);
-		boolean modelall = getBooleanParameter(16);
-		boolean highmem = getBooleanParameter(17);
+		boolean fivePrime = getBooleanParameter(16);
+		boolean modelall = getBooleanParameter(17);
+		boolean highmem = getBooleanParameter(18);
 		
 		if (!allGenes)
 			allGenes|=genomic.getGenes().ei().map(e->e.getData()).filter(e->genomic.getGeneTable("biotype").apply(e).length()>0).count()==0;
 		
-		String prefix = getParameter(18);
+		String prefix = getParameter(19);
 		
 		
 		Pattern no4sUPattern = Pattern.compile(pat,Pattern.CASE_INSENSITIVE);
@@ -124,7 +126,7 @@ public class SlamCollectStatistics extends GediProgram {
 		
 		context.getLog().info("Collecting reads for each gene (Strand: "+strandness.name()+") ...");
 		
-		SlamCollector collector = new SlamCollector(genomic, geneTest, reads, masked, locations,strandness,trim5p, trim3p, mode, overlapMode, no4sU, introns,lenientOverlap,modelall, highmem);
+		SlamCollector collector = new SlamCollector(genomic, geneTest, reads, masked, locations,strandness,trim5p, trim3p, mode, overlapMode, no4sU, introns,lenientOverlap,fivePrime, modelall, highmem);
 		collector.ercc();
 		if (viralChr!=null) {
 			collector.addReferenceCounter("viral",viralChr,false);

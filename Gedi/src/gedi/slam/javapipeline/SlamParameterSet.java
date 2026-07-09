@@ -95,6 +95,6 @@ public class SlamParameterSet extends GediParameterSet {
 	public GediParameter<ReadCountMode> mode = new GediParameter<ReadCountMode>(this,"mode", "Read count mode what to do with multi-mapping reads", false, new ChoicesParameterType<ReadCountMode>(ReadCountMode.valueOf, ReadCountMode.class),ReadCountMode.Weight);
 	public GediParameter<ReadCountMode> overlap = new GediParameter<ReadCountMode>(this,"overlap", "Overlapping gene mode: What to do for locations that are compatible with more than one gene", false, new ChoicesParameterType<ReadCountMode>(ReadCountMode.valueOf, ReadCountMode.class),ReadCountMode.All);
 
-	
+	public GediParameter<Boolean> fivePrime = new GediParameter<Boolean>(this,"fivePrime", "Only reads, which 5-prime end is inside the gene is used", false, new BooleanParameterType());
 	
 }

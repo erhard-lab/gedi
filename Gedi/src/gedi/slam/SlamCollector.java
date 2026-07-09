@@ -18,6 +18,7 @@ import gedi.core.genomic.Genomic;
 import gedi.core.reference.Strandness;
 import gedi.core.region.ArrayGenomicRegion;
 import gedi.core.region.GenomicRegion;
+import gedi.core.region.GenomicRegionPosition;
 import gedi.core.region.GenomicRegionStorage;
 import gedi.core.region.ImmutableReferenceGenomicRegion;
 import gedi.core.region.MutableReferenceGenomicRegion;
@@ -64,8 +65,9 @@ public class SlamCollector {
 	
 	private boolean useAllReadsForModel = false;
 	private boolean highmem = false;
+	private boolean fivePrime = false;
 	
-	public SlamCollector(Genomic genomic, Predicate<String> keepGene, GenomicRegionStorage<AlignedReadsData> reads, GenomicRegionStorage<?> masked, GenomicRegionStorage<NameProvider> locations, Strandness strandness, int trim5p, int trim3p, ReadCountMode mode, ReadCountMode overlap, boolean[] no4sU, boolean countIntrons, boolean lenientOverlap, boolean modelall, boolean highmem) {
+	public SlamCollector(Genomic genomic, Predicate<String> keepGene, GenomicRegionStorage<AlignedReadsData> reads, GenomicRegionStorage<?> masked, GenomicRegionStorage<NameProvider> locations, Strandness strandness, int trim5p, int trim3p, ReadCountMode mode, ReadCountMode overlap, boolean[] no4sU, boolean countIntrons, boolean lenientOverlap, boolean fivePrime, boolean modelall, boolean highmem) {
 		this.genomic = genomic;
 		this.reads = reads;
 		this.masked = masked;
@@ -79,7 +81,8 @@ public class SlamCollector {
 		this.lenientOverlap = lenientOverlap;
 		this.useAllReadsForModel = modelall;
 		this.highmem = highmem;
-		
+		this.fivePrime = fivePrime;
+
 		this.cond = reads.getMetaDataConditions().length;
 		gene2Trans = genomic.getTranscripts().ei().filter(r->keepGene.test(r.getData().getGeneId())).indexMulti(t->t.getData().getGeneId(), t->t);
 		
@@ -535,7 +538,10 @@ public class SlamCollector {
 //			int intronlen = t.getRegion().invert().intersect(tread).getTotalLength();
 //			return exonlen>intronlen*10;
 		}
-		
+		if (fivePrime) {
+            return t.getRegion().contains(GenomicRegionPosition.FivePrime.position(read));
+		}
+
 		if (t.getData().isCoding() && t.getData().get5Utr(t).getRegion().isEmpty() && t.getData().get3Utr(t).getRegion().isEmpty())
 			return t.getRegion().intersects(read.getRegion()) && t.getRegion().isIntronConsistent(read.getRegion());
 		return read.getData().isConsistentlyContained(read,t,0);
