@@ -79,6 +79,7 @@ import gedi.util.mutable.MutableTriple;
 import gedi.util.program.CommandLineHandler;
 import gedi.util.program.GediParameter;
 import gedi.util.program.GediParameterSet;
+import gedi.util.program.GediParameterSpec;
 import gedi.util.program.GediProgram;
 import gedi.util.program.GediProgramContext;
 import gedi.util.program.parametertypes.BooleanParameterType;
@@ -146,6 +147,8 @@ public class Prism {
 				+ "If there are non-decoys in a lower priority category, they are now preferred over decoys in higher categories.\n\n"
 				+ "1.1.7a:\n"
 				+ "Fixed bug from 1.1.6 with wrongly annotating overlapping genes.\n\n"
+				+ "1.1.7b:\n"
+				+ "-prefix is now the base for all output file names (output goes to <prefix>.<suffix>) instead of being appended to the input csv name (which produced glued paths like <input.csv><prefix>.<suffix>). -prefix may contain directories (created automatically). When -prefix is not given it defaults to the value of -in, so the output layout for runs without -prefix is unchanged.\n\n";
 				+ "1.1.8:\n"
 				+ "ECDF fitting for real valued scores.\n\n";
 	}
@@ -2429,8 +2432,7 @@ public class Prism {
 		public String execute(GediProgramContext context) throws Exception {
 			
 			File csv = getParameter(0);
-			
-			String in = getParameter(1);
+
 			int nthreads = getIntParameter(2);
 			boolean all = getBooleanParameter(3);
 			String ccat = getParameter(4);
@@ -2565,7 +2567,7 @@ public class Prism {
 //			double fac = 1/(decoyCounter[0]/((double)decoyCounter[0]+decoyCounter[1]));
 //			context.getLog().info("Decoy factor: "+fac);
 			
-			LineWriter oout = new LineOrientedFile(in+prefix+".pep.fdrdata.tsv").write();
+			LineWriter oout = new LineOrientedFile(prefix+".pep.fdrdata.tsv").write();
 			oout.writeLine("Length\tAnnotation\tGenome\tALC\tTarget\tDecoy\tBoth");
 			for (MutableTriple<Integer,Integer,String> p : counter.keySet()) {
 				int[][] a = counter.get(p);
@@ -2584,14 +2586,14 @@ public class Prism {
 			
 			context.getLog().info("Non parametric fit of mixture score distributions...");
 			
-			RRunner r = new RRunner(in+prefix+".fdr.R");
-			r.set("prefix",in+prefix);
+			RRunner r = new RRunner(prefix+".fdr.R");
+			r.set("prefix",prefix);
 			r.set("nthreads",nthreads+"");
 			r.addSource(getClass().getResourceAsStream("/resources/nonparametric_fit.R"));
 			r.run(true);
 			
 			HashMap<MutableTriple<Integer,Integer,String>,double[][]> qvalPeps = new HashMap<>();
-			for (String[] a : EI.lines(in+prefix+".pep.fdr.fit.tsv").header(header.Item).split('\t').loop()) {
+			for (String[] a : EI.lines(prefix+".pep.fdr.fit.tsv").header(header.Item).split('\t').loop()) {
 				MutableTriple<Integer, Integer,String> p = new MutableTriple<>(Integer.parseInt(a[header.Item.get("Length")]),aenum.hasName(a[header.Item.get("Annotation")])?aenum.valueOf(a[header.Item.get("Annotation")]).ordinal():-1,a[header.Item.get("Genome")]);
 				double[][] q = qvalPeps.computeIfAbsent(p, x->new double[101][2]);
 				q[Integer.parseInt(a[header.Item.get("ALC")])][0] = a[header.Item.get("FDR")].equals("NA")?1:Double.parseDouble(a[header.Item.get("FDR")]);
@@ -2831,9 +2833,10 @@ public class Prism {
 
 	public static class FindGenomicPeptidesProgram extends GediProgram {
 
-
+		private final FindGenomicPeptidesParameterSet params;
 
 		public FindGenomicPeptidesProgram(FindGenomicPeptidesParameterSet params) {
+			this.params = params;
 			addInput(params.input);
 			addInput(params.genomic);
 			addInput(params.nthreads);
@@ -2856,6 +2859,16 @@ public class Prism {
 			
 			addInput(params.prefix);
 			addOutput(params.annotatedPeaksOut);
+		}
+
+		@Override
+		protected void initParameter(GediParameterSet set, GediParameterSpec inputSpec) {
+			// -prefix is the base for all output file names. Default it to the
+			// value of -in, so that without an explicit -prefix the output layout
+			// is identical to the historical ${in}${prefix} naming (empty prefix).
+			String pre = params.prefix.getValue();
+			if (pre==null || pre.isEmpty())
+				params.prefix.set(params.input.getValue());
 		}
 
 		@Override
@@ -4585,7 +4598,7 @@ public class Prism {
 		public GediParameter<Integer> maxlen = new GediParameter<Integer>(this,"maxlen", "The maximal length of a peptide to consider", false, new IntParameterType(), 22);
 		public GediParameter<Integer> nthreads = new GediParameter<Integer>(this,"nthreads", "The number of threads to use for computations", false, new IntParameterType(), Runtime.getRuntime().availableProcessors());
 		public GediParameter<String> input = new GediParameter<String>(this,"in", "Peaks output csv", true, new StringParameterType());
-		public GediParameter<String> prefix = new GediParameter<String>(this,"prefix", "Additional prefix", true, new StringParameterType(),"");
+		public GediParameter<String> prefix = new GediParameter<String>(this,"prefix", "Output prefix: all output files are named <prefix>.<suffix>. May contain directories (created automatically). Defaults to the value of -in (so output is written next to the input csv when not specified).", true, new StringParameterType(),"");
 		public GediParameter<Genomic> genomic = new GediParameter<Genomic>(this,"g", "Genomic name", true, new GenomicParameterType());
 		public GediParameter<String> tis = new GediParameter<String>(this,"tis", "Start codons to consider (prioritized)", true, new StringParameterType(),"AUG,CUG,ACG,GUG,AUC");
 
@@ -4594,8 +4607,8 @@ public class Prism {
 		public GediParameter<String> reads = new GediParameter<String>(this,"reads", "Fastq file(s) or Fasta file with RNA-seq reads (will be 3-frame translated!)!", true, new StringParameterType(),true);
 		public GediParameter<Strandness> readsStrandness = new GediParameter<Strandness>(this,"strandness", "Strandness of the reads (cannot be automatic!)", false, new EnumParameterType<>(Strandness.class),true);
 		
-		public GediParameter<File> readSeqs = new GediParameter<File>(this,"${in}${prefix}.readseq", "Folder of identified reads sequences", false, new FileParameterType());
-		public GediParameter<File> readSeqTab = new GediParameter<File>(this,"${in}${prefix}.readseq.tsv.gz", "Table of identified reads sequences", false, new FileParameterType());
+		public GediParameter<File> readSeqs = new GediParameter<File>(this,"${prefix}.readseq", "Folder of identified reads sequences", false, new FileParameterType());
+		public GediParameter<File> readSeqTab = new GediParameter<File>(this,"${prefix}.readseq.tsv.gz", "Table of identified reads sequences", false, new FileParameterType());
 
 		
 		public GediParameter<String> hla = new GediParameter<String>(this,"hla", "File containing HLA allels (each line); could also be in ${input%.csv}.hla, in which case you do not have to specify this parameter!", true, new StringParameterType(),true);
@@ -4615,30 +4628,30 @@ public class Prism {
 		public GediParameter<String> anchors = new GediParameter<String>(this,"anchor", "Anchor residues for peptide count statistics", false, new StringParameterType());
 
 		
-		public GediParameter<File> annotatedPeaksOut = new GediParameter<File>(this,"${in}${prefix}.annotated.csv.gz", "Peaks file annotated with matched sequence, location and type (filtered by df and pep length)", false, new FileParameterType());
-		public GediParameter<File> nextFilteredOut = new GediParameter<File>(this,"${in}${prefix}.deltaNext.csv.gz", "Peaks file annotated by delta next filter; filtered for best hit per Sequence", false, new FileParameterType());
+		public GediParameter<File> annotatedPeaksOut = new GediParameter<File>(this,"${prefix}.annotated.csv.gz", "Peaks file annotated with matched sequence, location and type (filtered by df and pep length)", false, new FileParameterType());
+		public GediParameter<File> nextFilteredOut = new GediParameter<File>(this,"${prefix}.deltaNext.csv.gz", "Peaks file annotated by delta next filter; filtered for best hit per Sequence", false, new FileParameterType());
 		public GediParameter<Boolean> writeUnidentified = new GediParameter<Boolean>(this,"unidentified", "Write a file with all top hits (also the unidentified ones!)", false, new BooleanParameterType());
 		public GediParameter<Boolean> writeNextFiltered = new GediParameter<Boolean>(this,"deltaNextStats", "Write a file with reports for delta next", false, new BooleanParameterType());
 		
-		public GediParameter<File> unidentifiedPeaksFOut = new GediParameter<File>(this,"${in}${prefix}.pep.unidentified.csv", "Peptide list of unannotated spectra", false, new FileParameterType());
+		public GediParameter<File> unidentifiedPeaksFOut = new GediParameter<File>(this,"${prefix}.pep.unidentified.csv", "Peptide list of unannotated spectra", false, new FileParameterType());
 		
-		public GediParameter<File> pepGenomeOut = new GediParameter<File>(this,"${in}${prefix}.pep.tmp", "Peaks file filtered for best hit per Sequence (filtered by dn)", false, new FileParameterType()).setRemoveFile(true);
+		public GediParameter<File> pepGenomeOut = new GediParameter<File>(this,"${prefix}.pep.tmp", "Peaks file filtered for best hit per Sequence (filtered by dn)", false, new FileParameterType()).setRemoveFile(true);
 
-		public GediParameter<File> fdrOut = new GediParameter<File>(this,"${in}${prefix}.fdr.csv", "FDR statistics", false, new FileParameterType());
-		public GediParameter<File> fdrPlot = new GediParameter<File>(this,"${in}${prefix}.fdr.pdf", "FDR statistics plot", false, new FileParameterType());
+		public GediParameter<File> fdrOut = new GediParameter<File>(this,"${prefix}.fdr.csv", "FDR statistics", false, new FileParameterType());
+		public GediParameter<File> fdrPlot = new GediParameter<File>(this,"${prefix}.fdr.pdf", "FDR statistics plot", false, new FileParameterType());
 
-		public GediParameter<File> pepGenomeFOut = new GediParameter<File>(this,"${in}${prefix}.pep.csv.gz", "Peaks file filtered for best hit per Sequence (filtered by dn)", false, new FileParameterType());
-		public GediParameter<File> mhcOut = new GediParameter<File>(this,"${in}${prefix}.pep.mhc.csv.gz", "netMHC predictions", false, new FileParameterType());
-		public GediParameter<File> rtOut = new GediParameter<File>(this,"${in}${prefix}.pep.rt.csv.gz", "SRRCalc", false, new FileParameterType());
+		public GediParameter<File> pepGenomeFOut = new GediParameter<File>(this,"${prefix}.pep.csv.gz", "Peaks file filtered for best hit per Sequence (filtered by dn)", false, new FileParameterType());
+		public GediParameter<File> mhcOut = new GediParameter<File>(this,"${prefix}.pep.mhc.csv.gz", "netMHC predictions", false, new FileParameterType());
+		public GediParameter<File> rtOut = new GediParameter<File>(this,"${prefix}.pep.rt.csv.gz", "SRRCalc", false, new FileParameterType());
 		
-		public GediParameter<File> pepGenomeAOut = new GediParameter<File>(this,"${in}${prefix}.pep.annotated.csv.gz", "Annotated peaks file (Orfs, NetMHC binding)", false, new FileParameterType());
+		public GediParameter<File> pepGenomeAOut = new GediParameter<File>(this,"${prefix}.pep.annotated.csv.gz", "Annotated peaks file (Orfs, NetMHC binding)", false, new FileParameterType());
 		
 		public GediParameter<Double> pepBedOutThreshold = new GediParameter<Double>(this,"qbed", "Q value threshold for bed output", false, new DoubleParameterType(), 0.1);
 		public GediParameter<Double> pepBedOutMHCThreshold = new GediParameter<Double>(this,"mhcbed", "netMHC precition value threshold for bed output", false, new DoubleParameterType(), 0.5);
-		public GediParameter<File> pepBedOut = new GediParameter<File>(this,"${in}${prefix}.pep.bed", "Bed file of all identified peptides", false, new FileParameterType());
+		public GediParameter<File> pepBedOut = new GediParameter<File>(this,"${prefix}.pep.bed", "Bed file of all identified peptides", false, new FileParameterType());
 
-		public GediParameter<File> paramFile = new GediParameter<File>(this,"${in}${prefix}.param", "File containing the parameters used to call Prism", false, new FileParameterType());
-		public GediParameter<File> runtimeFile = new GediParameter<File>(this,"${in}${prefix}.runtime", "File containing the runtime information", false, new FileParameterType());
+		public GediParameter<File> paramFile = new GediParameter<File>(this,"${prefix}.param", "File containing the parameters used to call Prism", false, new FileParameterType());
+		public GediParameter<File> runtimeFile = new GediParameter<File>(this,"${prefix}.runtime", "File containing the runtime information", false, new FileParameterType());
 		
 	}
 
