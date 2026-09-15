@@ -1233,7 +1233,7 @@ public class Prism {
 		return lit.map(a->StringUtils.split(a, ','));
 	}
 	
-	public static ExtendedIterator<String[][]> iteratePeaksBlocks(String file, MutableMonad<HeaderLine> header, Consumer<String> first, Predicate<String[]> filterHit, AnnotationEnum restrictToBestAnnotation) throws IOException {
+	public static ExtendedIterator<String[][]> iteratePeaksBlocks(String file, MutableMonad<HeaderLine> header, Consumer<String> first, Predicate<String[]> filterHit, AnnotationEnum restrictToBestAnnotation, Logger log) throws IOException {
 		StringIterator lit = EI.lines(file);
 		String h = lit.next();
 
@@ -1263,6 +1263,7 @@ public class Prism {
 			h=h+",MockScan";
 			header.Item = new HeaderLine(h,',');
 			scan = header.Item.get("MockScan");
+			log.warning("There is no column Precursor Id nor Scan. Using Peptide instead.");
 		}
 		int mode = header.Item.get("mode",-1);
 		int id;
@@ -1894,7 +1895,7 @@ public class Prism {
 				context.getLog().info("Reading intensities...");
 				
 				MutableMonad<HeaderLine> header = new MutableMonad<>(); 
-				for (String[][] f : iteratePeaksBlocks(intFile, header, null,null,null).loop()) {
+				for (String[][] f : iteratePeaksBlocks(intFile, header, null,null,null, context.getLog()).loop()) {
 					inti.put(f[0][header.Item.get("ID")], f[0][header.Item.get("Area")]);
 				}
 			}
@@ -2462,7 +2463,8 @@ public class Prism {
 				for (String[][] f : iteratePeaksBlocks(input, header,
 														h->out.writeLine2(h+",UniqueCategory,UniqueGenome"), 
 														l->!l[header.Item.get("Category")].equals("Unknown"),
-														aenum
+														aenum,
+														context.getLog()
 														).loop()) {
 					int len = EI.seq(0, f.length).mapToInt(i->removeMod(f[i][header.Item.get("Peptide")]).length()).unique(false).getUniqueResult(true, true);
 					int best = aenum.valueOf(f[0][header.Item.get("Annotation")]).ordinal();
@@ -2543,7 +2545,8 @@ public class Prism {
 			// [len,prio]->ALC,[target,decoy,both]
 			HashMap<MutableTriple<Integer,Integer,String>,int[][]> counter = new HashMap<>();
 
-			for (String[][] f : iteratePeaksBlocks(input, header,null, l->!l[header.Item.get("Category")].equals("Unknown"),aenum).loop()) {
+			for (String[][] f : iteratePeaksBlocks(input, header,null, l->!l[header.Item.get("Category")].equals("Unknown"),aenum,
+					context.getLog()).loop()) {
 				
 				int len = EI.seq(0, f.length).mapToInt(i->removeMod(f[i][header.Item.get("Peptide")]).length()).unique(false).getUniqueResult(true, true);
 				int alc = EI.seq(0, f.length).mapToInt(i->(int)getScore(header.Item, f[i])).unique(false).getUniqueResult(true, true);
@@ -2631,7 +2634,8 @@ public class Prism {
 			for (String[][] f : iteratePeaksBlocks(input, header,
 													h->out.writeLine2(h+",UniqueCategory,UniqueGenome,PEP,Q,wrongQ"), 
 													null,
-													aenum
+													aenum,
+													context.getLog()
 													).loop()) {
 				
 				int len = EI.seq(0, f.length).mapToInt(i->removeMod(f[i][header.Item.get("Peptide")]).length()).unique(false).getUniqueResult(true, true);
@@ -2761,7 +2765,8 @@ public class Prism {
 			MutableMonad<HeaderLine> header = new MutableMonad<>(); 
 			HashMap<String,MutableIntDoublePair> best = new HashMap<>();
 			
-			for (String[][] f : iteratePeaksBlocks(input, header,null, l->allowed.contains(l[header.Item.get("Category")]),aenum).loop()) {
+			for (String[][] f : iteratePeaksBlocks(input, header,null, l->allowed.contains(l[header.Item.get("Category")]),aenum,
+					context.getLog()).loop()) {
 				for (int i=0; i<f.length; i++) {
 					String pep = f[i][header.Item.get("ModSequence")];
 					double score = getScore(header.Item,f[i]);//alcc==-1?-1:Integer.parseInt(f[i][alcc]);
@@ -2784,7 +2789,8 @@ public class Prism {
 															out2.writeLine2(h+",Passed deltaNext filter,Passed deltaFirst filter,Passed suboptimal hit for sequence filter");
 													},
 													l->allowed.contains(l[header.Item.get("Category")]),
-													aenum
+													aenum,
+													context.getLog()
 													).loop()) {
 				
 				// identify block with same alc
@@ -3013,7 +3019,8 @@ public class Prism {
 				out.writeLine2(h+",PSM rank,Location count,Delta first,Decoy,Genome,Location,Category,Sequence,CategoryInfo,ModSequence"+(reads!=null?",Reads,Decoyreads":""));
 				if (out2!=null)
 					out2.writeLine2(h+",Identified");
-			},null,null).loop()) {
+			},null,null,
+					context.getLog()).loop()) {
 				// true adds a new id to each line!
 				
 				double topscore = -1;
