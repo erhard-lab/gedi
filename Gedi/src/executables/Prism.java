@@ -147,7 +147,9 @@ public class Prism {
 				+ "1.1.7a:\n"
 				+ "Fixed bug from 1.1.6 with wrongly annotating overlapping genes.\n\n"
 				+ "1.1.8:\n"
-				+ "ECDF fitting for real valued scores.\n\n";
+				+ "ECDF fitting for real valued scores.\n\n"
+				+ "1.1.8a:\n"
+				+ "Fixed bug introduced in 1.1.8; Use Precursor Id instead of Scan, if present.\n\n";
 	}
 
 
@@ -1248,12 +1250,20 @@ public class Prism {
 		}
 		int fraction = header.Item.get("Fraction");
 		int feature = header.Item.hasField("Feature")?header.Item.get("Feature"):-1;
-		if (!header.Item.hasField("Scan")) {
+		int scan;
+		
+		if (header.Item.hasField("Precursor Id")) {
+			scan = header.Item.get("Precursor Id");
+		} 
+		else if (header.Item.hasField("Scan")) {
+			scan = header.Item.get("Scan");
+		} 
+		else {
 			lit = lit.mapString(s->s+","+StringUtils.splitField(s, ',', peptide));
-			h=h+",Scan";
+			h=h+",MockScan";
 			header.Item = new HeaderLine(h,',');
+			scan = header.Item.get("MockScan");
 		}
-		int scan = header.Item.get("Scan");
 		int mode = header.Item.get("mode",-1);
 		int id;
 		boolean reId = !header.Item.hasField("ID");
@@ -2794,7 +2804,7 @@ public class Prism {
 					if (i>0 && !areEqualUptoIsobar(f[i-1][header.Item.get("ModSequence")],f[i][header.Item.get("ModSequence")]))
 						allSequencesSame = false;
 					bestHit = best.get(f[i][header.Item.get("ModSequence")]);
-					if (bestHit==null || GeneralUtils.isEqual(bestHit.getDouble(),getScore(header.Item,f[i]))) 
+					if (bestHit==null || !GeneralUtils.isEqual(bestHit.getDouble(),getScore(header.Item,f[i]))) 
 						anySequenceHasBetterSpectrum = true;
 				}
 				
@@ -3912,8 +3922,8 @@ public class Prism {
 		
 		
 		if (rnaseq) {
-			frame = (frame-202)%3;
 			decoy = (frame>=205);
+			frame = (frame-202)%3;
 			reverse = false;
 		}
 		else
