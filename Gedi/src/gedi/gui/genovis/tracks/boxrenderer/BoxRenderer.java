@@ -247,7 +247,13 @@ public class BoxRenderer<D> {
 		boolean rtl = locationMapper.is5to3() && reference.getStrand()==Strand.Minus;
 		double x1 = rtl?locationMapper.bpToPixel(reference,end):locationMapper.bpToPixel(reference,start);
 		double x2 = rtl?locationMapper.bpToPixel(reference,start):locationMapper.bpToPixel(reference,end);
-		Rectangle2D.Double tile = new Rectangle2D.Double(xOffset+x1,y,x2-x1,h);
+		// x1<x2 is not guaranteed: when a short exon abuts the 3' end of a compressed block (e.g. with
+		// collapsed introns) bpToPixel(start) can overshoot bpToPixel(end), giving a zero/negative width.
+		// Java2D treats such a Rectangle2D as empty and draws neither fill nor border, so the box
+		// vanishes completely. Normalize the order and keep at least one pixel so it stays visible.
+		double left = Math.min(x1, x2);
+		double width = Math.max(Math.abs(x2-x1), 1);
+		Rectangle2D.Double tile = new Rectangle2D.Double(xOffset+left,y,width,h);
 		return tile;
 	}
 
