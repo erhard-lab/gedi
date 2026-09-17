@@ -224,13 +224,17 @@ public abstract class GediProgram {
 				
 			if (program.dontRunByUser())
 				return;
-			
+
+			// Resolve computed parameter defaults (programs may derive the value
+			// of one parameter from others in initParameter) before the parameter
+			// file path is built and written, so derived output prefixes are
+			// reflected in the .param file and in the output file locations.
+			program.initParameter(program.parameterSet,program.getInputSpec());
+
 			if (parameterFile!=null) {
 				parameterFile.getFile().getAbsoluteFile().getParentFile().mkdirs();
 				program.inputSpec.writeParameterFile(parameterFile.getFile());
 			}
-			
-			program.initParameter(program.parameterSet,program.getInputSpec());
 			
 			ProgressManager man = new ProgressManager();
 			program.getParameter("progress");
