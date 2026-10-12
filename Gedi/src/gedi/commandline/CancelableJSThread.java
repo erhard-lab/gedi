@@ -81,7 +81,7 @@ public class CancelableJSThread {
 			} catch (InterruptedException | ExecutionException | CancellationException e1) {
 				throw new RuntimeException("Should not happen!");
 			} catch (TimeoutException e1) {
-				thread.stop();
+                jsThread.shutdownNow();
 				initPool();
 				if (showWarning)
 					System.err.println("Warning, forced thread to stop, problems may occurr due to deadlocks or resource leaks!");
