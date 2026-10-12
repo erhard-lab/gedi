@@ -6,7 +6,6 @@ import gedi.util.io.randomaccess.BinaryReaderWriter;
 import gedi.util.io.randomaccess.BinaryWriter;
 import gedi.util.io.randomaccess.FixedSizeBinarySerializable;
 import gedi.util.io.randomaccess.serialization.BinarySerializable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -97,6 +96,11 @@ public class BinaryBlob implements Blob, BinaryReaderWriter {
     @Override
     public boolean eof() {
     	return !buffer.hasRemaining();
+    }
+    
+    @Override
+    public void close() {
+        BinaryReaderWriter.super.close(); 
     }
     
     /**
@@ -621,7 +625,7 @@ public class BinaryBlob implements Blob, BinaryReaderWriter {
 
 	@Override
 	public BinaryReader view(long start, long end) {
-		throw new NotImplementedException();
+		throw new RuntimeException("Not implemented");
 	}
 
 	@Override

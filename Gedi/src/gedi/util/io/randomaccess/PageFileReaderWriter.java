@@ -2,7 +2,6 @@ package gedi.util.io.randomaccess;
 
 import gedi.app.extension.ExtensionContext;
 import gedi.util.FileUtils;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -679,7 +678,7 @@ public class PageFileReaderWriter implements AutoCloseable, BinaryReaderWriter {
 
 	@Override
 	public BinaryReader view(long start, long end) {
-		throw new NotImplementedException();
+		throw new RuntimeException("Not implemented");
 	}
 
 	@Override

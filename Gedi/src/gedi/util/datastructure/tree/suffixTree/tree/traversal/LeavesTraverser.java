@@ -1,7 +1,7 @@
 package gedi.util.datastructure.tree.suffixTree.tree.traversal;
 
-import com.sun.org.apache.xerces.internal.util.IntStack;
 
+import gedi.util.datastructure.array.IntStack;
 import gedi.util.datastructure.tree.suffixTree.tree.Localization;
 import gedi.util.datastructure.tree.suffixTree.tree.SuffixTree;
 

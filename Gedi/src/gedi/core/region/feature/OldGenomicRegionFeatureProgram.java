@@ -26,7 +26,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import cern.colt.bitvector.BitVector;
-import sun.nio.ch.ThreadPool;
 
 public class OldGenomicRegionFeatureProgram<D> implements Consumer<ReferenceGenomicRegion<D>> {
 

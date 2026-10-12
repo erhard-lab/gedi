@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.function.Function;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 public interface Mutable {
 
 	
@@ -227,15 +225,15 @@ public interface Mutable {
 			}
 			@Override
 			public ListIterator<T> listIterator() {
-				throw new NotImplementedException();
+				throw new RuntimeException("Not implemented");
 			}
 			@Override
 			public ListIterator<T> listIterator(int index) {
-				throw new NotImplementedException();
+				throw new RuntimeException("Not implemented");
 			}
 			@Override
 			public List<T> subList(int fromIndex, int toIndex) {
-				throw new NotImplementedException();
+				throw new RuntimeException("Not implemented");
 			}
 			
 		};

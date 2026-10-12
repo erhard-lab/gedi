@@ -31,8 +31,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
@@ -51,9 +54,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.commons.compress.utils.IOUtils;
-
-import sun.nio.ch.DirectBuffer;
 import cern.colt.bitvector.BitVector;
 
 
@@ -591,41 +591,54 @@ public class FileUtils {
         return true;
 	}
     
-    /**
-	 *Make sure that there is no strong reference left to the buffer!
-	 * @param ref
-	 * @return
-	 */
+    private static final Object UNSAFE;
+    private static final Method INVOKE_CLEANER;
+
+    static {
+        Object unsafe = null;
+        Method invokeCleaner = null;
+        try {
+            Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+            Field f = unsafeClass.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            unsafe = f.get(null);
+            invokeCleaner = unsafeClass.getMethod("invokeCleaner", ByteBuffer.class);
+        } catch (Throwable t) {
+            // Fallback auf GC
+        }
+        UNSAFE = unsafe;
+        INVOKE_CLEANER = invokeCleaner;
+    }
+
     public static boolean unmapSynchronous(WeakReference<MappedByteBuffer> ref) {
-    	MappedByteBuffer buffer = ref.get();
-    	if (buffer==null) return true;
-        // first write all data
+        MappedByteBuffer buffer = ref.get();
+        if (buffer == null) return true;
+
         buffer.force();
 
-        // need to dispose old direct buffer, see bug
-        // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038
-
         boolean useSystemGc = true;
-        try {
-        	((DirectBuffer)buffer).cleaner().clean();
-            useSystemGc = false;
-        } catch (Throwable e) {
-            // useSystemGc is already true
-        } finally {
+        if (UNSAFE != null && INVOKE_CLEANER != null) {
+            try {
+                INVOKE_CLEANER.invoke(UNSAFE, buffer);
+                useSystemGc = false;
+            } catch (Throwable e) {
+                // useSystemGc bleibt true
+            }
         }
+
         if (useSystemGc) {
             buffer = null;
             long start = System.currentTimeMillis();
             while (ref.get() != null) {
                 if (System.currentTimeMillis() - start > GC_TIMEOUT_MS) {
-                  return false;
+                    return false;
                 }
                 System.gc();
                 Thread.yield();
             }
         }
         return true;
-	}
+    }
 
 	public static void applyRecursively(String path, Consumer<File> action) {
 		File root = new File( path );

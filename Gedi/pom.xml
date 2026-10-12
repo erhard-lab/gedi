@@ -119,11 +119,6 @@
 	    <version>3.4.1</version>
 	</dependency>
 	<dependency>
-	    <groupId>org.broad.igv</groupId>
-	    <artifactId>bigwig</artifactId>
-	    <version>2.0.0</version>
-	</dependency>
-	<dependency>
 	    <groupId>com.h2database</groupId>
 	    <artifactId>h2</artifactId>
 	    <version>1.4.177</version>
@@ -132,6 +127,11 @@
     <groupId>org.apache.commons</groupId>
     <artifactId>commons-compress</artifactId>
     <version>1.26.1</version>
+</dependency>
+<dependency>
+    <groupId>org.broad.igv</groupId>
+    <artifactId>bigwig</artifactId>
+    <version>2.0.0</version>
 </dependency>
 
 <!-- HTSJDK (provides htsjdk.samtools) -->

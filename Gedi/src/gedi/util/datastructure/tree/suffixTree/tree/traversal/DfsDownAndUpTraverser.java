@@ -2,7 +2,6 @@ package gedi.util.datastructure.tree.suffixTree.tree.traversal;
 
 import java.util.Stack;
 
-import com.sun.org.apache.xerces.internal.util.IntStack;
 
 import gedi.util.datastructure.tree.suffixTree.tree.SuffixTree;
 
