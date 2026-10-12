@@ -106,8 +106,13 @@ public class PriceIdentifyMajorIsoform extends GediProgram {
 			
 					// load data into structure
 					HashMap<GenomicRegion,MajorIsoform> map = loadData(g,ref,group,codons, orfs);
-					
-					// identify the maximal amount of reads
+
+					// first criterion: the isoform that explains the most reads by compatible detected ORFs
+					// (if no detected ORF is compatible with any isoform, all have 0 and the criteria below decide)
+					ArrayList<ImmutableReferenceGenomicRegion<PriceOrf>> detected = orfs.ei(ref,new ArrayGenomicRegion(group.getStart(),group.getEnd())).list();
+					find(map,a->getExplainedReads(a, detected),true);
+
+					// tie-breaking (previous criteria): identify the maximal amount of reads
 					double maxReads = find(map,a->a.getSum(0).sum(),false);
 					double thresh = maxReads*0.9;
 					
@@ -164,7 +169,7 @@ public class PriceIdentifyMajorIsoform extends GediProgram {
 				int pos = trans.setRegion(tr).induce(c.getRegion()).getStart();
 				MajorIsoform profile = re.computeIfAbsent(tr, x->new MajorIsoform(g,
 						new ImmutableReferenceGenomicRegion<>(ref, tr,group.get(tr)),
-						orfs.ei(trans).filter(o->trans.getRegion().containsUnspliced(o.getRegion()))
+						orfs.ei(trans).filter(o->isCompatible(trans.getRegion(),o))
 						));
 				profile.set(pos,c.getData());
 			}
@@ -172,8 +177,27 @@ public class PriceIdentifyMajorIsoform extends GediProgram {
 		return re;
 	}
 
-	
-	
+	/**
+	 * An ORF is compatible with a transcript, if the transcript contains it (from the predicted start codon up to and including the stop codon)
+	 */
+	private static boolean isCompatible(GenomicRegion transcript, ImmutableReferenceGenomicRegion<PriceOrf> orf) {
+		return transcript.containsUnspliced(orf.getData().getStartStop(orf, true).getRegion());
+	}
+
+	/**
+	 * Reads (summed over conditions) at in-frame positions of all detected ORFs compatible with the given isoform (each position counted once).
+	 * The annotated CDS is not used here (unless it is a detected ORF).
+	 */
+	private static double getExplainedReads(MajorIsoform mi, ArrayList<ImmutableReferenceGenomicRegion<PriceOrf>> detected) {
+		ImmutableReferenceGenomicRegion<Transcript> tr = mi.getTranscript();
+		ArrayList<ArrayGenomicRegion> induced = new ArrayList<>();
+		for (ImmutableReferenceGenomicRegion<PriceOrf> o : detected)
+			if (isCompatible(tr.getRegion(), o))
+				induced.add(tr.induce(o.getData().getStartStop(o, false).getRegion()));
+		return mi.getExplainedReads(induced);
+	}
+
+
 
 }
 

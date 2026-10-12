@@ -2,6 +2,8 @@ package gedi.riboseq.analysis;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -59,6 +61,9 @@ public class MajorIsoform implements BinarySerializable {
 		
 		for (ImmutableReferenceGenomicRegion<PriceOrf> r : eit.loop()) {
 			for (int i=0; i<r.getData().getNumAlternativeStartCodons(); i++) {
+				// skip alternative start codons (incl. stop) that are not compatible with this transcript
+				if (!transcript.getRegion().containsUnspliced(r.getData().getStartStop(r, i,true).getRegion()))
+					continue;
 				ImmutableReferenceGenomicRegion<PriceOrf> orf = r.getData().getStartStop(r, i,false);
 				ArrayGenomicRegion reg = transcript.induce(orf.getRegion());
 				PriceOrfType type = PriceOrfType.annotate(genomic, transcript, orf);
@@ -213,6 +218,25 @@ public class MajorIsoform implements BinarySerializable {
 
 	public int getAminoAcidLength(int orf) {
 		return orfs[orf].getTotalLength()/3;
+	}
+
+	/**
+	 * Sum of reads (over all conditions) at in-frame codon positions of the union of the given ORFs, i.e.
+	 * each codon position is counted at most once, even if it is covered by several ORFs.
+	 * @param orfs induced on transcript! Does not include stop
+	 * @return
+	 */
+	public double getExplainedReads(Collection<ArrayGenomicRegion> orfs) {
+		BitSet pos = new BitSet(psites.length);
+		for (ArrayGenomicRegion o : orfs)
+			for (int p=0; p<o.getTotalLength(); p+=3)
+				pos.set(o.map(p));
+		double re = 0;
+		for (int p=pos.nextSetBit(0); p>=0; p=pos.nextSetBit(p+1))
+			if (psites[p]!=null)
+				for (float f : psites[p])
+					re+=f;
+		return re;
 	}
 
 
