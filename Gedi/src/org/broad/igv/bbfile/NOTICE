@@ -1,0 +1,12 @@
+The package org.broad.igv.bbfile is third-party code bundled with Gedi.
+
+Origin:    bigwig 2.0.0 (Maven artifact org.broad.igv:bigwig:2.0.0)
+           https://bitbucket.org/lorainelab/bigwig
+Copyright: (c) 2007-2011 The Broad Institute of MIT and Harvard
+License:   GNU Lesser General Public License, version 2.1 (see LICENSE-LGPL-2.1.txt)
+
+The artifact is no longer available from public Maven repositories, so its
+source code is included here unmodified. As permitted by section 3 of the
+LGPL 2.1, this copy is distributed as part of Gedi under the terms of the
+GNU General Public License, version 3 (see the LICENSE file in the repository root).
+The original copyright notices in each source file are retained.
