@@ -69,7 +69,7 @@ public class SubreadProcessor<A extends AlignedReadsData>  {
 			TargetCollection targets, File output, ExperimentalDesign design, String[] subreads, Resimulator resimulator, String[] newConditions, int[][] conditionMapping) throws IOException {
 		
 		ExtendedIterator<ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData>> srit = targets.iterateRegions()
-				//EI.wrap(targets.getRegion("MYC"))
+//				EI.wrap(targets.getRegion("TRBJ2-2P"),targets.getRegion("TRBJ2-3"),targets.getRegion("TRBC2"))
 			.iff(progress!=null,ei->ei.progress(progress.get(), targets.getNumRegions(), r->"Processing "+r.getData()))
 			.parallelizedState(nthreads, 5, resimulator==null?null:resimulator.createState(),(ei,resim)->ei.unfold(target->{
 				

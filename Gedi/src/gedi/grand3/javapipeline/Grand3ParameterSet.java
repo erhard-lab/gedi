@@ -94,6 +94,7 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<String> resimName = new GediParameter<String>(this,"resimName", "Name for resim",false, new StringParameterType(),"resim");
 	public GediParameter<ResimulatorModelType> resimModelType = new GediParameter<ResimulatorModelType>(this,"resim-model", "Which model for resimulate (default: Do not resimulate, but write the reads as is).",false, new EnumParameterType<ResimulatorModelType>(ResimulatorModelType.class),true);
 	public GediParameter<Long> resimSeed = new GediParameter<Long>(this,"resim-seed", "Seed for resimulation.",false, new LongParameterType(),1337L);
+	public GediParameter<Boolean> resimKeepIndels = new GediParameter<Boolean>(this,"resim-keepIndels", "Otherwise, all reads with indels are removed!",false, new BooleanParameterType());
 	public GediParameter<File> resimFile = new GediParameter<File>(this,"${prefix}.${resimName}.${resim-model}.cit", "File containing the resimulated reads", false, new FileParameterType());
 	
 	public GediParameter<File> burstMCMCFile = new GediParameter<File>(this,"${prefix}.burstMCMC.txt", "File containing the burstMCMC inputs", false, new FileParameterType());

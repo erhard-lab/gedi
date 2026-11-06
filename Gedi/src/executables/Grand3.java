@@ -81,7 +81,9 @@ public class Grand3 {
 				"3.0.8:\n"
 				+ " Added support for outputting per exon and intron\n\n"+
 				"3.0.9:\n"
-				+ " Added support for computing discrete ll profiles\n\n"
+				+ " Added support for computing discrete ll profiles\n\n"+
+				"3.0.10:\n"
+				+ " Changed the read compatibility mode for no-UTR mRNAs (now: count only if at least half of the read is inside)\n\n"
 				;
 	}
 		

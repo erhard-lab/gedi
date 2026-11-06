@@ -30,14 +30,17 @@ public class Resimulator  {
 	private MismatchMatrix mmMat;
 	private long seed;
 	private Genomic genomic;
+	
+	private boolean keepIndels;
 
-	public Resimulator(Genomic genomic,ResimulatorModelType modelType, ModelStructure[][][] models, HashMap<String, Double>[][][] ntrs, MismatchMatrix mmMat, MetabolicLabelType[] types, long seed) {
+	public Resimulator(Genomic genomic,ResimulatorModelType modelType, ModelStructure[][][] models, HashMap<String, Double>[][][] ntrs, MismatchMatrix mmMat, MetabolicLabelType[] types, boolean keepIndels, long seed) {
 		this.genomic = genomic;
 		this.modelType = modelType;
 		this.models = models;
 		this.ntrs = ntrs;
 		this.types = types;
 		this.mmMat = mmMat;
+		this.keepIndels = keepIndels;
 		this.seed = seed;
 		
 		if (EI.wrap(types).map(t->t.getGenomic()).set().size()!=types.length)
@@ -100,8 +103,20 @@ public class Resimulator  {
 
 
 	private void singleResimulate(char[] sequence, int cond, ImmutableReferenceGenomicRegion<SubreadsAlignedReadsData> readRegion, int distinct, ResimulateState state, AlignedReadsDataFactory fac) {
-		
 		SubreadsAlignedReadsData data = readRegion.getData();
+		
+		// introduced mismatches cannot be within a deletion!
+		ArrayGenomicRegion deletion = new ArrayGenomicRegion();
+		for (int v=0; v<data.getVariationCount(distinct); v++)
+			if (data.isDeletion(distinct, v)) {
+				deletion = deletion.union(new ArrayGenomicRegion(data.getDeletionPos(distinct, v),data.getDeletionPos(distinct, v)+data.getDeletion(distinct, v).length()));
+			}
+
+		
+		
+		if (!keepIndels && !deletion.isEmpty()) 
+			return;
+		
 		fac.add(data,distinct, v->{
 			if (!v.isMismatch()) return v;
 			for (int t=0; t<types.length; t++) {
@@ -115,12 +130,7 @@ public class Resimulator  {
 		},true,false);
 		fac.setCount(cond, 1);
 		
-		// introduced mismatches cannot be within a deletion!
-		ArrayGenomicRegion deletion = new ArrayGenomicRegion();
-		for (int v=0; v<data.getVariationCount(distinct); v++)
-			if (data.isDeletion(distinct, v)) {
-				deletion = deletion.union(new ArrayGenomicRegion(data.getDeletionPos(distinct, v),data.getDeletionPos(distinct, v)+data.getDeletion(distinct, v).length()));
-			}
+		
 		
 		int len = readRegion.getRegion().getTotalLength();
 		

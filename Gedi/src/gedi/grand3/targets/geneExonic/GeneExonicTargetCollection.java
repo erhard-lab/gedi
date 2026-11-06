@@ -130,7 +130,7 @@ public class GeneExonicTargetCollection implements TargetCollection {
 		int inIntron = read.getRegion().intersectLengthInvert(t.getRegion());
 		if (t.getData().isCoding() && t.getData().get5UtrLength(t.getReference(), t.getRegion())==0 && t.getData().get3UtrLength(t.getReference(),t.getRegion())==0) {
 			// incomplete transcript
-			return inIntron<=clipForCompatibility && read.getRegion().intersects(t.getRegion());
+			return inIntron<=clipForCompatibility && read.getRegion().intersectLength(t.getRegion())>read.getRegion().getTotalLength()/2;
 		}
 		
 		return inIntron<=clipForCompatibility && inIntron<read.getRegion().getTotalLength() && t.getRegion().getStart()<=read.getRegion().getStart() && t.getRegion().getEnd()>=read.getRegion().getEnd();
