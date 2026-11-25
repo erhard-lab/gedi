@@ -22,7 +22,6 @@ import gedi.util.io.text.LineWriter;
 import gedi.util.math.stat.inference.ml.MaximumLikelihoodModelPriorDecorator;
 import gedi.util.math.stat.inference.ml.MaximumLikelihoodParametrization;
 import gedi.util.math.stat.inference.ml.NelderMeadMaximumLikelihoodEstimator;
-import jdistlib.Normal;
 
 public abstract class ModelEstimator {
 
@@ -31,17 +30,17 @@ public abstract class ModelEstimator {
 	protected double[][][][] pre_perr;
 	protected String[] subreads;
 	protected ExperimentalDesign design;
-	protected boolean useGaussianWithoutno4sU;
+	protected LogDensityPrior prior;
 	protected int maxIter;
-	protected boolean usePrior = true;
+//	protected boolean usePrior = true;
 	
 	
-	public ModelEstimator(ExperimentalDesign design, Function<int[], KNMatrixElement[]> stiToData, double[][][][] pre_perr, String[] subreads, boolean useGaussianWithoutno4sU) {
+	public ModelEstimator(ExperimentalDesign design, Function<int[], KNMatrixElement[]> stiToData, double[][][][] pre_perr, String[] subreads, LogDensityPrior prior) {
 		this.design = design;
 		this.stiToData = stiToData;
 		this.pre_perr = pre_perr;
 		this.subreads = subreads;
-		this.useGaussianWithoutno4sU = useGaussianWithoutno4sU;
+		this.prior = prior;
 	}
 	
 	public ExtendedIterator<ModelStructure> estimate(int[] sti) {
@@ -77,13 +76,13 @@ public abstract class ModelEstimator {
 	}
 	
 	
-	public void setUsePrior(boolean usePrior) {
-		this.usePrior = usePrior;
-	}
-	
-	public boolean isUsePrior() {
-		return usePrior;
-	}
+//	public void setUsePrior(boolean usePrior) {
+//		this.usePrior = usePrior;
+//	}
+//	
+//	public boolean isUsePrior() {
+//		return usePrior;
+//	}
 	
 	public void setMaxIter(int maxIter) {
 		this.maxIter = maxIter;
@@ -93,9 +92,10 @@ public abstract class ModelEstimator {
 	protected abstract MaximumLikelihoodParametrization fitBinom(KNMatrixElement[] data, double[] pre_perr, int t);
 	protected abstract MaximumLikelihoodParametrization fitTBBinom(KNMatrixElement[] data, double[] pre_perr, int t);
 	public LogDensityPrior getPrior(int t) {
-		if (!useGaussianWithoutno4sU) return LogDensityPrior.Epanechnikov;
-		boolean hasno4sU = design.getSamplesNotHaving(design.getTypes()[t]).length>0;
-		return hasno4sU?LogDensityPrior.Epanechnikov:LogDensityPrior.Gaussian;
+		return prior;
+//		if (!useGaussianWithoutno4sU) return LogDensityPrior.Epanechnikov;
+//		boolean hasno4sU = design.getSamplesNotHaving(design.getTypes()[t]).length>0;
+//		return hasno4sU?LogDensityPrior.Epanechnikov:LogDensityPrior.Gaussian;
 	}
 	
 	
@@ -111,26 +111,6 @@ public abstract class ModelEstimator {
 	public abstract ModelStructure computeProfile(Logger logger, LineWriter profOut, ModelStructure model, int nthreads, ExperimentalDesign design, String[] subreads);
 
 
-	public static enum LogDensityPrior {
-		Epanechnikov {
-			public double logdens(double x, double mean, double rad) {
-				double nd = (x-mean)/rad;
-				nd = nd*nd;
-				if (nd>=1) return Double.NEGATIVE_INFINITY;
-//				return Math.log(0.75*(1-nd)/rad);
-				return Math.log1p(-nd);
-			}
-		},
-		Gaussian {
-			public double logdens(double x, double mean, double rad) {
-				return Normal.density(x, mean, rad/2, true);
-			}
-		};
-		
-		public abstract double logdens(double x, double mean, double rad);
-	}
-	
-	
 	public static void main(String[] args) throws IOException {
 		HashMap<KnMatrixKey, KNMatrixElement[]> dataMap = Grand3Model.dataFromStatFile("/home/erhard/test/iter_117.conversion.knmatrix.tsv.gz");
 		KNMatrixElement[] data = dataMap.values().iterator().next();
@@ -184,9 +164,9 @@ public abstract class ModelEstimator {
 //		
 //		System.out.println(fit1.apply(-1.6));
 //		
-		FullModelEstimator est = new FullModelEstimator(null, null, null, null);
-		est.useGaussianWithoutno4sU = false;
-		System.out.println(est.fitTBBinom(data,new double[] {0,0.0004},0));
+//		FullModelEstimator est = new FullModelEstimator(null, null, null, null);
+//		est.prior = LogDensityPrior.Gaussian;
+//		System.out.println(est.fitTBBinom(data,new double[] {0,0.0004},0));
 
 	}
 	

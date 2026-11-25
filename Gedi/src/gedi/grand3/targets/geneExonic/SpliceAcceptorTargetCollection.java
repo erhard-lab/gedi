@@ -38,15 +38,16 @@ public class SpliceAcceptorTargetCollection extends GeneExonicTargetCollection {
 	
 	public SpliceAcceptorTargetCollection(Genomic genomic, MemoryIntervalTreeStorage<String> genes, Function<ReferenceSequence,String> genome,ToIntFunction<String> chrLength,
 			Predicate<String> useForGlobal,
+			boolean useExonForGlobal, boolean useIntronForGlobal, boolean outputExon, boolean outputIntron,
 			MemoryIntervalTreeStorage<Transcript> transcripts, ReadCountMode mode, ReadCountMode overlap,
 			int clipForCompatibility, int minOverlap) {
-		super(genomic, genes, genome, chrLength, useForGlobal, false, true, true, true, transcripts, mode, overlap, clipForCompatibility);
+		super(genomic, genes, genome, chrLength, useForGlobal, useExonForGlobal, useIntronForGlobal, outputExon, outputIntron, transcripts, mode, overlap, clipForCompatibility);
 		this.minOverlap = minOverlap;
 	}
 	
 	@Override
 	public TargetCollection create(ReadCountMode mode, ReadCountMode overlap) {
-		return new SpliceAcceptorTargetCollection(genomic,genes, genome, chrLength, useForGlobal, transcripts, mode, overlap, clipForCompatibility,minOverlap);
+		return new SpliceAcceptorTargetCollection(genomic,genes, genome, chrLength, useForGlobal, useExonForGlobal,useIntronForGlobal,outputExon,outputIntron,transcripts, mode, overlap, clipForCompatibility,minOverlap);
 	}
 	
 	private static class MyClassify implements Grand3ReadClassified {
@@ -170,6 +171,7 @@ public class SpliceAcceptorTargetCollection extends GeneExonicTargetCollection {
 					r->r.isMitochondrial()?"Mito":g.getOrigin(r).getId(),
 					r->g.getLength(r),
 					s->s.equals(first),
+					false,true,true,true,
 					g.getTranscripts(),
 					ReadCountMode.Unique,
 					ReadCountMode.Unique,

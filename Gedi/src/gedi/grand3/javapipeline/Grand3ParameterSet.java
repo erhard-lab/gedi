@@ -7,8 +7,9 @@ import gedi.core.data.reads.ReadCountMode;
 import gedi.core.genomic.Genomic;
 import gedi.core.reference.Strandness;
 import gedi.core.region.GenomicRegionStorage;
+import gedi.grand3.estimation.estimators.ErrorEstimationMethod;
+import gedi.grand3.estimation.estimators.LogDensityPrior;
 import gedi.grand3.estimation.estimators.ModelEstimationMethod;
-import gedi.grand3.javapipeline.Grand3SetupTargetsGenes.ExonIntronMode;
 import gedi.grand3.processing.Resimulator.ResimulatorModelType;
 import gedi.grand3.targets.TargetCollection;
 import gedi.util.program.GediParameter;
@@ -102,6 +103,9 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<File> modelFile = new GediParameter<File>(this,"${prefix}.model.parameters.tsv", "File containing the mixture model parameters", false, new FileParameterType());
 	public GediParameter<File> modelBinFile = new GediParameter<File>(this,"${prefix}.model.parameters.bin", "File containing the mixture model parameters", false, new FileParameterType());
 	
+	
+	public GediParameter<LogDensityPrior> errorPrior = new GediParameter<LogDensityPrior>(this, "errorPrior", "Which prior to use for the estimation of p_err. By default, Gaussian is used if error==RegressionNo4sU and estim==Full, and Epanechnikov otherwise.", false, new EnumParameterType<>(LogDensityPrior.class),true);
+	public GediParameter<ErrorEstimationMethod> errorMethod = new GediParameter<ErrorEstimationMethod>(this, "error", "Which method to use for estimating p_err. By default, RegressionNo4sU is used if there are no4sU samples, MedianErrorRates otherwise", false, new EnumParameterType<>(ErrorEstimationMethod.class),true);
 	public GediParameter<ModelEstimationMethod> estimMethod = new GediParameter<ModelEstimationMethod>(this, "estim", "Which method to use for estimating the global parameters. If more than one are given, the first is used to estimate target parameters", true, new EnumParameterType<>(ModelEstimationMethod.class),ModelEstimationMethod.Full);
 	public GediParameter<Integer> maxIter = new GediParameter<Integer>(this, "maxit", "Maximal number of iterations for Nelder Mead", false, new IntParameterType(),1000);
 	

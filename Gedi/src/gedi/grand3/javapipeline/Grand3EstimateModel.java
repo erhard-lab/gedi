@@ -17,7 +17,9 @@ import gedi.core.genomic.Genomic;
 import gedi.grand3.Grand3Utils;
 import gedi.grand3.estimation.ModelStructure;
 import gedi.grand3.estimation.PerrEstimator;
+import gedi.grand3.estimation.estimators.ErrorEstimationMethod;
 import gedi.grand3.estimation.estimators.FullModelEstimator;
+import gedi.grand3.estimation.estimators.LogDensityPrior;
 import gedi.grand3.estimation.estimators.MaskErrorComponentModelEstimator;
 import gedi.grand3.estimation.estimators.ModelEstimationMethod;
 import gedi.grand3.estimation.estimators.ModelEstimator;
@@ -56,6 +58,8 @@ public class Grand3EstimateModel extends GediProgram {
 		addInput(params.introntol);
 		addInput(params.jointModel);
 		addInput(params.estimMethod);
+		addInput(params.errorMethod);
+		addInput(params.errorPrior);
 		addInput(params.maxIter);
 		
 		addInput(params.prefix);
@@ -84,6 +88,8 @@ public class Grand3EstimateModel extends GediProgram {
 		int introntol = getIntParameter(pind++);
 		String joinModels = getParameter(pind++);
 		ArrayList<ModelEstimationMethod> estim = getParameters(pind++);
+		ErrorEstimationMethod errMethod = getParameter(pind++);
+		LogDensityPrior errPrior = getParameter(pind++);
 		int maxIter = getIntParameter(pind++);
 		
 		String prefix = getParameter(pind++);
@@ -107,21 +113,47 @@ public class Grand3EstimateModel extends GediProgram {
 		// subread,label,cond,min|max
 		double[][][][] pre_perr = new double[subreads.length][design.getTypes().length][design.getNumSamples()][];
 
+		boolean allno4sURegression = true;
 		PerrEstimator est = new PerrEstimator(mmFile, design, subreads);
 		for (int t=0; t<design.getTypes().length; t++) {
-			if (design.getSamplesNotHaving(design.getTypes()[t]).length>0)
+			
+			ErrorEstimationMethod hereErr = errMethod;
+			if (hereErr==null) {
+				if (design.getSamplesNotHaving(design.getTypes()[t]).length>0)
+					hereErr = ErrorEstimationMethod.RegressionNo4sU;
+				else 
+					hereErr = ErrorEstimationMethod.MedianErrorRates;
+			}
+			
+			if (hereErr.equals(ErrorEstimationMethod.RegressionNo4sU))
 				context.getLog().info(String.format("Estimate prior p.err for %s by regression using %s naive samples: %s",
 						design.getTypes()[t].toString(),
 						design.getTypes()[t].toString(),
 						EI.wrap(design.getSamplesNotHaving(design.getTypes()[t])).map(i->design.getSampleNameForSampleIndex(i)).concat(",")));
-			else
+			else if (hereErr.equals(ErrorEstimationMethod.SimpleNo4sU)) {
+				context.getLog().info(String.format("Estimate prior p.err for %s directly using %s naive samples: %s",
+						design.getTypes()[t].toString(),
+						design.getTypes()[t].toString(),
+						EI.wrap(design.getSamplesNotHaving(design.getTypes()[t])).map(i->design.getSampleNameForSampleIndex(i)).concat(",")));
+				allno4sURegression = false;
+			}
+			else if (hereErr.equals(ErrorEstimationMethod.MedianErrorRates)) {
 				context.getLog().info(String.format("Estimate prior p.err for %s without %s naive samples (median method).",
 						design.getTypes()[t].toString(),design.getTypes()[t].toString()));
-				
+				allno4sURegression = false;
+			}
+			else if (hereErr.equals(ErrorEstimationMethod.WidePrior)) {
+				context.getLog().info(String.format("Estimate prior p.err for %s without %s naive samples (wide prior method).",
+						design.getTypes()[t].toString(),design.getTypes()[t].toString()));
+				allno4sURegression = false;
+			}
+			else
+				throw new RuntimeException("Unknown error estimation method: "+hereErr);
+			
 			for (int s=0; s<subreads.length; s++) 
 				for (int i=0; i<design.getNumSamples(); i++)
 					if (design.getLabelForSample(i,design.getTypes()[t])!=null) {
-						pre_perr[s][t][i] = est.estimate(i, s, design.getTypes()[t]);
+						pre_perr[s][t][i] = est.estimate(i, s, design.getTypes()[t], hereErr);
 					}
 		}
 		
@@ -164,15 +196,29 @@ public class Grand3EstimateModel extends GediProgram {
 			
 			ModelEstimationMethod method = estim.get(mi);
 			
+			
+			LogDensityPrior herePrior = errPrior;
+			if (herePrior==null) {
+				if (method.equals(ModelEstimationMethod.Full) & allno4sURegression)
+					herePrior = LogDensityPrior.Gaussian;
+				else 
+					herePrior = LogDensityPrior.Epanechnikov;
+			}
+			
+			context.getLog().info(String.format("Using %s error prior for %s",
+					herePrior,
+					method));
+			
 			ModelEstimator estimator;
 			if (method.equals(ModelEstimationMethod.Full))
-				estimator=new FullModelEstimator(design,stiToData,pre_perr, subreads);
+				estimator=new FullModelEstimator(design,stiToData,pre_perr, subreads,errPrior);
 			else if (method.equals(ModelEstimationMethod.MaskErrorComponent))
-				estimator=new MaskErrorComponentModelEstimator(design,stiToData,pre_perr, subreads);
-			else if (method.equals(ModelEstimationMethod.FullNoPrior)) {
-				estimator=new FullModelEstimator(design, stiToData, pre_perr, subreads);
-				estimator.setUsePrior(false);
-			} else
+				estimator=new MaskErrorComponentModelEstimator(design,stiToData,pre_perr, subreads,errPrior);
+//			else if (method.equals(ModelEstimationMethod.FullNoPrior)) {
+//				estimator=new FullModelEstimator(design, stiToData, pre_perr, subreads,errPrior);
+//				estimator.setUsePrior(false);
+//			} 
+			else
 				throw new RuntimeException("Unknown estimation method: "+method);
 			
 			context.getLog().info("Estimating models using "+method+" method...");
@@ -320,7 +366,7 @@ public class Grand3EstimateModel extends GediProgram {
 			for (int s=0; s<subreads.length; s++) 
 				for (int i=0; i<design.getNumSamples(); i++)
 					if (s==2 && design.getLabelForSample(i,design.getTypes()[t])!=null) {
-						double[] pr = est.estimate(i, s, design.getTypes()[t]);
+						double[] pr = est.estimate(i, s, design.getTypes()[t], ErrorEstimationMethod.MedianErrorRates);
 						System.out.printf(Locale.US,"%s %s %d %.10f %.10f\n",args[0],subreads[s],i,pr[0],pr[1]);
 					}
 		}

@@ -29,6 +29,7 @@ public class Grand3SetupTargetsAcceptor extends GediProgram {
 		addInput(params.mode);
 		addInput(params.overlap);
 		addInput(params.minOverlap);
+		addInput(params.genemode);
 		
 		setRunFlag(params.targets, "acceptor");
 		
@@ -44,6 +45,7 @@ public class Grand3SetupTargetsAcceptor extends GediProgram {
 		ReadCountMode mode = getParameter(pind++);
 		ReadCountMode overlap = getParameter(pind++);
 		int minOverlap = getIntParameter(pind++);
+		ExonIntronMode exin = getParameter(pind++);
 		
 		context.getLog().info("Parameters will be estimated for splice acceptor sites!");
 		
@@ -54,6 +56,7 @@ public class Grand3SetupTargetsAcceptor extends GediProgram {
 				r->r.isMitochondrial()?"Mito":genomic.getOrigin(r).getId(),
 				r->genomic.getLength(r),
 				s->s.equals(first),
+				exin.getExonForGlobal(),exin.getIntronForGlobal(),exin.getExonForTarget(),exin.getIntronForTarget(),
 				genomic.getTranscripts(),
 				mode,
 				overlap,

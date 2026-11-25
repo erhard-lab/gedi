@@ -28,6 +28,7 @@ public class Grand3SetupTargetsExonIntron extends GediProgram {
 		addInput(params.introntol);
 		addInput(params.mode);
 		addInput(params.overlap);
+		addInput(params.genemode);
 		
 		setRunFlag(params.targets, "exin");
 		
@@ -42,6 +43,7 @@ public class Grand3SetupTargetsExonIntron extends GediProgram {
 		int introntol = getIntParameter(pind++);
 		ReadCountMode mode = getParameter(pind++);
 		ReadCountMode overlap = getParameter(pind++);
+		ExonIntronMode exin = getParameter(pind++);
 		
 		context.getLog().info("Parameters will be estimated for exons and introns!");
 		
@@ -52,7 +54,7 @@ public class Grand3SetupTargetsExonIntron extends GediProgram {
 				r->r.isMitochondrial()?"Mito":genomic.getOrigin(r).getId(),
 				r->genomic.getLength(r),
 				s->s.equals(first),
-				false,true,true,true,
+				exin.getExonForGlobal(),exin.getIntronForGlobal(),exin.getExonForTarget(),exin.getIntronForTarget(),
 				genomic.getTranscripts(),
 				mode,
 				overlap,

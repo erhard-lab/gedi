@@ -28,8 +28,8 @@ public class MaskErrorComponentModelEstimator extends ModelEstimator {
 	private double maxErrComponentFraction = 0.01;
 	
 	public MaskErrorComponentModelEstimator(ExperimentalDesign design,Function<int[], KNMatrixElement[]> stiToData, double[][][][] pre_perr,
-			String[] subreads) {
-		super(design,stiToData, pre_perr, subreads,false);
+			String[] subreads, LogDensityPrior prior) {
+		super(design,stiToData, pre_perr, subreads,prior);
 	}
 
 	public double getMaxErrComponentFraction() {

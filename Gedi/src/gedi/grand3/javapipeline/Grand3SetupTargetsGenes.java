@@ -17,34 +17,6 @@ import gedi.util.program.GediProgramContext;
 
 public class Grand3SetupTargetsGenes extends GediProgram {
 
-	public static enum ExonIntronMode {
-		Standard{
-			public boolean getExonForGlobal() {return true;	}
-			public boolean getIntronForGlobal() {return false;}
-			public boolean getExonForTarget() {return true;}
-			public boolean getIntronForTarget() {return false;}
-		},
-		Talkseq {
-			public boolean getExonForGlobal() {return false;	}
-			public boolean getIntronForGlobal() {return true;}
-			public boolean getExonForTarget() {return true;}
-			public boolean getIntronForTarget() {return true;}
-		}, 
-		Intronic {
-			public boolean getExonForGlobal() {return false;	}
-			public boolean getIntronForGlobal() {return true;}
-			public boolean getExonForTarget() {return false;}
-			public boolean getIntronForTarget() {return true;}
-		};
-		
-		public abstract boolean getExonForGlobal();
-		public abstract boolean getIntronForGlobal();
-		public abstract boolean getExonForTarget();
-		public abstract boolean getIntronForTarget();
-		
-	}
-	
-	
 	public Grand3SetupTargetsGenes(Grand3ParameterSet params) {
 		
 		addInput(params.genomic);
