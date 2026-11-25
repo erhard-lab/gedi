@@ -60,6 +60,9 @@ public class Grand3EstimateModel extends GediProgram {
 		addInput(params.estimMethod);
 		addInput(params.errorMethod);
 		addInput(params.errorPrior);
+		addInput(params.manualPriorLow);
+		addInput(params.manualPriorHigh);
+		
 		addInput(params.maxIter);
 		
 		addInput(params.prefix);
@@ -90,6 +93,8 @@ public class Grand3EstimateModel extends GediProgram {
 		ArrayList<ModelEstimationMethod> estim = getParameters(pind++);
 		ErrorEstimationMethod errMethod = getParameter(pind++);
 		LogDensityPrior errPrior = getParameter(pind++);
+		double manualPriorLow = getDoubleParameter(pind++);
+		double manualPriorHigh = getDoubleParameter(pind++);
 		int maxIter = getIntParameter(pind++);
 		
 		String prefix = getParameter(pind++);
@@ -114,7 +119,9 @@ public class Grand3EstimateModel extends GediProgram {
 		double[][][][] pre_perr = new double[subreads.length][design.getTypes().length][design.getNumSamples()][];
 
 		boolean allno4sURegression = true;
-		PerrEstimator est = new PerrEstimator(mmFile, design, subreads);
+		double[] manual = {manualPriorLow,manualPriorHigh};
+		PerrEstimator est = new PerrEstimator(mmFile, design, subreads, manual);
+		
 		for (int t=0; t<design.getTypes().length; t++) {
 			
 			ErrorEstimationMethod hereErr = errMethod;
@@ -142,9 +149,9 @@ public class Grand3EstimateModel extends GediProgram {
 						design.getTypes()[t].toString(),design.getTypes()[t].toString()));
 				allno4sURegression = false;
 			}
-			else if (hereErr.equals(ErrorEstimationMethod.WidePrior)) {
-				context.getLog().info(String.format("Estimate prior p.err for %s without %s naive samples (wide prior method).",
-						design.getTypes()[t].toString(),design.getTypes()[t].toString()));
+			else if (hereErr.equals(ErrorEstimationMethod.Manual)) {
+				context.getLog().info(String.format("Set manual prior p.err for %s: [%.2g:%.2g]",
+						design.getTypes()[t].toString(),manualPriorLow,manualPriorHigh));
 				allno4sURegression = false;
 			}
 			else
@@ -153,6 +160,7 @@ public class Grand3EstimateModel extends GediProgram {
 			for (int s=0; s<subreads.length; s++) 
 				for (int i=0; i<design.getNumSamples(); i++)
 					if (design.getLabelForSample(i,design.getTypes()[t])!=null) {
+						
 						pre_perr[s][t][i] = est.estimate(i, s, design.getTypes()[t], hereErr);
 					}
 		}
@@ -200,9 +208,9 @@ public class Grand3EstimateModel extends GediProgram {
 			LogDensityPrior herePrior = errPrior;
 			if (herePrior==null) {
 				if (method.equals(ModelEstimationMethod.Full) & allno4sURegression)
-					herePrior = LogDensityPrior.Gaussian;
-				else 
 					herePrior = LogDensityPrior.Epanechnikov;
+				else 
+					herePrior = LogDensityPrior.Gaussian;
 			}
 			
 			context.getLog().info(String.format("Using %s error prior for %s",
@@ -211,9 +219,9 @@ public class Grand3EstimateModel extends GediProgram {
 			
 			ModelEstimator estimator;
 			if (method.equals(ModelEstimationMethod.Full))
-				estimator=new FullModelEstimator(design,stiToData,pre_perr, subreads,errPrior);
+				estimator=new FullModelEstimator(design,stiToData,pre_perr, subreads,herePrior);
 			else if (method.equals(ModelEstimationMethod.MaskErrorComponent))
-				estimator=new MaskErrorComponentModelEstimator(design,stiToData,pre_perr, subreads,errPrior);
+				estimator=new MaskErrorComponentModelEstimator(design,stiToData,pre_perr, subreads,herePrior);
 //			else if (method.equals(ModelEstimationMethod.FullNoPrior)) {
 //				estimator=new FullModelEstimator(design, stiToData, pre_perr, subreads,errPrior);
 //				estimator.setUsePrior(false);
@@ -361,7 +369,7 @@ public class Grand3EstimateModel extends GediProgram {
 		String[] subreads = Grand3Utils.readSemantic(subreadFile);
 		
 		
-		PerrEstimator est = new PerrEstimator(mmFile, design, subreads);
+		PerrEstimator est = new PerrEstimator(mmFile, design, subreads, new double[0]);
 		for (int t=0; t<design.getTypes().length; t++) {
 			for (int s=0; s<subreads.length; s++) 
 				for (int i=0; i<design.getNumSamples(); i++)

@@ -85,7 +85,9 @@ public class Grand3 {
 				"3.0.10:\n"
 				+ " Changed the read compatibility mode for no-UTR mRNAs (now: count only if at least half of the read is inside)\n\n"+
 				"3.0.11:\n"
-				+ " Additional prior for p_err choices\n\n"
+				+ " Additional prior for p_err choices\n\n"+
+				"3.0.12:\n"
+				+ " Fixed prior defaults, added manual prior boundaries\n\n"
 				;
 	}
 		

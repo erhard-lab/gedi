@@ -25,9 +25,11 @@ public class PerrEstimator extends MismatchMatrix {
 	private static final StandardDeviation sd = new StandardDeviation();
 
 	private boolean excludeAntisense = true;
+	private double[] manual;
 	
-	public PerrEstimator(File mmFile, ExperimentalDesign design, String[] subreads) throws IOException {
+	public PerrEstimator(File mmFile, ExperimentalDesign design, String[] subreads, double[] manual) throws IOException {
 		super(mmFile,design,subreads);
+		this.manual = manual;
 	}
 	
 	public void setExcludeAntisense(boolean excludeAntisense) {
@@ -78,7 +80,11 @@ public class PerrEstimator extends MismatchMatrix {
 			throw new RuntimeException("Could not estimate p_err using median approach!");
 		}
 		
-		return new double[] {0,1E-3};
+		if (errMethod.equals(ErrorEstimationMethod.Manual)) {
+			return manual;
+		}
+		
+		throw new RuntimeException("Could not estimate p_err, unknown method!");
 	}
 	
 	private double[] regress(double[] s, double[] on, MetabolicLabelType type) {

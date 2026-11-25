@@ -104,7 +104,9 @@ public class Grand3ParameterSet extends GediParameterSet {
 	public GediParameter<File> modelBinFile = new GediParameter<File>(this,"${prefix}.model.parameters.bin", "File containing the mixture model parameters", false, new FileParameterType());
 	
 	
-	public GediParameter<LogDensityPrior> errorPrior = new GediParameter<LogDensityPrior>(this, "errorPrior", "Which prior to use for the estimation of p_err. By default, Gaussian is used if error==RegressionNo4sU and estim==Full, and Epanechnikov otherwise.", false, new EnumParameterType<>(LogDensityPrior.class),true);
+	public GediParameter<Double> manualPriorLow = new GediParameter<Double>(this, "manual-prior-low", "Set the prior manually, only effective if error=Manual", false, new DoubleParameterType(),0.0);
+	public GediParameter<Double> manualPriorHigh = new GediParameter<Double>(this, "manual-prior-high", "Set the prior manually, only effective if error=Manual", false, new DoubleParameterType(),1E-3);
+	public GediParameter<LogDensityPrior> errorPrior = new GediParameter<LogDensityPrior>(this, "errorPrior", "Which prior to use for the estimation of p_err. By default, Epanechnikov is used if error==RegressionNo4sU and estim==Full, and Gaussian otherwise.", false, new EnumParameterType<>(LogDensityPrior.class),true);
 	public GediParameter<ErrorEstimationMethod> errorMethod = new GediParameter<ErrorEstimationMethod>(this, "error", "Which method to use for estimating p_err. By default, RegressionNo4sU is used if there are no4sU samples, MedianErrorRates otherwise", false, new EnumParameterType<>(ErrorEstimationMethod.class),true);
 	public GediParameter<ModelEstimationMethod> estimMethod = new GediParameter<ModelEstimationMethod>(this, "estim", "Which method to use for estimating the global parameters. If more than one are given, the first is used to estimate target parameters", true, new EnumParameterType<>(ModelEstimationMethod.class),ModelEstimationMethod.Full);
 	public GediParameter<Integer> maxIter = new GediParameter<Integer>(this, "maxit", "Maximal number of iterations for Nelder Mead", false, new IntParameterType(),1000);
